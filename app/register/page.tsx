@@ -275,7 +275,7 @@ export default function RegisterPage() {
       {/* ── Background illustration ── */}
       <div className="fixed inset-0 z-0 pointer-events-none">
         <Image
-          src="/images/auth/register-bg.png"
+          src="/images/auth/register-bg.webp"
           alt=""
           fill
           priority

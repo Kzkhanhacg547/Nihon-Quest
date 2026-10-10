@@ -1,3 +1,4 @@
+import images from "@/lib/images.json";
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 import Link from "next/link";
@@ -15,6 +16,7 @@ import {
 } from "@/components/DashboardArt";
 import { ActivityButton } from "./ActivityButton";
 import { buildLearningPath, sanitizeAnswers } from "@/lib/personalization";
+import { isImageAvatar } from "@/lib/avatar";
 
 export const metadata = { title: "Dashboard — Nihon Quest" };
 
@@ -197,7 +199,7 @@ export default async function AppHome() {
                 <p>{intro}{skillIntro ? ` ${skillIntro}` : ""}</p>
               </div>
               <div className="nqd-hero-scene" aria-hidden="true">
-                <Image src="/images/dashboard/fuji-hero.webp" alt="" fill priority sizes="(max-width: 1100px) 100vw, 800px" />
+                <Image src={images.fujiHero} alt="" fill priority sizes="(max-width: 1100px) 100vw, 800px" />
               </div>
               <div className="nqd-stamp-wrap" aria-hidden="true">
                 <div className="nqd-stamp"><span>一歩ずつ</span><span>夢に近づく</span></div>
@@ -251,7 +253,7 @@ export default async function AppHome() {
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img className="nqd-bg-light" src="/dash/light.png" alt="" />
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img className="nqd-bg-dark" src="/dash/dark.png" alt="" />
+                    <img className="nqd-bg-dark" src="/dash/dark.webp" alt="" />
                   </div>
                   <div className="nqd-focus-top">
                     {isNewLesson && <span className="nqd-new">New</span>}
@@ -353,13 +355,13 @@ export default async function AppHome() {
                     const label = row.displayName || row.name || "Học viên";
                     return (
                       <div className={`nqd-rank ${row.id === uid ? "me" : ""}`} key={row.id}>
-                        <span className={`n ${i < 3 ? `r${i + 1}` : ""}`}>{i + 1}</span>
+                        <span className={`n ${i < 3 ? `r${i + 1}` : "BOT"}`}>{i + 1}</span>
                         <span className="av">
-                          {row.avatar && (row.avatar.startsWith("http") || row.avatar.startsWith("/")) ? (
+                          {isImageAvatar(row.avatar) ? (
                             // eslint-disable-next-line @next/next/no-img-element
-                            <img src={row.avatar} alt="" width={36} height={36} />
+                            <img src={row.avatar!.startsWith("http") || row.avatar!.startsWith("/") || row.avatar!.startsWith("data:") ? row.avatar! : "data:image/jpeg;base64," + row.avatar!} alt="" width={36} height={36} />
                           ) : (
-                            row.avatar || label.slice(0, 1).toUpperCase()
+                            (row.avatar && row.avatar.length < 10 ? row.avatar : label.slice(0, 1).toUpperCase())
                           )}
                         </span>
                         <b>
@@ -403,3 +405,5 @@ export default async function AppHome() {
     </div>
   );
 }
+
+

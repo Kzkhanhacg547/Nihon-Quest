@@ -86,14 +86,37 @@ export interface AwardXpResult {
 /**
  * Retrieves the canonical user progress model with synchronized metrics.
  */
-export async function getUserProgress(userId: string): Promise<CanonicalUserProgress | null> {
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
+export async function getUserProgress(userIdOrEmail: string): Promise<CanonicalUserProgress | null> {
+  const user = await prisma.user.findFirst({
+    where: {
+      OR: [
+        { id: userIdOrEmail },
+        { email: userIdOrEmail },
+        { accounts: { some: { providerAccountId: userIdOrEmail } } },
+      ],
+    },
     include: { profile: true },
   });
 
   if (!user) return null;
 
+  // Auto-create Profile if user (e.g. Google OAuth sign in) has no Profile record yet
+  if (!user.profile) {
+    try {
+      const createdProfile = await prisma.profile.create({
+        data: {
+          userId: user.id,
+          displayName: user.name || user.email.split("@")[0],
+          avatar: user.image || null,
+        },
+      });
+      user.profile = createdProfile;
+    } catch {
+      // Ignore if concurrent creation
+    }
+  }
+
+  const userId = user.id;
   const userLevel = user.learningLevel || "N5";
   const levelInfo = calculateLevel(user.totalXP);
 

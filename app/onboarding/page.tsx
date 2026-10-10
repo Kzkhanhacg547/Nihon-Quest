@@ -11,6 +11,8 @@ import {
   LEARNING_STYLE_OPTIONS,
 } from "@/lib/personalization";
 import "./onboarding.css";
+import PlacementTestModal from "@/components/PlacementTestModal";
+import { type JLPTLevel } from "@/lib/placement-test";
 
 const STEPS = [...ONBOARDING_QUESTIONS];
 
@@ -43,6 +45,7 @@ export default function OnboardingPage() {
   const router = useRouter();
   const [step, setStep] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [isTesting, setIsTesting] = useState(false);
   const [levelChoice, setLevelChoice] = useState("BEGINNER");
   const [selections, setSelections] = useState({
     learningLevel: "N5",
@@ -55,6 +58,12 @@ export default function OnboardingPage() {
 
   const currentStep = STEPS[step];
   const isLast = step === STEPS.length - 1;
+
+  const handleTestComplete = (level: JLPTLevel) => {
+    setLevelChoice(level);
+    setSelections((s) => ({ ...s, levelChoice: level, learningLevel: level === "BEGINNER" ? "N5" : level }));
+    setIsTesting(false);
+  };
 
   const handleNext = async () => {
     if (!isLast) {

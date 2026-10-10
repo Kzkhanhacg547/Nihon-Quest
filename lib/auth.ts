@@ -3,6 +3,6 @@ import { authOptions } from "@/lib/auth-options";
 
 export async function requireUserId(): Promise<string | null> {
   const session = await getServerSession(authOptions);
-  const id = (session?.user as { id?: string } | undefined)?.id;
+  const id = (session?.user as { id?: string } | undefined)?.id || session?.user?.email;
   return id ?? null;
 }

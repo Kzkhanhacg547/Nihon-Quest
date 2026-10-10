@@ -1,3 +1,4 @@
+import images from "@/lib/images.json";
 import Image from "next/image";
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
@@ -54,7 +55,7 @@ export default async function AchievementsPage() {
       <section className="mx-auto mt-3 max-w-[1320px] px-4 sm:px-6">
         <div className="relative isolate overflow-hidden rounded-3xl bg-[#0b1230] shadow-xl">
           <Image
-            src="/images/dashboard/fuji-hero.webp"
+            src={images.fujiHero}
             alt=""
             fill
             priority
@@ -99,4 +100,5 @@ export default async function AchievementsPage() {
     </div>
   );
 }
+
 

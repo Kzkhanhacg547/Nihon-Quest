@@ -1,3 +1,4 @@
+import images from "@/lib/images.json";
 import fs from "node:fs";
 import path from "node:path";
 import Image from "next/image";
@@ -80,7 +81,7 @@ export default async function GrammarPage() {
       <section className="mx-auto mt-2 max-w-[1320px] px-4 sm:px-6">
         <div className="relative isolate overflow-hidden rounded-3xl bg-[#0b1230]">
           <Image
-            src="/images/dashboard/fuji-hero.webp"
+            src={images.fujiHero}
             alt=""
             fill
             priority

@@ -72,10 +72,10 @@ function useDismiss(ref: { current: HTMLElement | null }, open: boolean, onClose
 
 function Avatar({ name, image }: { name?: string | null; image?: string | null }) {
   const initial = (name?.trim()?.[0] ?? "N").toUpperCase();
-  if (image) {
+  if (image && (image.startsWith("http") || image.startsWith("/") || image.startsWith("data:") || image.length > 50)) {
     return (
       // eslint-disable-next-line @next/next/no-img-element
-      <img src={image} alt={name ?? "Tài khoản"} className="h-10 w-10 rounded-full object-cover ring-2 ring-white dark:ring-sumi-800" />
+      <img src={image.startsWith("http") || image.startsWith("/") || image.startsWith("data:") ? image : "data:image/jpeg;base64," + image} alt={name ?? "Tài khoản"} className="h-10 w-10 rounded-full object-cover ring-2 ring-white dark:ring-sumi-800" />
     );
   }
   return (

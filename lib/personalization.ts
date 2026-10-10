@@ -261,34 +261,44 @@ function levelPool(level: string): CatalogEntry[] {
 
 // --- Goal ordering: define the ideal order of tags per goal ---
 const GOAL_ORDER: Record<string, string[]> = {
-  TRAVEL: ["travel", "foundations", "listening", "practical", "conversation", "reading", "jlpt", "writing", "mock"],
-  JLPT: ["foundations", "jlpt", "writing", "reading", "listening", "mock"],
-  CONVERSATION: ["conversation", "speaking", "listening", "foundations", "travel", "immersive"],
-  CULTURE: ["culture", "foundations", "reading", "conversation", "travel", "jlpt"],
+  TRAVEL: ["travel", "practical", "listening", "speaking", "conversation", "culture", "foundations"],
+  JLPT: ["jlpt", "mock", "reading", "writing", "listening", "foundations"],
+  CONVERSATION: ["conversation", "speaking", "listening", "practical", "immersive", "foundations"],
+  CULTURE: ["culture", "reading", "listening", "foundations"],
 };
 
 const SKILL_PRIORITY: Record<string, string[]> = {
-  LISTENING: ["listening", "speaking", "foundations", "travel", "conversation", "reading", "jlpt", "writing", "mock"],
-  SPEAKING: ["speaking", "listening", "conversation", "travel", "foundations", "immersive", "practical", "jlpt", "reading", "writing", "mock"],
-  READING: ["reading", "foundations", "jlpt", "writing", "listening", "travel", "conversation", "mock"],
-  WRITING: ["writing", "foundations", "jlpt", "reading", "conversation", "listening", "travel", "mock"],
+  LISTENING: ["listening", "conversation"],
+  SPEAKING: ["speaking", "conversation", "practical"],
+  READING: ["reading", "jlpt", "culture"],
+  WRITING: ["writing", "jlpt"],
   BALANCED: [],
 };
 
 function scoreModule(entry: CatalogEntry, goal: string, focusSkill: string, style: string): number {
   let score = 0;
   const goalOrder = GOAL_ORDER[goal] ?? [];
-  entry.tags.forEach((tag, i) => {
+  
+  if (entry.tags.includes(goal.toLowerCase())) score += 100;
+  
+  entry.tags.forEach((tag) => {
     const gi = goalOrder.indexOf(tag);
     if (gi >= 0) score += (goalOrder.length - gi) * 10;
     const si = (SKILL_PRIORITY[focusSkill] ?? []).indexOf(tag);
-    if (si >= 0) score += (SKILL_PRIORITY[focusSkill].length - si) * 3;
+    if (si >= 0) score += (SKILL_PRIORITY[focusSkill].length - si) * 5;
   });
-  if (style === "PRACTICAL" && entry.tags.includes("practical")) score += 40;
-  if (style === "IMMERSIVE" && entry.tags.includes("immersive")) score += 30;
-  if (style === "GAMIFIED" && entry.tags.includes("gamified")) score += 25;
-  if (style === "STRUCTURED" && entry.tags.includes("foundations")) score += 15;
+  
+  if (style === "PRACTICAL" && entry.tags.includes("practical")) score += 50;
+  if (style === "IMMERSIVE" && entry.tags.includes("immersive")) score += 50;
+  if (style === "GAMIFIED" && entry.tags.includes("gamified")) score += 50;
+  if (style === "STRUCTURED" && entry.tags.includes("foundations")) score += 50;
+  
   if (focusSkill !== "BALANCED" && entry.skills.some((s) => s === SKILL_LABELS[focusSkill])) score += 50;
+  
+  if (goal === "TRAVEL" && entry.tags.includes("jlpt") && !entry.tags.includes("travel")) score -= 30;
+  if (goal === "JLPT" && entry.tags.includes("travel") && !entry.tags.includes("jlpt")) score -= 30;
+  if (goal === "CONVERSATION" && entry.tags.includes("jlpt") && !entry.tags.includes("conversation")) score -= 20;
+
   return score;
 }
 
@@ -329,23 +339,19 @@ export function buildLearningPath(input: PersonalizationAnswers): LearningPath {
         : `bỏ qua phần kana cơ bản, đi thẳng vào ngữ pháp & kỹ năng ${LEVEL_LABELS[level]}`
     }.`,
   );
-  rationale.push(`Mục tiêu ${GOAL_LABELS[goal]} định hướng trọng tâm nội dung — các mô-đun phù hợp được xếp trước.`);
-  rationale.push(`Kỹ năng trọng tâm ${SKILL_LABELS[focusSkill]} được ưu tiên trong mọi giai đoạn.`);
-  rationale.push(`Phong cách ${STYLE_LABELS[style]} quyết định cách xen kẽ bài học, thực hành và ôn tập.`);
-  rationale.push(`Ngân sách ${daily} phút/ngày → khoảng ${modulesPerWeekFor(daily)} mô-đun/tuần, lộ trình kéo dài tương ứng.`);
+  rationale.push(`Mục tiêu ${GOAL_LABELS[goal]} định hướng trọng tâm nội dung — các bài học phù hợp nhất được chọn ra từ kho dữ liệu.`);
+  rationale.push(`Kỹ năng trọng tâm ${SKILL_LABELS[focusSkill]} được ưu tiên trong lộ trình của bạn.`);
+  rationale.push(`Phong cách ${STYLE_LABELS[style]} định hình các hoạt động xen kẽ giữa bài học (như AI, Sinh tồn, hay Ôn tập SRS).`);
+  rationale.push(`Ngân sách ${daily} phút/ngày → khoảng ${modulesPerWeekFor(daily)} mô-đun/tuần.`);
 
-  // ---- Phase 1: foundations ----
   const modules: PathModule[] = [];
   const pool = levelPool(level);
   const mid = minutesForDailyGoal(daily);
-
   const seen = new Set<string>();
-  const add = (entry: CatalogEntry, why: string, overrideMinutes?: number) => {
-    const key = entry.slug ?? entry.title;
-    if (seen.has(key)) return;
-    seen.add(key);
-    modules.push({
-      id: `${entry.kind}-${key}`.toLowerCase().replace(/[^a-z0-9-]+/g, "-"),
+
+  const createModule = (entry: CatalogEntry, why: string, overrideMinutes?: number): PathModule => {
+    return {
+      id: `${entry.kind}-${entry.slug ?? entry.title}`.toLowerCase().replace(/[^a-z0-9-]+/g, "-"),
       kind: entry.kind,
       slug: entry.slug,
       target: entry.target,
@@ -355,98 +361,114 @@ export function buildLearningPath(input: PersonalizationAnswers): LearningPath {
       xp: entry.xp,
       skills: entry.skills,
       why,
-    });
+    };
+  };
+
+  const add = (entry: CatalogEntry, why: string, overrideMinutes?: number) => {
+    const key = entry.slug ?? entry.title;
+    if (seen.has(key)) return;
+    seen.add(key);
+    modules.push(createModule(entry, why, overrideMinutes));
   };
 
   const goalWhy = `Phù hợp mục tiêu ${GOAL_LABELS[goal]} của bạn.`;
   const skillWhy = `Được chọn vì bạn tập trung kỹ năng ${SKILL_LABELS[focusSkill]}.`;
-  const styleWhy = `Phong cách ${STYLE_LABELS[style]} của bạn cần bước này.`;
+  const styleWhy = `Phong cách ${STYLE_LABELS[style]} của bạn cần hoạt động này.`;
 
+  // 1. Phân bổ các bài khởi đầu
   if (isRealBeginner(level)) {
     add(KANA_HIRA, "Mọi lộ trình cho người mới đều bắt đầu bằng Hiragana — nền tảng đọc viết.");
     add(KANA_KATA, "Katakana mở ra vốn từ mượn quốc tế bạn gặp hằng ngày.");
   }
 
-  // ---- Phase 2: goal-specialized core (sorted by score) ----
-  // Foundational modules always precede specialized content,
-  // regardless of goal/skill scoring.
+  // Cố định nền tảng ban đầu để không bị nhảy cóc ngữ pháp
+  const foundational = new Set<CatalogEntry>();
   if (level === "N5" || level === "BEGINNER") {
+    foundational.add(DAKUTEN);
+    foundational.add(YOON);
     add(DAKUTEN, "Nền tảng phát âm: biến âm đục là bước tiếp sau kana cơ bản.");
     add(YOON, "Nền tảng phát âm: ảo âm & âm ngắt hoàn thiện bảng 50 âm.");
-  } else {
+  } else if (style === "STRUCTURED" || goal === "JLPT") {
+    foundational.add(PARTICLES);
+    foundational.add(TE_FORM);
+    foundational.add(VERB_CONJ);
     add(PARTICLES, "Nền tảng ngữ pháp: 10 trợ từ cốt lõi trước khi học cấu trúc nâng cao.");
     add(TE_FORM, "Nền tảng ngữ pháp: thể Te là chìa khóa cho mọi biến thể sau này.");
     add(VERB_CONJ, "Nền tảng ngữ pháp: bảng chia 5 thể — tổng quan trước khi chuyên sâu.");
   }
 
-  const foundational = new Set(
-    level === "N5" || level === "BEGINNER"
-      ? [DAKUTEN, YOON]
-      : [PARTICLES, TE_FORM, VERB_CONJ],
-  );
-
-  const scored = levelPool(level)
+  // 2. Chấm điểm & chọn Core Modules dựa sát vào Goal & Skill
+  const coreSize = daily >= 60 ? 25 : daily >= 30 ? 20 : daily >= 15 ? 15 : 10;
+  const scored = pool
     .filter((e) => e !== KANA_HIRA && e !== KANA_KATA && !foundational.has(e))
     .map((e) => ({ e, s: scoreModule(e, goal, focusSkill, style) }))
     .sort((a, b) => b.s - a.s);
 
-  // core size scales with time budget
-  const coreSize = daily >= 60 ? 12 : daily >= 30 ? 10 : daily >= 15 ? 8 : 6;
+  // Lấy top modules phù hợp
+  const topCore = scored.slice(0, coreSize).map(x => x.e);
+  
+  // Sắp xếp lại theo thứ tự bài học gốc (chronological) để lộ trình hợp lý
+  topCore.sort((a, b) => pool.indexOf(a) - pool.indexOf(b));
 
-  // For PRACTICAL style, force survival into the first core slots
-  if (style === "PRACTICAL") {
-    add(SURVIVAL, "Bạn chọn phong cách thực chiến — học ngay tình huống giao tiếp đời thực trước.", Math.min(10, mid));
-  }
+  const extraActivities: PathModule[] = [];
+  const pushExtra = (entry: CatalogEntry, why: string) => {
+    if (!seen.has(entry.slug ?? entry.title)) {
+      seen.add(entry.slug ?? entry.title);
+      extraActivities.push(createModule(entry, why, Math.min(15, mid)));
+    }
+  };
 
-  for (const { e } of scored.slice(0, coreSize)) {
-    const whyParts: string[] = [];
-    if (e.tags.includes(goal)) whyParts.push(goalWhy);
-    if (focusSkill !== "BALANCED" && (e.tags.includes(focusSkill.toLowerCase()) || e.skills.includes(SKILL_LABELS[focusSkill]))) whyParts.push(skillWhy);
-    if (!whyParts.length) whyParts.push(`Nằm trong lộ trình ${GOAL_LABELS[goal]} ${LEVEL_LABELS[level]} — trình tự khoa học.`);
-    add(e, whyParts.join(" "));
-  }
-
-  // ---- Phase 3: style overlay ----
+  // Nạp thêm các bài luyện kỹ năng / phong cách vào mảng phụ để trộn
   if (style === "IMMERSIVE") {
-    add(JOURNEY, "Nhập vai: mở khóa hành trình Shinkansen song song bài học.", 10);
-    add(SENSEI, "Nhập vai: đối thoại thật với AI Sensei để củng cố phản xạ.", 15);
-    add(SURVIVAL, "Nhập vai: thử thách sinh tồn tổng lực.", 10);
+    pushExtra(SENSEI, styleWhy + " Hội thoại thực tế với AI.");
+    pushExtra(SURVIVAL, styleWhy + " Thử thách sinh tồn tổng lực.");
   } else if (style === "GAMIFIED") {
-    add(JOURNEY, "Phiêu lưu: mỗi bài học là một chặng tàu mới trên bản đồ.", 10);
-    add(REVIEW_SRS, "Phiêu lưu: chuỗi ngày học (streak) & thẻ SRS củng cố thành quả.", 10);
+    pushExtra(JOURNEY, styleWhy + " Mở khóa bản đồ Nhật Bản.");
+    pushExtra(REVIEW_SRS, styleWhy + " Giữ streak ôn tập.");
   } else if (style === "PRACTICAL") {
-    add(SENSEI, "Thực chiến: luyện nói với AI trước khi ra thực tế.", 15);
-    add(REVIEW_SRS, "Thực chiến: ôn SRS để kiến thức không rơi rớt.", 10);
+    pushExtra(SURVIVAL, styleWhy + " Ứng dụng ngay những gì đã học.");
+    pushExtra(SENSEI, styleWhy + " Nói chuyện giả định với người bản xứ.");
   } else {
-    add(REVIEW_SRS, "Bài bản: ôn tập SRS đúng chu kỳ SM-2 sau mỗi giai đoạn.", 10);
-    if (goal === "CONVERSATION" || focusSkill === "SPEAKING") add(SENSEI, "Bài bản: đối thoại AI theo cấu trúc đã học.", 15);
+    pushExtra(REVIEW_SRS, "Bài bản: Ôn tập định kỳ chống quên.");
   }
 
-  // ---- Phase 4: skill booster (ensure focus skill is strongly represented) ----
-  if (focusSkill === "LISTENING") {
-    add(LISTENING_N5, skillWhy);
-    add(SURVIVAL, "Nghe phản xạ trong điều kiện thời gian thực.");
-  } else if (focusSkill === "SPEAKING") {
-    add(SENSEI, skillWhy);
-    add(PLAIN_FORM, "Nói tự nhiên hơn với thể thông thường.");
-  } else if (focusSkill === "READING") {
-    add(READ_SIGNS, skillWhy);
-    add(READ_EMAILS, "Đọc tin nhắn, email — kỹ năng đọc thực tế.");
-  } else if (focusSkill === "WRITING") {
-    add(VERB_CONJ, skillWhy);
-    add(KANJI_PEOPLE, "Luyện viết Hán tự tay qua thẻ SRS.");
+  if (focusSkill === "LISTENING" || focusSkill === "SPEAKING") {
+    pushExtra(SENSEI, skillWhy + " Luyện phản xạ giao tiếp.");
+  }
+  if (goal === "JLPT") {
+    pushExtra(REVIEW_SRS, "JLPT: Lặp lại ngắt quãng để nhớ từ vựng lâu.");
+  }
+  
+  pushExtra(VOCAB_N5, "Học từ mới qua Flashcard giúp cải thiện mọi kỹ năng.");
+
+  // Trộn Core Modules với Extra Activities
+  topCore.forEach((entry, idx) => {
+    const whyParts: string[] = [];
+    if (entry.tags.includes(goal.toLowerCase())) whyParts.push(goalWhy);
+    if (focusSkill !== "BALANCED" && (entry.tags.includes(focusSkill.toLowerCase()) || entry.skills.includes(SKILL_LABELS[focusSkill]))) whyParts.push(skillWhy);
+    if (!whyParts.length) whyParts.push(`Kiến thức ${LEVEL_LABELS[level]} bổ trợ lộ trình của bạn.`);
+    
+    add(entry, whyParts.join(" "));
+
+    // Chèn 1 extra activity sau mỗi 3 bài học (nếu có)
+    if ((idx + 1) % 3 === 0 && extraActivities.length > 0) {
+      modules.push(extraActivities.shift()!);
+    }
+  });
+
+  // Chèn nốt các extra hoạt động còn thừa vào cuối
+  while (extraActivities.length > 0) {
+    modules.push(extraActivities.shift()!);
   }
 
-  // ---- Phase 5: JLPT mock at the end for JLPT goal ----
+  // 3. Thi thử / Kết thúc
   if (goal === "JLPT") {
     if (level === "N3") add(N3_GRAMMAR.find((g) => g.slug === "n3-lesson-25-jlpt-mock-test-final")!, "Tổng duyệt trước kỳ thi N3.");
     else if (level === "N4") add(N4_GRAMMAR.find((g) => g.slug === "n4-lesson-50-humble-kenjougo")!, "Tổng ôn N4 trước khi thi.");
-    else add(MOCK_N5, "Bài bản: thi thử tổng lực để kiểm tra trình độ.");
+    else add(MOCK_N5, "Tổng duyệt: Đề thi thử JLPT N5.");
+  } else if (style === "STRUCTURED") {
+    if (level === "BEGINNER" || level === "N5") add(MOCK_N5, "Kiểm tra năng lực tổng hợp cuối khóa.");
   }
-
-  // ---- Phase 6: vocab + journey caps ----
-  add(VOCAB_N5, "Từ vựng là chất liệu cho mọi kỹ năng — lưu thẻ SRS mỗi ngày.");
-  if (style !== "IMMERSIVE" && style !== "GAMIFIED") add(JOURNEY, "Mở khóa địa danh thưởng cho mỗi giai đoạn hoàn thành.", 10);
 
   // ---- Pacing ----
   const perWeek = modulesPerWeekFor(daily);

@@ -90,8 +90,8 @@ export const authOptions: NextAuthOptions = {
       return token;
     },
     async session({ session, token }) {
-      if (session.user && token.uid) {
-        (session.user as { id?: string }).id = token.uid as string;
+      if (session.user) {
+        (session.user as { id?: string }).id = (token.uid as string) || (token.sub as string);
       }
       return session;
     },

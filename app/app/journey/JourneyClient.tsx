@@ -305,7 +305,7 @@ export function JourneyClient({
     <div className="jy-shell">
       {/* ============ HERO + BẢN ĐỒ 3D ============ */}
       <section className={`jy-hero ${atmosphere === "NIGHT" ? "is-night" : ""}`}>
-        <div className="jy-hero-bg" style={{ backgroundImage: `url(${IMG_BASE}/hero.png)` }} />
+        <div className="jy-hero-bg" style={{ backgroundImage: `url(${IMG_BASE}/hero.webp)` }} />
         <div className="jy-hero-shade" />
         <SakuraFallCanvas mode={atmosphere} />
 
@@ -556,7 +556,7 @@ export function JourneyClient({
           <div className="jy-mascot">
             <p className="jy-bubble">Khám phá thêm nhiều thành phố để nhận huy hiệu đặc biệt nhé!</p>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={`${IMG_BASE}/mascot.png`} alt="" onError={(e) => (e.currentTarget.style.display = "none")} />
+            <img src={`${IMG_BASE}/mascot.webp`} alt="" onError={(e) => (e.currentTarget.style.display = "none")} />
           </div>
         </div>
       </section>

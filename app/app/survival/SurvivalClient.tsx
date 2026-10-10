@@ -645,8 +645,8 @@ const POLITENESS_TAG: Record<DialogueStep["choices"][0]["politeness"], { label: 
 // Ảnh nhân vật      : /images/survival/character/<slug>.png  (PNG nền trong suốt, nhân vật đứng, cắt từ đầu tới chân)
 // Chưa có file -> tự động dùng gradient + emoji, không bị vỡ giao diện.
 const IMG_BASE = "/images/survival";
-const lessonImg = (slug: string) => `${IMG_BASE}/lesson/${slug}.png`;
-const characterImg = (slug: string) => `${IMG_BASE}/character/${slug}.png`;
+const lessonImg = (slug: string) => `${IMG_BASE}/lesson/${slug}.webp`;
+const characterImg = (slug: string) => `${IMG_BASE}/character/${slug}.webp`;
 
 const SCENARIO_ICON: Record<string, string> = {
   "ordering-ramen": "🍜",

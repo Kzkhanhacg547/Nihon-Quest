@@ -1,6 +1,6 @@
 /* Nihon Quest — Login + Onboarding. Import sau redesign.css */
 :root{--nq-red:#c8281f;--nq-red-2:#a81f18;--nq-ink:#141f1e;--nq-muted:#5f6764;--nq-paper:#f8f6f1;--nq-line:#e8e3db;--nq-pink:#fbe9e6;
---nq-font:var(--font-be-vietnam),system-ui,sans-serif;--nq-jp:var(--font-noto-serif-jp),"Yu Mincho","Hiragino Mincho ProN",serif}
+--nq-font:var(--font-be-vietnam),system-ui,sans-serif;--nq-jp:var(--font-noto-serif-jp),"Yu Mincho","Hiragino Mincho ProN", var(--font-be-vietnam), serif}
 .jp-text{font-family:var(--nq-jp)}
 .nq-auth,.nq-onboard-page{position:relative;min-height:100dvh;isolation:isolate;overflow:hidden;font-family:var(--nq-font);color:var(--nq-ink);background:var(--nq-paper)}
 .nq-auth a,.nq-onboard-page a{text-decoration:none;color:inherit}
@@ -202,3 +202,4 @@ mask-image:linear-gradient(to bottom,#000 70%,transparent),linear-gradient(to ri
   .nq-eyebrow-dot{font-size:9px}
   .nq-submit-red{height:52px;font-size:15px}
 }
+

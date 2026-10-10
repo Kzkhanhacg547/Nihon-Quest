@@ -10,8 +10,8 @@
   --nqd-red: #dc2f3c;
   --nqd-red-dark: #b8232f;
   --nqd-ink: #1c1917;
-  --nqd-muted: #78716c;
-  --nqd-body: #57534e;
+  --nqd-muted: #57534e;
+  --nqd-body: #3c3836;
   --nqd-paper: #fffdfb;
   --nqd-line: #f3e6e1;
   --nqd-blush: #fdeeee;
@@ -38,9 +38,9 @@
 .dark .nqd {
   --nqd-red: #f0685e;
   --nqd-red-dark: #d9534a;
-  --nqd-ink: #f2ece5;
-  --nqd-muted: #a8a29b;
-  --nqd-body: #b6aea6;
+  --nqd-ink: #f8fafc;
+  --nqd-muted: #cbd5e1;
+  --nqd-body: #e2e8f0;
   --nqd-paper: #1a2320;
   --nqd-line: #2c3a34;
   --nqd-blush: #2b1a17;
@@ -87,7 +87,7 @@
 .nqd-name .brush { position: absolute; left: -2%; bottom: -2px; width: 104%; height: 16px; }
 .nqd-hero-copy p { max-width: 400px; margin: 0; font-size: 15px; line-height: 1.6; color: var(--nqd-body); }
 
-.nqd-hero-scene {
+.nqd-hero-scene::after { content: ""; position: absolute; inset: 0; background: linear-gradient(to left, rgba(0,0,0,0.4), transparent 50%); z-index: 1; pointer-events: none; } .nqd-hero-scene {
   position: absolute; top: 0; right: 0; z-index: 0; width: 64%; height: 282px; pointer-events: none;
   border-radius: 0 32px 32px 0; overflow: hidden;
   -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 24%), linear-gradient(180deg, #000 78%, transparent 100%);
@@ -127,7 +127,7 @@
 .nqd-mini-top small { font-size: 11px; font-weight: 700; line-height: 1.25; color: var(--nqd-ink); }
 .nqd-mini .big { display: block; margin-top: 4px; font-family: var(--nqd-serif); font-size: 38px; font-weight: 800; line-height: 1; }
 .nqd-mini .unit { display: block; margin-top: 2px; font-size: 17px; font-weight: 800; }
-.nqd-mini .foot { margin: 6px 0 0; font-size: 10px; color: var(--nqd-muted); }
+.nqd-mini .foot { margin: 6px 0 0; font-size: 11px; color: var(--nqd-muted); } /* a11y: was 10px; raised for legibility */
 .nqd-streak .daruma { position: absolute; right: 10px; bottom: 8px; width: 50px; }
 .nqd-streak .act { position: absolute; top: 2px; right: 2px; }
 .nqd-level .lv { display: block; margin-top: 6px; font-family: var(--nqd-serif); font-size: 26px; font-weight: 800; }
@@ -235,7 +235,7 @@
 .dark .nqd-mission .mi.m1 { background: rgba(99, 102, 241, 0.18); color: #a5b4fc; }
 .dark .nqd-mission .mi.m2 { background: rgba(245, 158, 11, 0.16); color: #fcd34d; }
 .nqd-mission b { display: block; margin-bottom: 5px; font-size: 12px; }
-.nqd-mission small { display: block; margin-top: 3px; font-size: 10px; color: var(--nqd-muted); }
+.nqd-mission small { display: block; margin-top: 3px; font-size: 11px; color: var(--nqd-muted); } /* a11y: was 10px; raised for legibility */
 .nqd-mission em { align-self: start; font-style: normal; font-size: 12px; font-weight: 800; color: var(--nqd-orange); }
 
 /* Synthetic ("bot") classmates must be visibly labelled, never read as real. */
@@ -252,7 +252,7 @@
 .nqd-rank em { font-style: normal; font-size: 13px; font-weight: 800; color: var(--nqd-orange); white-space: nowrap; }
 .nqd-rank.me b, .nqd-rank.me em { color: var(--nqd-red); font-weight: 700; }
 .nqd-bot-badge { flex: none; padding: 1px 5px; border-radius: 4px; background: #6f7671; color: #fff; font-style: normal; font-size: 9px; font-weight: 800; letter-spacing: 0.04em; }
-.nqd-bot-note { margin: 8px 0 0; font-size: 10px; line-height: 1.5; color: var(--nqd-muted); }
+.nqd-bot-note { margin: 8px 0 0; font-size: 11px; line-height: 1.5; color: var(--nqd-muted); } /* a11y: was 10px; raised for legibility */
 
 /* ---------- JOURNEY ---------- */
 .nqd-train { height: 64px; margin-bottom: 12px; overflow: hidden; border-radius: 12px; }
@@ -283,7 +283,7 @@
   .nqd-aside { margin-top: 0; }
   .nqd-hero { min-height: 0; }
   .nqd-hero-copy { max-width: 100%; }
-  .nqd-hero-scene { position: relative; top: auto; right: auto; width: 100%; height: 240px; margin-top: 8px; -webkit-mask-image: none; mask-image: none; border-radius: 18px; overflow: hidden; }
+  .nqd-hero-scene::after { content: ""; position: absolute; inset: 0; background: linear-gradient(to left, rgba(0,0,0,0.4), transparent 50%); z-index: 1; pointer-events: none; } .nqd-hero-scene { position: relative; top: auto; right: auto; width: 100%; height: 240px; margin-top: 8px; -webkit-mask-image: none; mask-image: none; border-radius: 18px; overflow: hidden; }
   .nqd-hero-scene img { object-position: 50% 38%; }
   .nqd-stamp-wrap { display: none; }
   .nqd-hero-quote { position: relative; left: auto; top: auto; width: auto; margin-top: 12px; }
@@ -326,7 +326,7 @@
   .nqd-sec-title { flex-wrap: wrap; }
   .nqd-focus { padding: 18px 14px; }
   .nqd-mode { padding: 12px; }
-  .nqd-hero-scene { height: 200px; }
+  .nqd-hero-scene::after { content: ""; position: absolute; inset: 0; background: linear-gradient(to left, rgba(0,0,0,0.4), transparent 50%); z-index: 1; pointer-events: none; } .nqd-hero-scene { height: 200px; }
 }
 @media (max-width: 400px) {
   .nqd-mini .big { font-size: 28px; }

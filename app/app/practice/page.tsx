@@ -1,3 +1,4 @@
+import images from "@/lib/images.json";
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 import Image from "next/image";
@@ -103,7 +104,7 @@ export default async function PracticePage() {
             }}
           >
             <Image
-              src="/images/dashboard/fuji-hero.webp"
+              src={images.fujiHero}
               alt=""
               fill
               priority
@@ -207,7 +208,7 @@ export default async function PracticePage() {
             )}
 
             <div className="relative hidden h-32 w-32 justify-self-end md:block lg:h-36 lg:w-36">
-              <Image src="/cat_hand.png" alt="Mèo thần tài Maneki-neko" fill sizes="144px" className="object-contain drop-shadow-lg" />
+              <Image src="/cat_hand.webp" alt="Mèo thần tài Maneki-neko" fill sizes="144px" className="object-contain drop-shadow-lg" />
             </div>
           </div>
         </div>

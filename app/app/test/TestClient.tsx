@@ -6,7 +6,7 @@ import { useSoundAndTheme } from "@/components/SoundAndThemeContext";
 interface Question {
   id: number;
   category: "Kanji" | "Từ Vựng" | "Ngữ Pháp" | "Đọc Hiểu";
-  level: "N5" | "N4" | "N3" | "N2";
+  level: "N5" | "N4" | "N3" | "N2" | "N1";
   question: string;
   subText?: string;
   reading?: string;
@@ -216,6 +216,46 @@ const DIAGNOSTIC_QUESTIONS: Question[] = [
     ],
     explanation: "Chủ trương: 静かにする (giữ yên lặng) & 飲食禁止 (cấm ăn uống).",
   },
+  // N1 Questions
+  {
+    id: 16,
+    category: "Kanji",
+    level: "N1",
+    question: "Chữ Hán 「驚愕」 đọc là gì?",
+    options: [
+      { label: "A", text: "きょうがく (Kyougaku)", isCorrect: true },
+      { label: "B", text: "きょうきょ (Kyoukyo)", isCorrect: false },
+      { label: "C", text: "けいがく (Keigaku)", isCorrect: false },
+      { label: "D", text: "けいきょ (Keikyo)", isCorrect: false },
+    ],
+    explanation: "驚愕 (Kinh ngạc) đọc là きょうがく.",
+  },
+  {
+    id: 17,
+    category: "Ngữ Pháp",
+    level: "N1",
+    question: "Chọn mẫu câu N1 đúng: 「彼は学生である＿＿＿、ビジネスマンとしても成功している。」",
+    options: [
+      { label: "A", text: "かたわら (Bên cạnh việc...)", isCorrect: true },
+      { label: "B", text: "がてら (Nhân tiện...)", isCorrect: false },
+      { label: "C", text: "かたがた (Nhân dịp...)", isCorrect: false },
+      { label: "D", text: "ごとく (Như là...)", isCorrect: false },
+    ],
+    explanation: "～かたわら mang nghĩa vừa làm việc này (chính), vừa làm việc kia.",
+  },
+  {
+    id: 18,
+    category: "Từ Vựng",
+    level: "N1",
+    question: "Từ nào đồng nghĩa với 「あらかじめ」 (Arakajime)?",
+    options: [
+      { label: "A", text: "事前に (Trước)", isCorrect: true },
+      { label: "B", text: "急に (Đột nhiên)", isCorrect: false },
+      { label: "C", text: "偶然に (Tình cờ)", isCorrect: false },
+      { label: "D", text: "直ちに (Ngay lập tức)", isCorrect: false },
+    ],
+    explanation: "あらかじめ = 事前に (Làm gì đó trước, chuẩn bị trước).",
+  },
 ];
 
 const TEST_MODES = [
@@ -258,6 +298,26 @@ const TEST_MODES = [
     icon: "🗼",
     color: "from-blue-500 to-indigo-600",
     badge: "Trung cấp",
+  },
+  {
+    id: "N2_FULL",
+    title: "Bài Test Năng Lực JLPT N2",
+    description: "Bài test nâng cao JLPT N2 (Đọc hiểu phức tạp, Ngữ pháp cấp cao).",
+    timeMinutes: 30,
+    questionCount: 15,
+    icon: "🗻",
+    color: "from-purple-500 to-fuchsia-600",
+    badge: "Cao cấp 1",
+  },
+  {
+    id: "N1_FULL",
+    title: "Bài Test Năng Lực JLPT N1",
+    description: "Thử thách mức độ cao nhất N1 (Thành ngữ, Từ vựng chuyên ngành, Ngữ pháp học thuật).",
+    timeMinutes: 30,
+    questionCount: 15,
+    icon: "🐉",
+    color: "from-slate-700 to-black",
+    badge: "Cao cấp 2",
   },
 ];
 
@@ -354,8 +414,10 @@ export function TestClient({ userLevel, userXP: initialXP, displayName }: TestCl
 
   // Recommended Level logic
   const determineRecommendedLevel = (): string => {
-    if (scorePercent >= 85) return "N3";
-    if (scorePercent >= 65) return "N4";
+    if (scorePercent >= 90) return "N1";
+    if (scorePercent >= 75) return "N2";
+    if (scorePercent >= 60) return "N3";
+    if (scorePercent >= 45) return "N4";
     return "N5";
   };
 

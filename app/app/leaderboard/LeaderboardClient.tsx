@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { Card, Badge, Button } from "@/components/ui";
 import { type EnrichedLeaderboardUser, type DirectRivalInfo } from "@/lib/rivalBots";
+import { isImageAvatar } from "@/lib/avatar";
 
 const RANK_ICONS = ["🥇", "🥈", "🥉"];
 const TIER_COLORS = [
@@ -166,9 +167,14 @@ export function LeaderboardClient({
 
                 {/* Avatar / Badge */}
                 <div
-                  className={`w-10 h-10 rounded-2xl bg-gradient-to-br ${tier.color} flex items-center justify-center text-lg shadow-sm shrink-0 font-black text-white`}
+                  className={`w-10 h-10 rounded-2xl bg-gradient-to-br ${tier.color} flex items-center justify-center text-lg shadow-sm shrink-0 font-black text-white overflow-hidden`}
                 >
-                  {user.avatar || tier.badge}
+                  {isImageAvatar(user.avatar) ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={user.avatar!.startsWith("http") || user.avatar!.startsWith("/") || user.avatar!.startsWith("data:") ? user.avatar! : "data:image/jpeg;base64," + user.avatar!} alt="" className="w-full h-full object-cover" />
+                  ) : (
+                    user.avatar || tier.badge
+                  )}
                 </div>
 
                 {/* Info */}

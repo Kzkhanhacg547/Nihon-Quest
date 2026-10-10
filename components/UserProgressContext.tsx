@@ -1,7 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from "react";
-import { useSession } from "next-auth/react";
+import { useSession, signOut } from "next-auth/react";
 import type { CanonicalUserProgress } from "@/lib/progress-service";
 
 export type { CanonicalUserProgress };
@@ -35,7 +35,7 @@ export function UserProgressProvider({ children }: { children: React.ReactNode }
   const fetchingRef = useRef(false);
 
   const fetchProgress = useCallback(async (): Promise<CanonicalUserProgress | null> => {
-    if (status !== "authenticated" && status !== "loading") {
+    if (status !== "authenticated") {
       setProgress(null);
       return null;
     }
@@ -52,6 +52,11 @@ export function UserProgressProvider({ children }: { children: React.ReactNode }
         return data;
       } else if (res.status === 401) {
         setProgress(null);
+      } else if (res.status === 404) {
+        setProgress(null);
+        // Ghost session (database reset but JWT cookie remains)
+        // Automatically sign out to clear the bad session
+        signOut({ redirect: false });
       }
     } catch (err) {
       setError(err instanceof Error ? err : new Error(String(err)));

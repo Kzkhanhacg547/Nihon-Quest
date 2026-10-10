@@ -154,7 +154,7 @@ export async function importJapaneseCurriculum(): Promise<ImportStats> {
             vocabularyId: existingVocab.id,
             japanese: v.exampleJapanese,
             romaji: v.exampleRomaji,
-            meaning: v.exampleMeaning,
+            meaning: v.exampleMeaning ?? "",
           },
         });
       }
@@ -175,7 +175,7 @@ export async function importJapaneseCurriculum(): Promise<ImportStats> {
                   {
                     japanese: v.exampleJapanese,
                     romaji: v.exampleRomaji,
-                    meaning: v.exampleMeaning,
+                    meaning: v.exampleMeaning ?? "",
                   },
                 ],
               }

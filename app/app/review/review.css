@@ -5,7 +5,7 @@
   position: relative;
   overflow-x: clip;
   /* Ảnh banner: public/images/SRS_card/ — đổi tên file ở đây nếu khác */
-  --rv-banner-img: url("/images/SRS_card/header.png");
+  --rv-banner-img: url("/images/SRS_card/header.webp");
   /* --rv-card-img được ReviewClient gán theo từng thẻ từ thư mục SRS_card/back/ */
   --rv-glass: rgba(255, 255, 255, 0.92);
   --rv-red: #d3261e;
@@ -13,7 +13,7 @@
   --rv-red-line: #f3b8b3;
   --rv-ink: #161b22;
   --rv-muted: #6b7280;
-  --rv-faint: #9aa1ab;
+  --rv-faint: #6b7180; /* a11y: was #9aa1ab (2.61:1 on white, FAIL); darkened to 4.88:1 */
   --rv-card: #ffffff;
   --rv-line: #ece6df;
   --rv-chip: #f4efea;

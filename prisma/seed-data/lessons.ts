@@ -24822,12 +24822,12 @@ export const LESSONS = [
       {
         "type": "JLPT_MOCK",
         "question": "Chọn từ thích hợp điền vào chỗ trống: 'あした テストが ありますから、今夜は [ ? ] 勉強します。'",
-        "correctAnswer": "一生懸命 (いっしょうけんめい - chăm chỉ hết sức)",
+        "correctAnswer": "たくさん (takusan - nhiều)",
         "points": 10,
         "options": [
           {
             "label": "A",
-            "text": "一生懸命 (いっしょうけんめい - chăm chỉ hết sức)",
+            "text": "たくさん (takusan - nhiều)",
             "isCorrect": true,
             "order": 0
           },
@@ -24854,13 +24854,13 @@ export const LESSONS = [
       },
       {
         "type": "JLPT_MOCK",
-        "question": "Chọn trợ từ thích hợp: '私は 毎朝 パン [ ? ] コーヒーを 飲みます。'",
-        "correctAnswer": "を食べ、 / を食べて、",
+        "question": "Chọn trợ từ thích hợp: '毎朝 パン [ ? ] 卵を 食べます。'",
+        "correctAnswer": "と (to - và)",
         "points": 10,
         "options": [
           {
             "label": "A",
-            "text": "を食べ、 / を食べて、",
+            "text": "と (to - và)",
             "isCorrect": true,
             "order": 0
           },
@@ -25019,13 +25019,13 @@ export const LESSONS = [
       },
       {
         "type": "JLPT_MOCK",
-        "question": "Chọn từ đúng: 'この シャツは [ ? ] すぎますから、着られません。'",
-        "correctAnswer": "大き (ooki - 大きすぎます: quá to)",
+        "question": "Chọn từ đúng: 'この シャツは [ ? ]、着られません。'",
+        "correctAnswer": "大きくて (ookikute - vì to nên)",
         "points": 10,
         "options": [
           {
             "label": "A",
-            "text": "大き (ooki - 大きすぎます: quá to)",
+            "text": "大きくて (ookikute - vì to nên)",
             "isCorrect": true,
             "order": 0
           },
@@ -25217,31 +25217,31 @@ export const LESSONS = [
       },
       {
         "type": "JLPT_MOCK",
-        "question": "Mục tiêu đạt được cấp chứng chỉ JLPT N5 chứng nhận điều gì?",
-        "correctAnswer": "Khả năng hiểu và sử dụng tiếng Nhật căn bản (bảng chữ cái Kana, ~100 Kanji, ~800 từ vựng và ngữ pháp sơ cấp cơ bản)",
+        "question": "Chọn câu đúng: 「きのうは ＿＿＿＿＿。」",
+        "correctAnswer": "あめでした (ame deshita - hôm qua trời đã mưa)",
         "points": 10,
         "options": [
           {
             "label": "A",
-            "text": "Khả năng hiểu và sử dụng tiếng Nhật căn bản (bảng chữ cái Kana, ~100 Kanji, ~800 từ vựng và ngữ pháp sơ cấp cơ bản)",
+            "text": "あめでした (ame deshita - hôm qua trời đã mưa)",
             "isCorrect": true,
             "order": 0
           },
           {
             "label": "B",
-            "text": "Giao tiếp thành thạo công sở",
+            "text": "あめだ (ame da)",
             "isCorrect": false,
             "order": 1
           },
           {
             "label": "C",
-            "text": "Đọc báo kinh tế chuyên ngành",
+            "text": "あめです (ame desu)",
             "isCorrect": false,
             "order": 2
           },
           {
             "label": "D",
-            "text": "Dịch cabin hội nghị quốc tế",
+            "text": "あめ ではありません (ame dewa arimasen)",
             "isCorrect": false,
             "order": 3
           }

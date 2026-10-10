@@ -1,3 +1,4 @@
+import images from "@/lib/images.json";
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 import Link from "next/link";
@@ -159,7 +160,7 @@ export default async function LearningPathPage() {
           <div className="nqp-hero-main">
             <div className="nqp-hero-scene" aria-hidden="true">
               <Image
-                src="/images/dashboard/fuji-hero.webp"
+                src={images.fujiHero}
                 alt=""
                 fill
                 priority

@@ -1,4 +1,5 @@
 import { SeedKanji, SeedVocab } from "./kanji-vocab";
+import { SeedGrammar } from "./grammar";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // JLPT N3 KANJI SEED DATA (61 items)

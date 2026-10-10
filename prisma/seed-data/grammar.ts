@@ -1,3 +1,18 @@
+export interface SeedGrammarExample {
+  japanese: string;
+  romaji: string;
+  meaning: string;
+}
+
+export interface SeedGrammar {
+  title: string;
+  level: string;
+  meaning: string;
+  structure: string;
+  commonMistakes?: string;
+  examples: SeedGrammarExample[];
+}
+
 // Grammar N5 Seed Data — Full coverage of Minna No Nihongo I (Bài 1 - 25)
 export const grammarData = [
   {

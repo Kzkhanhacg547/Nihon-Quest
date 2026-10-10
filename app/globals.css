@@ -7,7 +7,7 @@
     --background: 255 255 255;
     --foreground: 15 23 42;
     --font-sans: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
-    --font-jp: "Hiragino Kaku Gothic ProN", "Yu Gothic", "Meiryo", "Noto Sans JP", sans-serif;
+    --font-jp: "Hiragino Kaku Gothic ProN", "Yu Gothic", "Meiryo", "Noto Sans JP", var(--font-be-vietnam), sans-serif;
     /* Mirror Tailwind palette (slate/sumi) để đồng bộ transition */
     --nq-bg: 255 255 255;
     --nq-bg-soft: 241 245 249;
@@ -305,4 +305,5 @@ html {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+
 
