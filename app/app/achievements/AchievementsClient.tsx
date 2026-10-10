@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useSoundAndTheme } from "@/components/SoundAndThemeContext";
 
@@ -233,6 +233,11 @@ export function AchievementsClient({
   const [selectedCategory, setSelectedCategory] = useState<string>("ALL");
   const [searchQuery, setSearchQuery] = useState("");
 
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   // Map owned achievements by key for fast lookup
   const ownedKeyMap = new Map<string, DbUserAchievement>();
   ownedList.forEach((ua) => {
@@ -280,7 +285,7 @@ export function AchievementsClient({
     return {
       ...b,
       isUnlocked: !!ownedInfo,
-      unlockedAt: ownedInfo?.unlockedAt ? new Date(ownedInfo.unlockedAt).toLocaleDateString("vi-VN") : null,
+      unlockedAt: mounted && ownedInfo?.unlockedAt ? new Date(ownedInfo.unlockedAt).toLocaleDateString("vi-VN") : null,
     };
   });
 

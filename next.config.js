@@ -44,9 +44,9 @@ const nextConfig = {
               // unsafe-eval cần cho Next.js dev HMR và một số polyfill
               "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
               // Style: unsafe-inline cần cho Tailwind CSS-in-JS và styled-components patterns
-              "style-src 'self' 'unsafe-inline'",
-              // Font: self + data URI (cho icon fonts)
-              "font-src 'self' data:",
+              "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+              // Font: self + data URI (cho icon fonts) + google fonts
+              "font-src 'self' data: https://fonts.gstatic.com",
               // Ảnh: self + data URI + blob (cho canvas) + external hosts đã whitelist
               "img-src 'self' data: blob: https://images.unsplash.com https://lh3.googleusercontent.com https://res.cloudinary.com https://avatars.githubusercontent.com",
               // Kết nối API: self + https chung (cho NextAuth callbacks, API routes)

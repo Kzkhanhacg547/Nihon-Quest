@@ -127,7 +127,7 @@ export function LeaderboardClient({
                 <span className="text-red-600 dark:text-red-400">#{currentUserRank}</span>
               </p>
               <div className="flex items-center gap-3 mt-0.5 text-xs text-slate-500 flex-wrap font-semibold">
-                <span>⚡ {currentUser.xp.toLocaleString()} XP</span>
+                <span>⚡ {currentUser.xp.toLocaleString("vi-VN")} XP</span>
                 <span>🎯 Lv.{currentUser.level}</span>
                 <span>🔥 {currentUser.currentStreak} ngày</span>
               </div>
@@ -203,7 +203,7 @@ export function LeaderboardClient({
                 {/* XP earned */}
                 <div className="text-right shrink-0">
                   <div className="font-black text-sm text-amber-600 dark:text-amber-400">
-                    ⚡ {user.xp.toLocaleString()}
+                    ⚡ {user.xp.toLocaleString("vi-VN")}
                   </div>
                   <div className="text-[10px] text-slate-400 font-mono">
                     {tab === "WEEKLY" ? "XP tuần" : "XP"}
