@@ -58,7 +58,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           }}
         />
       </head>
-      <body className="min-h-[100dvh] font-sans selection:bg-[#d22f27] selection:text-white max-w-full overflow-x-clip">
+      <body
+        suppressHydrationWarning
+        className="min-h-[100dvh] font-sans selection:bg-[#d22f27] selection:text-white max-w-full overflow-x-clip"
+      >
         <a
           href="#main"
           className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-[max(1rem,env(safe-area-inset-top))] focus:p-4 focus:bg-[#c82c25] focus:text-white focus:z-[100] rounded-lg"
