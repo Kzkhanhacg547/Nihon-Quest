@@ -1,4 +1,4 @@
-# 🌸 Nihon Quest (SSA-GR3-) — Nền Tảng Học Tiếng Nhật Tương Tác & Gamification
+# 🌸 Nihon Quest (SSA-GR3-) — Nền Tảng Học Tiếng Nhật Tương Tác & Gamification 
 
 > **Nihon Quest** là ứng dụng web học tiếng Nhật toàn diện (từ cơ bản Bảng chữ cái đến JLPT N5 – N3), kết hợp phương pháp học hiện đại, gamification (trò chơi hoá), mô phỏng không gian văn hóa Nhật Bản 3D, luyện viết chữ Kana/Kanji trực quan trên Canvas, và hệ thống ôn tập lặp lại ngắt quãng (Spaced Repetition System - SRS).
 
@@ -315,5 +315,6 @@ Dự án được xây dựng và duy trì bởi nhóm phát triển **SSA-GR3-*
 4. Push lên branch của bạn (`git push origin feature/TinhNangMoi`)
 5. Tạo một Pull Request mới
 
-Phát hành theo giấy phép **MIT License**.#   N I H O N W U E S T  
+Phát hành theo giấy phép **MIT License**.#   N I H O N W U E S T 
+ 
  
