@@ -139,12 +139,19 @@ export function StatsClient({
 
           <div className="flex flex-wrap items-center gap-3">
             <Link
-              href="/app/practice"
+              href="/app/analytics"
               onClick={playClick}
               className="inline-flex min-h-11 items-center gap-2 rounded-2xl bg-gradient-to-r from-red-600 to-rose-500 px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-red-900/40 transition hover:brightness-110 active:scale-95"
             >
-              <span>📖 Học bài tiếp theo</span>
+              <span>📊 Đánh giá tiến bộ</span>
               <span aria-hidden="true">→</span>
+            </Link>
+            <Link
+              href="/app/practice"
+              onClick={playClick}
+              className="inline-flex min-h-11 items-center gap-2 rounded-2xl border border-white/20 bg-white/10 px-5 py-2.5 text-sm font-bold text-white backdrop-blur-sm transition hover:bg-white/20 active:scale-95"
+            >
+              <span>📖 Học bài tiếp theo</span>
             </Link>
             <Link
               href="/app/review"

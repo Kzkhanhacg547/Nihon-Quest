@@ -41,6 +41,7 @@ const MORE_ITEMS: NavItem[] = [
   { href: "/app/sensei", label: "AI Kaiwa Sensei", glyph: "話", short: "Sensei" },
   { href: "/app/achievements", label: "Huy hiệu & Thành tựu", glyph: "🏆", short: "Huy hiệu" },
   { href: "/app/leaderboard", label: "Bảng xếp hạng", glyph: "杯", short: "BXH" },
+  { href: "/app/analytics", label: "Đánh giá tiến bộ (Chu trình 8 bước)", glyph: "進", short: "Tiến bộ" },
   { href: "/app/stats", label: "Thống kê học tập", glyph: "計", short: "Thống kê" },
   {
     href: "/app/profile",
