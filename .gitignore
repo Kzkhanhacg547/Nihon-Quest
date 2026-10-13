@@ -26,3 +26,9 @@ unitcuments/
 *.rar
 *.7z
 *.tar.gz
+skills-lock.json
+docs/
+**/*.md
+!/README.md
+!vendor/**/README.md
+!vendor/**/SECURITY.md
