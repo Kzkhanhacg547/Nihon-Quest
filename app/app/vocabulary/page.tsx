@@ -79,7 +79,7 @@ export default async function VocabularyPage() {
       </section>
 
       {/* Thẻ nội dung chính đè lên mép dưới của hero (bo góc lớn như mẫu) */}
-      <div className="relative z-10 mx-auto -mt-10 max-w-[1320px] px-3 pb-16 sm:px-5">
+      <div className="relative z-10 mx-auto -mt-10 max-w-[1320px] px-3 pb-28 sm:pb-20">
         <VocabKanjiClient
           vocabulary={JSON.parse(JSON.stringify(vocabulary))}
           kanji={JSON.parse(JSON.stringify(kanji))}

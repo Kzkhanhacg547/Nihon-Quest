@@ -50,20 +50,43 @@ export async function POST(req: Request) {
       where: { userId_locationId: { userId, locationId: loc.id } },
     });
     const currentStatus = existing?.status ?? "AVAILABLE";
-    const newStatus = currentStatus === "COMPLETED" ? "COMPLETED" : (currentStatus === "LOCKED" ? "LOCKED" : "IN_PROGRESS");
+    const reached100 = progressVal >= 100 || (existing?.progress ?? 0) >= 100;
+    const newStatus = reached100 || currentStatus === "COMPLETED" ? "COMPLETED" : (currentStatus === "LOCKED" ? "LOCKED" : "IN_PROGRESS");
     const row = await prisma.userJourneyProgress.upsert({
       where: { userId_locationId: { userId, locationId: loc.id } },
       update: {
         progress: Math.max(existing?.progress ?? 0, progressVal),
         status: newStatus,
+        completedAt: reached100 && !existing?.completedAt ? now : existing?.completedAt,
       },
       create: {
         userId,
         locationId: loc.id,
         progress: progressVal,
-        status: "IN_PROGRESS",
+        status: newStatus,
+        completedAt: reached100 ? now : null,
       },
     });
+
+    if (reached100 && existing?.status !== "COMPLETED") {
+      const awardResult = await awardUserXP({
+        userId,
+        amount: loc.xpReward,
+        reason: "JOURNEY_COMPLETE",
+        referenceId: loc.id,
+        now,
+      });
+      return NextResponse.json({
+        ...row,
+        xpAwarded: awardResult.xpAwarded,
+        newLevel: awardResult.level,
+        newTotalXP: awardResult.totalXP,
+        leveledUp: awardResult.leveledUp,
+        newlyUnlockedAchievements: awardResult.newlyUnlockedAchievements,
+        newlyUnlockedJourney: awardResult.newlyUnlockedJourney,
+      });
+    }
+
     return NextResponse.json(row);
   }
 

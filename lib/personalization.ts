@@ -561,3 +561,138 @@ export function sanitizeAnswers(raw: {
     learningStyle: norm(raw.learningStyle ?? "", LEARNING_STYLES, "STRUCTURED"),
   };
 }
+
+// ---------------------------------------------------------------------------
+// 8-Stage Scientific Learning Lifecycle & Prerequisite / Remediation Engine
+// ---------------------------------------------------------------------------
+
+export interface LifecycleStage {
+  step: number;
+  key: string;
+  title: string;
+  subtitle: string;
+  href: string;
+  glyph: string;
+}
+
+export const LEARNING_LIFECYCLE_STAGES: LifecycleStage[] = [
+  {
+    step: 1,
+    key: "DIAGNOSTIC",
+    title: "Đánh giá đầu vào",
+    subtitle: "Kiểm tra 4 kỹ năng Nghe・Nói・Đọc・Viết",
+    href: "/app/test",
+    glyph: "診",
+  },
+  {
+    step: 2,
+    key: "LEVEL_PLACEMENT",
+    title: "Xác định trình độ",
+    subtitle: "Phân cấp chính xác N5・N4・N3",
+    href: "/app/profile",
+    glyph: "級",
+  },
+  {
+    step: 3,
+    key: "PERSONAL_PATH",
+    title: "Lộ trình cá nhân",
+    subtitle: "Sắp xếp bài học theo mục tiêu & thời lượng",
+    href: "/app/path",
+    glyph: "道",
+  },
+  {
+    step: 4,
+    key: "LEARN_CONCEPTS",
+    title: "Học kiến thức",
+    subtitle: "Từ vựng, Kanji, Ngữ pháp, Kính ngữ & Văn hóa",
+    href: "/app/vocabulary",
+    glyph: "学",
+  },
+  {
+    step: 5,
+    key: "PRACTICE",
+    title: "Luyện tập",
+    subtitle: "Bài tập tình huống, hội thoại AI & Minigame",
+    href: "/app/practice",
+    glyph: "練",
+  },
+  {
+    step: 6,
+    key: "CHECKPOINT_TEST",
+    title: "Kiểm tra",
+    subtitle: "Đạt ≥ 60% để mở khóa bài kế tiếp hoặc vượt cấp",
+    href: "/app/test",
+    glyph: "試",
+  },
+  {
+    step: 7,
+    key: "SPACED_REPETITION",
+    title: "Ôn tập cách quãng",
+    subtitle: "Thuật toán SRS SM-2 chống quên kiến thức",
+    href: "/app/review",
+    glyph: "復",
+  },
+  {
+    step: 8,
+    key: "PROGRESS_EVAL",
+    title: "Đánh giá tiến bộ",
+    subtitle: "Đồng bộ XP, Hành trình Nhật Bản & Thống kê",
+    href: "/app/analytics",
+    glyph: "進",
+  },
+];
+
+export interface RemediationItem {
+  id: string;
+  type: "LOW_SCORE_LESSON" | "OVERDUE_SRS" | "WEAK_SRS";
+  title: string;
+  reason: string;
+  actionLabel: string;
+  href: string;
+  urgency: "HIGH" | "MEDIUM";
+}
+
+export function buildRemediationPlan(params: {
+  dueSrsCount: number;
+  weakSrsCount: number;
+  lowScoreLessons: Array<{ slug: string; title: string; score: number }>;
+}): RemediationItem[] {
+  const items: RemediationItem[] = [];
+
+  if (params.weakSrsCount > 0) {
+    items.push({
+      id: "remedy-weak-srs",
+      type: "WEAK_SRS",
+      title: `Ôn tập khẩn cấp ${params.weakSrsCount} thẻ kiến thức hay quên`,
+      reason: "Bạn có thẻ SRS vừa trả lời sai hoặc độ thuần thục thấp (repetitions = 0).",
+      actionLabel: "Ôn lại thẻ yếu ngay",
+      href: "/app/review",
+      urgency: "HIGH",
+    });
+  } else if (params.dueSrsCount > 0) {
+    items.push({
+      id: "remedy-due-srs",
+      type: "OVERDUE_SRS",
+      title: `${params.dueSrsCount} thẻ SRS đã đến hạn ôn tập cách quãng`,
+      reason: "Ôn đúng điểm rơi遗忘 (forgetting curve) giúp giữ 90%+ kiến thức lâu dài.",
+      actionLabel: "Vào phòng SRS",
+      href: "/app/review",
+      urgency: params.dueSrsCount >= 10 ? "HIGH" : "MEDIUM",
+    });
+  }
+
+  for (const lesson of params.lowScoreLessons.slice(0, 2)) {
+    items.push({
+      id: `remedy-lesson-${lesson.slug}`,
+      type: "LOW_SCORE_LESSON",
+      title: `Củng cố bài: ${lesson.title}`,
+      reason: `Điểm gần nhất đạt ${lesson.score}% (< 75%). Làm lại để nắm chắc ngữ pháp và từ vựng trước khi học bài mới.`,
+      actionLabel: "Luyện tập củng cố",
+      href: `/app/practice/${lesson.slug}`,
+      urgency: lesson.score < 60 ? "HIGH" : "MEDIUM",
+    });
+  }
+
+  return items;
+}
+

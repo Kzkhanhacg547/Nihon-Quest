@@ -525,6 +525,80 @@ model AiMessage {
   @@index([conversationId])
 }
 
+model DocumentResource {
+  id               String   @id @default(cuid())
+  slug             String   @unique
+  title            String
+  fileName         String
+  relativePath     String   @unique
+  ext              String
+  sizeBytes        Int      @default(0)
+  sha256           String
+  level            String   @default("N5")
+  category         String   @default("REFERENCE")
+  preImportStatus  String   @default("NOT_IMPORTED")
+  importStatus     String   @default("IMPORTED")
+  accessPolicy     String   @default("VIEW_ONLY")
+  isDuplicate      Boolean  @default(false)
+  duplicateOf      String?
+  copyrightNote    String?
+  description      String?
+  audioDurationSec Int?
+  transcript       String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  @@index([level])
+  @@index([category])
+  @@index([sha256])
+}
 
+model AssessmentExam {
+  id              String                   @id @default(cuid())
+  slug            String                   @unique
+  title           String
+  description     String
+  kindLabel       String                   @default("Kiểm tra năng lực")
+  category        String                   @default("LEVEL_TEST")
+  targetLevel     String                   @default("N5")
+  skillFocus      String                   @default("ALL")
+  timeMinutes     Int                      @default(15)
+  icon            String                   @default("📝")
+  badge           String                   @default("JLPT")
+  sourceDocument  String?
+  answerAuthority String                   @default("CURATED")
+  isPublished     Boolean                  @default(true)
+  order           Int                      @default(0)
+  createdAt       DateTime                 @default(now())
+  updatedAt       DateTime                 @updatedAt
+  questions       AssessmentExamQuestion[]
+  @@index([targetLevel])
+  @@index([category])
+  @@index([order])
+}
 
-
+model AssessmentExamQuestion {
+  id                     String         @id @default(cuid())
+  examId                 String
+  questionKey            String
+  order                  Int            @default(0)
+  skill                  String         @default("READING")
+  subCategory            String         @default("Đọc hiểu")
+  level                  String         @default("N5")
+  format                 String         @default("MULTIPLE_CHOICE")
+  question               String
+  contextPassage         String?
+  audioUrl               String?
+  audioScript            String?
+  promptHint             String?
+  optionsJson            String         @default("[]")
+  acceptedKeywordsJson   String         @default("[]")
+  sampleAnswer           String?
+  rubricCriteriaJson     String         @default("[]")
+  explanation            String
+  recommendedLessonSlug  String         @default("n5-lesson-01")
+  recommendedLessonTitle String         @default("Bài học gợi ý")
+  recommendedLessonTopic String         @default("Ôn tập kiến thức")
+  exam                   AssessmentExam @relation(fields: [examId], references: [id], onDelete: Cascade)
+  @@unique([examId, questionKey])
+  @@index([examId, order])
+}

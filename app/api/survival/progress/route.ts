@@ -6,7 +6,8 @@ import { todayKeyForUser } from "@/lib/missionDay";
 import { awardUserXP } from "@/lib/progress-service";
 
 const schema = z.object({
-  scenarioId: z.string().min(1),
+  scenarioId: z.string().optional(),
+  slug: z.string().optional(),
 });
 
 export async function POST(req: Request) {
@@ -14,9 +15,13 @@ export async function POST(req: Request) {
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const parsed = schema.safeParse(await req.json().catch(() => null));
-  if (!parsed.success) return NextResponse.json({ error: "Invalid scenario." }, { status: 400 });
+  if (!parsed.success || (!parsed.data.scenarioId && !parsed.data.slug)) {
+    return NextResponse.json({ error: "Invalid scenario." }, { status: 400 });
+  }
 
-  const scenario = await prisma.scenario.findUnique({ where: { id: parsed.data.scenarioId } });
+  const scenario = parsed.data.scenarioId
+    ? await prisma.scenario.findUnique({ where: { id: parsed.data.scenarioId } })
+    : await prisma.scenario.findUnique({ where: { slug: parsed.data.slug! } });
   if (!scenario) return NextResponse.json({ error: "Scenario not found." }, { status: 404 });
 
   const existing = await prisma.userScenarioProgress.findUnique({

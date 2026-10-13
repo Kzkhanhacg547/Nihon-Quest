@@ -21,6 +21,19 @@ export interface SeedVocab {
   category?: string;
 }
 
+export interface SeedGrammar {
+  title: string;
+  level: string;
+  meaning: string;
+  structure: string;
+  commonMistakes?: string;
+  examples?: Array<{
+    japanese: string;
+    meaning: string;
+    romaji?: string;
+  }>;
+}
+
 export const KANJI_N5: SeedKanji[] = [
   {
     "character": "一",

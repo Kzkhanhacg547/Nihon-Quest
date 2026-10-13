@@ -18,3 +18,11 @@ Kho*
 
 .commandcode/
 .neon
+unitcuments/
+.agents/
+.claude/
+.kilo/
+.kilocode/
+*.rar
+*.7z
+*.tar.gz

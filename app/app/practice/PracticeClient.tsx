@@ -43,28 +43,47 @@ const LEVEL_TONE: Record<string, string> = {
 
 export function PracticeClient({
   lessons,
+  allLessons,
   units,
+  unitsByLevel,
   userLevel,
 }: {
   lessons: PracticeLessonItem[];
+  allLessons?: PracticeLessonItem[];
   units: UnitInfo[];
+  unitsByLevel?: Record<string, UnitInfo[]>;
   userLevel: string;
 }) {
   const [mainTab, setMainTab] = useState<MainTab>("LESSONS");
+  const [activeLevel, setActiveLevel] = useState<string>(userLevel || "N5");
   const [selectedUnit, setSelectedUnit] = useState<number | "ALL">("ALL");
   const [statusFilter, setStatusFilter] = useState<"ALL" | "COMPLETED" | "UNFINISHED">("ALL");
   const [sort, setSort] = useState<SortKey>("ORDER");
   const [query, setQuery] = useState("");
   const { playClick } = useSoundAndTheme();
 
+  const levelLessons = useMemo(() => {
+    if (allLessons && allLessons.length > 0) {
+      return allLessons.filter((l) => l.level === activeLevel);
+    }
+    return lessons;
+  }, [allLessons, lessons, activeLevel]);
+
+  const activeUnits = useMemo(() => {
+    if (unitsByLevel && unitsByLevel[activeLevel]) {
+      return unitsByLevel[activeLevel];
+    }
+    return units;
+  }, [unitsByLevel, units, activeLevel]);
+
   const currentUnit = useMemo(
-    () => (selectedUnit === "ALL" ? null : units.find((u) => u.number === selectedUnit) ?? null),
-    [selectedUnit, units]
+    () => (selectedUnit === "ALL" ? null : activeUnits.find((u) => u.number === selectedUnit) ?? null),
+    [selectedUnit, activeUnits]
   );
 
   const displayedLessons = useMemo(() => {
-    let result = lessons;
-    if (currentUnit) result = lessons.slice(currentUnit.startIndex, currentUnit.endIndex);
+    let result = levelLessons;
+    if (currentUnit) result = levelLessons.slice(currentUnit.startIndex, currentUnit.endIndex);
 
     if (statusFilter === "COMPLETED") result = result.filter((l) => l.progressStatus === "COMPLETED");
     else if (statusFilter === "UNFINISHED") result = result.filter((l) => l.progressStatus !== "COMPLETED");
@@ -76,7 +95,7 @@ export function PracticeClient({
     if (sort === "SCORE") sorted.sort((a, b) => (b.score ?? -1) - (a.score ?? -1));
     if (sort === "XP") sorted.sort((a, b) => b.xpReward - a.xpReward);
     return sorted;
-  }, [lessons, currentUnit, statusFilter, query, sort]);
+  }, [levelLessons, currentUnit, statusFilter, query, sort]);
 
   const pill = (active: boolean) =>
     `flex min-h-12 shrink-0 items-center gap-2.5 rounded-2xl border px-3 py-2 text-[13px] font-bold transition active:scale-[0.98] ${
@@ -87,31 +106,63 @@ export function PracticeClient({
 
   return (
     <div className="space-y-6">
-      {/* ── Main tab ── */}
-      <div className="flex w-full items-center gap-2 rounded-2xl border border-slate-200 bg-white p-1.5 shadow-sm dark:border-slate-800 dark:bg-sumi-900 sm:w-fit">
-        <button
-          type="button"
-          id="practice-tab-lessons"
-          onClick={() => { playClick(); setMainTab("LESSONS"); }}
-          aria-pressed={mainTab === "LESSONS"}
-          className={`flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl px-4 text-sm font-black transition active:scale-[0.98] sm:flex-none ${
-            mainTab === "LESSONS" ? "bg-red-600 text-white shadow-md shadow-red-600/25" : "text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-sumi-800"
-          }`}
-        >
-          📚 Bài Học
-        </button>
-        <button
-          type="button"
-          id="practice-tab-battle"
-          onClick={() => { playClick(); setMainTab("BATTLE"); }}
-          aria-pressed={mainTab === "BATTLE"}
-          className={`flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl px-4 text-sm font-black transition active:scale-[0.98] sm:flex-none ${
-            mainTab === "BATTLE" ? "bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-md shadow-violet-500/25" : "text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-sumi-800"
-          }`}
-        >
-          🃏 Kana Battle
-          <span className="rounded-full bg-amber-400 px-1.5 py-0.5 text-[10px] font-black text-slate-900">NEW</span>
-        </button>
+      {/* ── Main tab + Level Switcher ── */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex w-full items-center gap-2 rounded-2xl border border-slate-200 bg-white p-1.5 shadow-sm dark:border-slate-800 dark:bg-sumi-900 sm:w-fit">
+          <button
+            type="button"
+            id="practice-tab-lessons"
+            onClick={() => { playClick(); setMainTab("LESSONS"); }}
+            aria-pressed={mainTab === "LESSONS"}
+            className={`flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl px-4 text-sm font-black transition active:scale-[0.98] sm:flex-none ${
+              mainTab === "LESSONS" ? "bg-red-600 text-white shadow-md shadow-red-600/25" : "text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-sumi-800"
+            }`}
+          >
+            📚 Bài Học
+          </button>
+          <button
+            type="button"
+            id="practice-tab-battle"
+            onClick={() => { playClick(); setMainTab("BATTLE"); }}
+            aria-pressed={mainTab === "BATTLE"}
+            className={`flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl px-4 text-sm font-black transition active:scale-[0.98] sm:flex-none ${
+              mainTab === "BATTLE" ? "bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-md shadow-violet-500/25" : "text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-sumi-800"
+            }`}
+          >
+            🃏 Kana Battle
+            <span className="rounded-full bg-amber-400 px-1.5 py-0.5 text-[10px] font-black text-slate-900">NEW</span>
+          </button>
+        </div>
+
+        {mainTab === "LESSONS" && allLessons && allLessons.length > 0 && (
+          <div className="flex flex-wrap items-center gap-1.5 rounded-2xl border border-slate-200 bg-white p-1.5 shadow-sm dark:border-slate-800 dark:bg-sumi-900">
+            {([
+              { id: "N5", label: "JLPT N5 & FPT JPD (59 bài)" },
+              { id: "N4", label: "JLPT N4 (25 bài)" },
+              { id: "N3", label: "JLPT N3 (25 bài)" },
+            ] as const).map((lvl) => {
+              const isAct = activeLevel === lvl.id;
+              return (
+                <button
+                  key={lvl.id}
+                  type="button"
+                  onClick={() => {
+                    playClick();
+                    setActiveLevel(lvl.id);
+                    setSelectedUnit("ALL");
+                  }}
+                  className={`rounded-xl px-3.5 py-2 text-xs font-extrabold transition ${
+                    isAct
+                      ? "bg-slate-900 text-white shadow-sm dark:bg-white dark:text-slate-900"
+                      : "text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-sumi-800"
+                  }`}
+                >
+                  {lvl.label}
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {mainTab === "BATTLE" && (
@@ -127,17 +178,17 @@ export function PracticeClient({
             <div className="flex items-center gap-2 overflow-x-auto scrollbar-none">
               <button type="button" onClick={() => { playClick(); setSelectedUnit("ALL"); }} className={pill(selectedUnit === "ALL")}>
                 <span className={`flex h-8 w-8 items-center justify-center rounded-xl text-base ${selectedUnit === "ALL" ? "bg-white/20" : "bg-slate-100 dark:bg-sumi-800"}`}>▦</span>
-                Tất cả <span className="text-[11px] opacity-70">({lessons.length} bài)</span>
+                Tất cả <span className="text-[11px] opacity-70">({levelLessons.length} bài)</span>
               </button>
-              {units.map((u) => {
-                const list = lessons.slice(u.startIndex, u.endIndex);
+              {activeUnits.map((u) => {
+                const list = levelLessons.slice(u.startIndex, u.endIndex);
                 const done = list.filter((l) => l.progressStatus === "COMPLETED").length;
                 const active = selectedUnit === u.number;
                 return (
                   <button key={u.number} type="button" onClick={() => { playClick(); setSelectedUnit(u.number); }} className={pill(active)}>
                     <span className={`flex h-8 w-8 items-center justify-center rounded-xl text-base ${active ? "bg-white/20" : "bg-slate-100 dark:bg-sumi-800"}`}>{u.icon}</span>
-                    Unit 0{u.number}
-                    <span className={`text-[11px] ${active ? "text-rose-100" : "text-slate-400"}`}>
+                    {u.number === 6 && activeLevel === "N5" ? "Unit 06 (FPT JPD)" : `Unit 0${u.number}`}
+                    <span className={`text-[11px] ${active ? "text-rose-100" : "text-slate-500 dark:text-slate-400"}`}>
                       {list.length > 0 && done === list.length ? "✓" : `(${done}/${list.length})`}
                     </span>
                   </button>
@@ -154,10 +205,10 @@ export function PracticeClient({
               </span>
               <div>
                 <h3 className="text-xl font-black text-slate-900 dark:text-white">
-                  {currentUnit ? currentUnit.title : "Danh sách khóa học"}
+                  {currentUnit ? currentUnit.title : `Danh sách khóa học JLPT ${activeLevel}`}
                 </h3>
                 <p className="mt-0.5 max-w-2xl text-xs text-slate-500 dark:text-slate-400">
-                  {currentUnit ? currentUnit.description : `Khám phá ${lessons.length} bài học JLPT ${userLevel} được sắp xếp theo trình độ, dễ học, dễ nhớ`}
+                  {currentUnit ? currentUnit.description : `Khám phá ${levelLessons.length} bài học JLPT ${activeLevel} được sắp xếp theo trình độ, dễ học, dễ nhớ`}
                 </p>
               </div>
             </div>
@@ -191,8 +242,8 @@ export function PracticeClient({
                     type="button"
                     onClick={() => setStatusFilter(key)}
                     aria-pressed={statusFilter === key}
-                    className={`min-h-9 flex-1 rounded-lg px-3 text-xs font-bold transition sm:flex-none ${
-                      statusFilter === key ? "bg-red-600 text-white" : "text-slate-500 hover:text-slate-900 dark:text-slate-400"
+                    className={`min-h-10 sm:min-h-9 flex-1 rounded-lg px-3 text-xs font-bold transition active:scale-95 sm:flex-none ${
+                      statusFilter === key ? "bg-red-600 text-white shadow-sm" : "text-slate-500 hover:text-slate-900 dark:text-slate-400"
                     }`}
                   >
                     {label}
@@ -202,33 +253,96 @@ export function PracticeClient({
             </div>
           </div>
 
+          {/* ── Gợi ý Ôn tập củng cố khi làm sai nhiều (< 75%) ── */}
+          {levelLessons.some((l) => typeof l.score === "number" && l.score < 75) && (
+            <div className="flex flex-col justify-between gap-3 rounded-2xl border border-amber-300 bg-amber-50/90 p-4 shadow-sm dark:border-amber-800/60 dark:bg-amber-950/35 sm:flex-row sm:items-center">
+              <div>
+                <p className="text-xs font-extrabold uppercase tracking-wider text-amber-800 dark:text-amber-300">
+                  🩺 Bài ôn tập củng cố (Remediation)
+                </p>
+                <p className="mt-0.5 text-xs text-amber-900 dark:text-amber-100">
+                  Bạn có bài học đạt dưới 75%. Hãy ôn lại để nắm vững ngữ pháp & từ vựng trước khi tiến xa hơn, hoặc vào phòng SRS để ôn các câu đã làm sai.
+                </p>
+              </div>
+              <div className="flex shrink-0 flex-wrap gap-2">
+                {(() => {
+                  const weak = levelLessons.find((l) => typeof l.score === "number" && l.score < 75);
+                  return weak ? (
+                    <Link
+                      href={`/app/practice/${weak.slug}`}
+                      className="inline-flex min-h-9 items-center rounded-xl bg-amber-600 px-3.5 py-1.5 text-xs font-bold text-white transition hover:bg-amber-700"
+                    >
+                      Ôn lại: {cleanLessonTitle(weak.title)} ({weak.score}%) →
+                    </Link>
+                  ) : null;
+                })()}
+                <Link
+                  href="/app/review"
+                  className="inline-flex min-h-9 items-center rounded-xl border border-amber-300 bg-white px-3.5 py-1.5 text-xs font-bold text-amber-800 transition hover:bg-amber-100 dark:border-amber-700 dark:bg-sumi-900 dark:text-amber-200"
+                >
+                  Ôn thẻ SRS
+                </Link>
+              </div>
+            </div>
+          )}
+
           {/* ── Lưới thẻ bài học ── */}
           {displayedLessons.length === 0 ? (
             <div className="rounded-2xl border border-slate-200 bg-white p-10 text-center dark:border-slate-800 dark:bg-sumi-900">
               <span className="text-3xl">🔍</span>
               <p className="mt-2 text-sm font-bold text-slate-700 dark:text-slate-300">Không tìm thấy bài học phù hợp</p>
-              <p className="mt-1 text-xs text-slate-400">Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm</p>
+              <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm</p>
             </div>
           ) : (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {displayedLessons.map((l) => {
                 const done = l.progressStatus === "COMPLETED";
                 const doing = l.progressStatus === "IN_PROGRESS";
-                const unit = units.find((u) => l.order >= u.startIndex && l.order < u.endIndex) ?? units[0];
-                const pct = done ? 100 : l.score ?? 0;
+                const idxInAll = levelLessons.findIndex((item) => item.id === l.id);
+                const unit =
+                  activeUnits.find((u) => idxInAll >= u.startIndex && idxInAll < u.endIndex) ??
+                  activeUnits[0];
+                const pct = typeof l.score === "number" ? l.score : done ? 100 : 0;
+
+                // Mở khóa bài đầu tiên của mỗi Unit, các bài Giáo trình FPT JPD113–133, hoặc bài có bài liền trước đã COMPLETED
+                const isFirstInUnit = unit ? idxInAll === unit.startIndex : idxInAll <= 0;
+                const isFptCurriculum = l.slug.startsWith("fpt-jpd");
+                const prevLesson = idxInAll > 0 ? levelLessons[idxInAll - 1] : null;
+                const isUnlocked =
+                  done ||
+                  doing ||
+                  isFirstInUnit ||
+                  isFptCurriculum ||
+                  !prevLesson ||
+                  prevLesson.progressStatus === "COMPLETED";
 
                 return (
                   <article
                     key={l.id}
-                    className="group relative flex flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg dark:border-slate-800 dark:bg-sumi-900"
+                    className={`group relative flex flex-col overflow-hidden rounded-2xl border bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg dark:bg-sumi-900 ${
+                      isUnlocked
+                        ? "border-slate-200/80 dark:border-slate-800"
+                        : "border-slate-200/60 opacity-90 dark:border-slate-800/70"
+                    }`}
                   >
                     <div className="pointer-events-none absolute -right-3 -top-3 flex h-24 w-24 items-center justify-center rounded-full bg-gradient-to-br from-rose-100 to-transparent text-5xl opacity-80 dark:from-red-950/40" aria-hidden>
                       {unit.icon}
                     </div>
 
-                    <span className={`relative w-fit rounded-lg border px-2.5 py-1 text-xs font-black ${LEVEL_TONE[l.level] ?? LEVEL_TONE.N5}`}>
-                      {l.level}
-                    </span>
+                    <div className="relative flex items-center justify-between gap-2">
+                      <span className={`w-fit rounded-lg border px-2.5 py-1 text-xs font-black ${LEVEL_TONE[l.level] ?? LEVEL_TONE.N5}`}>
+                        {l.level} · Bài {String(l.order + 1).padStart(2, "0")}
+                      </span>
+                      {done ? (
+                        <span className="rounded-full bg-emerald-50 px-2.5 py-0.5 text-[11px] font-bold text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300">
+                          ✓ Hoàn thành
+                        </span>
+                      ) : !isUnlocked ? (
+                        <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-[11px] font-bold text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                          🔒 Tiên quyết
+                        </span>
+                      ) : null}
+                    </div>
 
                     <h4 className="relative mt-3 text-[15px] font-black leading-snug text-slate-900 dark:text-white">
                       {cleanLessonTitle(l.title)}
@@ -239,21 +353,40 @@ export function PracticeClient({
 
                     <div className="relative mt-3 flex items-center gap-3 text-[11px] font-semibold text-slate-500 dark:text-slate-400">
                       <span>📝 {l.exercisesCount} câu</span>
-                      <span className="text-red-500">◔ {pct}%</span>
+                      <span className="text-red-500">◔ {pct}% (cần ≥60%)</span>
                       <span className="ml-auto rounded-md bg-amber-50 px-2 py-0.5 font-bold text-amber-600 dark:bg-amber-950/40 dark:text-amber-300">+{l.xpReward} XP</span>
                     </div>
 
-                    <Link
-                      href={`/app/practice/${l.slug}`}
-                      className={`relative mt-4 inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border text-[13px] font-black transition active:scale-[0.98] ${
-                        doing
-                          ? "border-red-600 bg-red-600 text-white shadow-md shadow-red-600/25 hover:bg-red-700"
-                          : "border-red-500 bg-white text-red-600 hover:bg-red-50 dark:bg-transparent dark:hover:bg-red-950/30"
-                      }`}
-                    >
-                      <span aria-hidden>▶</span>
-                      {done ? "Luyện tập lại" : doing ? "Tiếp tục học" : "Bắt đầu học"}
-                    </Link>
+                    {isUnlocked ? (
+                      <Link
+                        href={`/app/practice/${l.slug}`}
+                        className={`relative mt-4 inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border text-[13px] font-black transition active:scale-[0.98] ${
+                          doing
+                            ? "border-red-600 bg-red-600 text-white shadow-md shadow-red-600/25 hover:bg-red-700"
+                            : "border-red-500 bg-white text-red-600 hover:bg-red-50 dark:bg-transparent dark:hover:bg-red-950/30"
+                        }`}
+                      >
+                        <span aria-hidden>▶</span>
+                        {done ? "Ôn tập lại" : doing ? "Tiếp tục học" : "Bắt đầu học"}
+                      </Link>
+                    ) : (
+                      <div className="relative mt-4 flex items-center gap-2">
+                        <Link
+                          href={prevLesson ? `/app/practice/${prevLesson.slug}` : `/app/practice/${l.slug}`}
+                          title={prevLesson ? `Cần hoàn thành: ${cleanLessonTitle(prevLesson.title)}` : ""}
+                          className="inline-flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-xl border border-slate-300 bg-slate-100 px-3 text-xs font-bold text-slate-700 transition hover:bg-slate-200 dark:border-slate-700 dark:bg-sumi-800 dark:text-slate-200"
+                        >
+                          🔒 Học bài trước
+                        </Link>
+                        <Link
+                          href="/app/test"
+                          title="Kiểm tra miễn học phần"
+                          className="inline-flex min-h-11 items-center justify-center rounded-xl border border-amber-300 bg-amber-50 px-3 text-xs font-bold text-amber-800 transition hover:bg-amber-100 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-300"
+                        >
+                          Thi vượt
+                        </Link>
+                      </div>
+                    )}
                   </article>
                 );
               })}

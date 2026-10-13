@@ -9,6 +9,7 @@ import { KANJI_N5, VOCABULARY_N5 } from "../prisma/seed-data/kanji-vocab";
 import { grammarData as GRAMMAR_N5 } from "../prisma/seed-data/grammar";
 import { KANJI_N4, VOCABULARY_N4, GRAMMAR_N4, LESSONS_N4, SCENARIOS_N4 } from "../prisma/seed-data/n4-data";
 import { KANJI_N3, VOCABULARY_N3, GRAMMAR_N3, LESSONS_N3, SCENARIOS_N3 } from "../prisma/seed-data/n3-data";
+import { EXPANDED_KANJI, EXPANDED_VOCABULARY, EXPANDED_GRAMMAR, EXPANDED_SCENARIOS } from "../prisma/seed-data/expanded-curriculum";
 import { evaluateUserAchievements, evaluateUserJourneyUnlocks } from "../lib/progress-service";
 
 interface ImportStats {
@@ -84,9 +85,9 @@ export async function importJapaneseCurriculum(): Promise<ImportStats> {
   }
   console.log(`  ✓ Journey locations: ${stats.meta.journey}, Achievements: ${stats.meta.achievements}, Missions: ${stats.meta.missions}.`);
 
-  // 3. KANJI (N5 + N4 + N3)
+  // 3. KANJI (N5 + N4 + N3 + Expanded)
   console.log("\nImporting Kanji with deduplication & readings...");
-  const ALL_KANJI = [...KANJI_N5, ...KANJI_N4, ...KANJI_N3];
+  const ALL_KANJI = [...KANJI_N5, ...KANJI_N4, ...KANJI_N3, ...EXPANDED_KANJI];
   const seenKanjiChars = new Set<string>();
 
   for (const k of ALL_KANJI) {
@@ -115,9 +116,9 @@ export async function importJapaneseCurriculum(): Promise<ImportStats> {
   }
   console.log(`  ✓ Kanji imported: ${stats.kanji.total} (N5: ${stats.kanji.n5}, N4: ${stats.kanji.n4}, N3: ${stats.kanji.n3}, skipped: ${stats.kanji.skipped}).`);
 
-  // 4. VOCABULARY (N5 + N4 + N3)
+  // 4. VOCABULARY (N5 + N4 + N3 + Expanded)
   console.log("\nImporting Vocabulary with examples and deduplication...");
-  const ALL_VOCABULARY = [...VOCABULARY_N5, ...VOCABULARY_N4, ...VOCABULARY_N3];
+  const ALL_VOCABULARY = [...VOCABULARY_N5, ...VOCABULARY_N4, ...VOCABULARY_N3, ...EXPANDED_VOCABULARY];
   const seenVocabKeys = new Set<string>();
   const vocabMapByLevel = new Map<string, Array<{ id: string; word: string; tags: string }>>();
 
@@ -154,7 +155,7 @@ export async function importJapaneseCurriculum(): Promise<ImportStats> {
             vocabularyId: existingVocab.id,
             japanese: v.exampleJapanese,
             romaji: v.exampleRomaji,
-            meaning: v.exampleMeaning,
+            meaning: v.exampleMeaning ?? "",
           },
         });
       }
@@ -175,7 +176,7 @@ export async function importJapaneseCurriculum(): Promise<ImportStats> {
                   {
                     japanese: v.exampleJapanese,
                     romaji: v.exampleRomaji,
-                    meaning: v.exampleMeaning,
+                    meaning: v.exampleMeaning ?? "",
                   },
                 ],
               }
@@ -197,9 +198,9 @@ export async function importJapaneseCurriculum(): Promise<ImportStats> {
   }
   console.log(`  ✓ Vocabulary imported: ${stats.vocab.total} (N5: ${stats.vocab.n5}, N4: ${stats.vocab.n4}, N3: ${stats.vocab.n3}, skipped: ${stats.vocab.skipped}).`);
 
-  // 5. GRAMMAR (N5 + N4 + N3)
+  // 5. GRAMMAR (N5 + N4 + N3 + Expanded)
   console.log("\nImporting Grammar points with structures & authentic examples...");
-  const ALL_GRAMMAR = [...GRAMMAR_N5, ...GRAMMAR_N4, ...GRAMMAR_N3];
+  const ALL_GRAMMAR = [...GRAMMAR_N5, ...GRAMMAR_N4, ...GRAMMAR_N3, ...EXPANDED_GRAMMAR];
   const seenGrammarTitles = new Set<string>();
   const grammarMapByLevel = new Map<string, Array<{ id: string; title: string }>>();
 
@@ -222,7 +223,7 @@ export async function importJapaneseCurriculum(): Promise<ImportStats> {
         });
 
     await prisma.grammarExample.deleteMany({ where: { grammarId: grammar.id } });
-    for (const ex of g.examples) {
+    for (const ex of g.examples ?? []) {
       await prisma.grammarExample.create({
         data: { grammarId: grammar.id, japanese: ex.japanese, romaji: ex.romaji, meaning: ex.meaning },
       });
@@ -366,9 +367,9 @@ export async function importJapaneseCurriculum(): Promise<ImportStats> {
   console.log(`  ✓ Exercises imported: ${stats.lessons.exercises} total exercises.`);
   console.log(`  ✓ LessonItems connected: ${stats.lessonItems.total} linkages.`);
 
-  // 7. SCENARIOS (N5 + N4 + N3)
+  // 7. SCENARIOS (N5 + N4 + N3 + EXPANDED)
   console.log("\nImporting Interactive Survival & Conversation Scenarios...");
-  const ALL_SCENARIOS = [...SCENARIOS_N5, ...SCENARIOS_N4, ...SCENARIOS_N3];
+  const ALL_SCENARIOS = [...SCENARIOS_N5, ...SCENARIOS_N4, ...SCENARIOS_N3, ...EXPANDED_SCENARIOS];
   for (const s of ALL_SCENARIOS) {
     const scenario = await prisma.scenario.upsert({
       where: { slug: s.slug },

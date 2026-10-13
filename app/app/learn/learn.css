@@ -4,7 +4,7 @@
   --lp-red: #d6322a;
   --lp-red-dark: #b12019;
   --lp-ink: #191919;
-  --lp-muted: #6b6f76;
+  --lp-muted: #4b515d;
   --lp-line: #ece7dc;
   --lp-card: rgba(255, 255, 255, 0.94);
   --lp-soft: #faf7f1;
@@ -16,8 +16,8 @@
   color: var(--lp-ink);
 }
 .dark .lp-root {
-  --lp-ink: #f1efe9;
-  --lp-muted: #a3a7ae;
+  --lp-ink: #f8fafc;
+  --lp-muted: #cbd5e1;
   --lp-line: #2b2e33;
   --lp-card: rgba(24, 26, 30, 0.94);
   --lp-soft: #1e2025;
@@ -52,7 +52,7 @@
 .lp-hero { position: relative; display: block; overflow: hidden; min-height: 0; margin: 0 0 22px; padding: 0; background: var(--lp-bg); border: 1px solid var(--lp-line); border-radius: 24px; box-shadow: 0 10px 34px rgba(60, 45, 30, 0.08); isolation: isolate; }
 .lp-hero-bg {
   position: absolute; top: 0; bottom: 0; right: 0; width: 80%;
-  background: url("/learn/hero.jpg") 70% center / cover no-repeat, linear-gradient(135deg, #f3d5cc, #dfe8e6);
+  background: url("/learn/hero-fuji.jpg") 70% center / cover no-repeat, linear-gradient(135deg, #f3d5cc, #dfe8e6);
   -webkit-mask-image: linear-gradient(90deg, transparent 0, rgba(0, 0, 0, 0.55) 26%, #000 52%);
   mask-image: linear-gradient(90deg, transparent 0, rgba(0, 0, 0, 0.55) 26%, #000 52%);
 }
@@ -113,13 +113,13 @@
   background: linear-gradient(180deg, rgba(255, 250, 246, 0) 30%, rgba(255, 250, 246, 0.95) 68%), url("/learn/kana-card.jpg") 0 0 / 230% auto no-repeat, linear-gradient(135deg, #fbe9e6, #fdf6ee);
 }
 .dark .lp-preview { background-blend-mode: multiply; background-color: #2a2220; }
-.lp-preview-glyph { position: absolute; right: 18px; top: 16px; z-index: 0; font-size: 92px; line-height: 1; font-weight: 800; color: #151515; }
+.lp-preview-glyph { position: absolute; right: 18px; top: 16px; z-index: 0; font-size: 92px; line-height: 1; font-weight: 800; color: var(--lp-ink); }
 .lp-preview-glyph[data-long="true"] { font-size: 64px; letter-spacing: -0.04em; top: 30px; }
-.dark .lp-preview-glyph { color: #151515; }
+.dark .lp-preview-glyph { color: var(--lp-ink); }
 .lp-preview-copy { position: relative; z-index: 1; display: grid; gap: 3px; grid-column: 1 / -1; align-self: end; }
 .lp-preview-copy b { font-size: 17px; font-weight: 800; color: var(--lp-red); }
-.lp-preview-romaji { font-size: 12px; font-weight: 700; color: #3a3a3a; }
-.lp-preview-copy small { max-width: 75%; font-size: 11px; line-height: 1.45; color: #555a61; }
+.lp-preview-romaji { font-size: 12px; font-weight: 700; color: var(--lp-ink); }
+.lp-preview-copy small { max-width: 75%; font-size: 11px; line-height: 1.45; color: var(--lp-muted); }
 .lp-preview-actions { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
 .lp-speaker { display: grid; place-items: center; width: 44px; height: 44px; border: 0; border-radius: 10px; background: #fff; color: var(--lp-red); cursor: pointer; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08); }
 
@@ -129,6 +129,8 @@
 .lp-overall b { color: var(--lp-red); font-weight: 800; }
 .lp-bar { width: 100%; height: 5px; border-radius: 99px; background: #eceae3; overflow: hidden; }
 .dark .lp-bar { background: #2b2e33; }
+.dark .lp-pill, .dark .kl-badge { background: #262930; color: #cbd5e1; }
+.dark .kl-card.is-done { border-color: #059669; background: linear-gradient(180deg, rgba(16, 185, 129, 0.15), var(--lp-card)); }
 .lp-bar i { display: block; height: 100%; border-radius: inherit; background: var(--lp-red); }
 .lp-timeline { position: relative; margin-top: 18px; display: grid; gap: 12px; }
 .lp-timeline::before { content: ""; position: absolute; left: 13px; top: 24px; bottom: 24px; width: 2px; background: var(--lp-line); }
@@ -257,7 +259,8 @@
 .kw-toggle[aria-pressed="true"] .kw-switch { background: var(--lp-red, #d6322a); }
 .kw-toggle[aria-pressed="true"] .kw-switch::after { transform: translateX(12px); }
 .kw button:disabled { opacity: 0.45; cursor: not-allowed; }
-.kw-warn { margin: 0; padding: 10px 12px; border-radius: 10px; font-size: 12px; background: #fff6e0; color: #8a5a00; }
+.kw-warn { margin: 0; padding: 10px 12px; border-radius: 10px; font-size: 12px; background: var(--lp-rose); color: var(--lp-red); }
+.dark .kw-warn { background: #3a2a14; color: #f5a54a; }
 .kw-boards { display: grid; grid-template-columns: 1fr; gap: 12px; }
 @media (min-width: 560px) { .kw-boards { grid-template-columns: 1fr 1fr; } }
 .kw-board { position: relative; margin: 0; }

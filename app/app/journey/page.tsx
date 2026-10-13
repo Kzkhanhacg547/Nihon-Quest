@@ -20,20 +20,32 @@ export default async function JourneyPage() {
 
   // Sync journey status to the real XP gate so all pages use the same source of truth.
   for (const loc of locations) {
-    const currentStatus = byId.get(loc.id)?.status ?? "LOCKED";
+    const existing = byId.get(loc.id);
+    const currentStatus = existing?.status ?? "LOCKED";
+    const currentProgress = existing?.progress ?? 0;
     const resolvedStatus = resolveJourneyStatus({
       currentStatus,
       locationOrder: loc.order,
       requirementXp: loc.requirementXp,
       totalXP: user.totalXP,
       previousCompleted: true,
+      progress: currentProgress,
     });
 
     if (!byId.has(loc.id)) {
       const created = await prisma.userJourneyProgress.create({
-        data: { userId: uid, locationId: loc.id, status: resolvedStatus },
+        data: { userId: uid, locationId: loc.id, status: resolvedStatus, progress: currentProgress },
       });
       byId.set(loc.id, created);
+      continue;
+    }
+
+    if (currentProgress >= 100 && existing?.status !== "COMPLETED") {
+      const updated = await prisma.userJourneyProgress.update({
+        where: { userId_locationId: { userId: uid, locationId: loc.id } },
+        data: { status: "COMPLETED", progress: 100, completedAt: existing?.completedAt || new Date() },
+      });
+      byId.set(loc.id, updated);
       continue;
     }
 
@@ -50,7 +62,8 @@ export default async function JourneyPage() {
 
   const rows = locations.map((loc, i) => {
     const prev = i === 0 ? null : locations[i - 1];
-    const prevStatus = prev ? byId.get(prev.id)?.status : null;
+    const prevProg = prev ? byId.get(prev.id) : null;
+    const prevDone = prevProg?.status === "COMPLETED" || (prevProg?.progress ?? 0) >= 100;
     return {
       location: JSON.parse(JSON.stringify(loc)),
       progress: byId.get(loc.id) ? JSON.parse(JSON.stringify(byId.get(loc.id))) : null,
@@ -58,7 +71,7 @@ export default async function JourneyPage() {
         locationOrder: loc.order,
         requirementXp: loc.requirementXp,
         totalXP: user.totalXP,
-        previousCompleted: i === 0 || prevStatus === "COMPLETED",
+        previousCompleted: i === 0 || prevDone,
       }),
     };
   });

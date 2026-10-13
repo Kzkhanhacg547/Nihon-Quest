@@ -2,6 +2,7 @@
 
 import { Fragment, useEffect, useMemo, useState } from "react";
 import Image from "next/image";
+import { BASE64_IMAGES } from "@/lib/assets/base64Images";
 import Link from "next/link";
 import { Badge, Button, Card, EmptyState, Icon, IconButton, Modal, SelectField } from "@/components/ui";
 import { useSoundAndTheme } from "@/components/SoundAndThemeContext";
@@ -479,7 +480,7 @@ function KanjiRow({
        <div className="jp-text text-[28px] sm:text-[34px] font-black leading-none text-slate-900 dark:text-white">{k.character}</div>
       <div className="min-w-0">
         <p className="text-sm text-slate-600 dark:text-slate-300">{k.strokeCount} nét</p>
-        <p className="text-xs text-slate-400">Số nét viết</p>
+        <p className="text-xs text-slate-500 dark:text-slate-400">Số nét viết</p>
       </div>
       <div className="min-w-0 basis-full md:basis-auto">
         <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">{k.meaning}</p>
@@ -527,6 +528,54 @@ function SrsBox({ name, saved, onSave }: { name: string; saved: boolean; onSave:
   );
 }
 
+function parseLinguisticMeta(v: VocabItem) {
+  const tags = tagsOf(v.tags);
+  const originTag = tags.find((t) => t.startsWith("Xuất xứ:"));
+  const standardTag = tags.find((t) => t.startsWith("Chuẩn:"));
+  const nuanceTag = tags.find((t) => t.startsWith("Sắc thái:"));
+
+  let registerLabel = "Ngôn ngữ chuẩn (標準語 / 丁寧語)";
+  let registerTone = "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800/60";
+  let usageContext = "Dùng an toàn trong giao tiếp hàng ngày, lớp học, du lịch và văn viết chuẩn.";
+
+  const raw = `${v.tags ?? ""} ${v.meaning}`;
+  if (raw.includes("Tôn kính ngữ") || raw.includes("尊敬語")) {
+    registerLabel = "Tôn kính ngữ (尊敬語 - Sonkeigo)";
+    registerTone = "bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-950/40 dark:text-indigo-300 dark:border-indigo-800/60";
+    usageContext = "Nâng cao hành động/trạng thái của cấp trên, khách hàng, thầy cô. TUYỆT ĐỐI không dùng cho bản thân.";
+  } else if (raw.includes("Khiêm nhường ngữ") || raw.includes("謙譲語")) {
+    registerLabel = "Khiêm nhường ngữ (謙譲語 - Kenjōgo)";
+    registerTone = "bg-violet-50 text-violet-700 border-violet-200 dark:bg-violet-950/40 dark:text-violet-300 dark:border-violet-800/60";
+    usageContext = "Hạ thấp hành động của bản thân hoặc người trong nhóm (Uchi) để thể hiện sự kính trọng với đối phương (Soto).";
+  } else if (raw.includes("Từ đệm") || raw.includes("クッション言葉")) {
+    registerLabel = "Từ đệm lịch sự (クッション言葉)";
+    registerTone = "bg-sky-50 text-sky-700 border-sky-200 dark:bg-sky-950/40 dark:text-sky-300 dark:border-sky-800/60";
+    usageContext = "Đặt đầu câu khi nhờ vả, hỏi thông tin hoặc từ chối khéo trong môi trường công sở/dịch vụ.";
+  } else if (raw.includes("Phương ngữ") || raw.includes("方言")) {
+    registerLabel = "Phương ngữ vùng miền (方言 - Hōgen)";
+    registerTone = "bg-amber-50 text-amber-800 border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800/60";
+    usageContext = "Giao tiếp địa phương mang bản sắc vùng miền (Kansai, Kyoto, Hakata, Hokkaido...). Trong văn bản hành chính/thi JLPT nên quy đổi về tiếng Nhật chuẩn (標準語).";
+  } else if (raw.includes("Tiếng lóng") || raw.includes("若者言葉") || raw.includes("俗語")) {
+    registerLabel = "Tiếng lóng / Khẩu ngữ thân mật (若者言葉・タメ口)";
+    registerTone = "bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-800/60";
+    usageContext = "Chỉ dùng giữa bạn bè thân thiết, mạng xã hội hoặc hội thoại suồng sã. Không dùng với cấp trên, người lớn tuổi hoặc trong phỏng vấn.";
+  } else if (raw.includes("Thành ngữ") || raw.includes("ことわざ") || raw.includes("慣用句") || raw.includes("四字熟語")) {
+    registerLabel = "Thành ngữ / Quán dụng ngữ (慣用句・ことわざ)";
+    registerTone = "bg-teal-50 text-teal-700 border-teal-200 dark:bg-teal-950/40 dark:text-teal-300 dark:border-teal-800/60";
+    usageContext = "Giàu hình ảnh văn hóa Nhật Bản; giúp câu nói tự nhiên, sâu sắc hơn ở trình độ N4–N3 trở lên.";
+  }
+
+  return {
+    registerLabel,
+    registerTone,
+    usageContext,
+    origin: originTag ? originTag.replace(/^Xuất xứ:\s*/i, "") : null,
+    standardCounterpart: standardTag ? standardTag.replace(/^Chuẩn:\s*/i, "") : null,
+    nuance: nuanceTag ? nuanceTag.replace(/^Sắc thái:\s*/i, "") : null,
+    cleanTags: tags.filter((t) => !t.startsWith("Xuất xứ:") && !t.startsWith("Chuẩn:") && !t.startsWith("Sắc thái:")),
+  };
+}
+
 function VocabDetail({
   v,
   saved,
@@ -545,19 +594,22 @@ function VocabDetail({
   onSave: () => void;
 }) {
   const freq = frequencyOf(v);
-  const tags = tagsOf(v.tags);
+  const meta = parseLinguisticMeta(v);
   const examples = showAllExamples ? v.examples : v.examples.slice(0, 3);
   const hl = { word: v.word, kana: v.kana };
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <Badge variant="brand" className="text-[11px] uppercase">
           Từ vựng
         </Badge>
         <Badge variant="amber" className="text-[11px]">
           JLPT {v.jlptLevel}
         </Badge>
+        <span className={`rounded-full border px-2.5 py-0.5 text-[11px] font-bold ${meta.registerTone}`}>
+          {meta.registerLabel}
+        </span>
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -590,14 +642,37 @@ function VocabDetail({
       <dl className={detailTable}>
         <DetailRow label="Nghĩa tiếng Việt">{v.meaning}</DetailRow>
         <DetailRow label="Loại từ">{POS_LABELS[v.partOfSpeech] ?? v.partOfSpeech}</DetailRow>
+        <DetailRow label="Ngữ vực (Register)">
+          <span className={`rounded-lg border px-2 py-0.5 text-xs font-bold ${meta.registerTone}`}>
+            {meta.registerLabel}
+          </span>
+        </DetailRow>
+        {meta.standardCounterpart && (
+          <DetailRow label="Đối chiếu Chuẩn">
+            <span className="jp-text rounded-md bg-slate-100 px-2 py-0.5 font-bold text-slate-800 dark:bg-sumi-800 dark:text-slate-100">
+              標準語: {meta.standardCounterpart}
+            </span>
+          </DetailRow>
+        )}
+        {meta.origin && (
+          <DetailRow label="Xuất xứ / Vùng">{meta.origin}</DetailRow>
+        )}
+        {meta.nuance && (
+          <DetailRow label="Sắc thái">{meta.nuance}</DetailRow>
+        )}
+        <DetailRow label="Hoàn cảnh dùng">
+          <span className="text-xs font-normal leading-relaxed text-slate-600 dark:text-slate-300">
+            {meta.usageContext}
+          </span>
+        </DetailRow>
         <DetailRow label="Tần suất">
           <FrequencyDots dots={freq.dots} label={freq.label} />
         </DetailRow>
         <DetailRow label="Chủ đề">
-          {tags.length === 0 ? (
-            <span className="text-slate-500 dark:text-slate-400">Chưa phân loại</span>
+          {meta.cleanTags.length === 0 ? (
+            <span className="text-slate-500 dark:text-slate-400">Giao tiếp & Đời sống</span>
           ) : (
-            tags.map((t) => (
+            meta.cleanTags.map((t) => (
               <span
                 key={t}
                 className="rounded-full border border-red-100 bg-red-50 px-2.5 py-0.5 text-[11px] font-semibold text-red-600 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-300"
@@ -828,7 +903,7 @@ function PromoBanner() {
   return (
     <div className="overflow-hidden rounded-3xl border border-rose-100 bg-white shadow-sm dark:border-slate-800">
       <Image
-        src="/images/cang-hoc-cang-gioi.webp"
+        src={BASE64_IMAGES.cangHocCangGioi}
         alt="Càng học càng giỏi, càng gần ước mơ!"
         width={1720}
         height={914}
@@ -1164,6 +1239,10 @@ export function VocabKanjiClient({
 
   const topicGroups = useMemo(() => {
     const groups: Record<string, VocabItem[]> = {
+      "🙇 Kính ngữ & Lịch sự (敬語)": [],
+      "🏮 Văn hóa & Thành ngữ (文化・慣用句)": [],
+      "🔥 Tiếng lóng & Khẩu ngữ (若者言葉・俗語)": [],
+      "🗾 Phương ngữ vùng miền (方言)": [],
       "💬 Giao tiếp & Chào hỏi": [],
       "🏠 Gia đình & Đời sống": [],
       "🍣 Món ăn & Nhà hàng": [],
@@ -1177,11 +1256,19 @@ export function VocabKanjiClient({
     filteredVocab.forEach((v) => {
       const tag = v.tags || "";
       const pos = v.partOfSpeech || "";
-      if (tag.includes("Giao tiếp") || pos === "expression") groups["💬 Giao tiếp & Chào hỏi"].push(v);
+      if (tag.includes("Kính ngữ") || tag.includes("尊敬語") || tag.includes("謙譲語") || tag.includes("クッション言葉")) {
+        groups["🙇 Kính ngữ & Lịch sự (敬語)"].push(v);
+      } else if (tag.includes("Thành ngữ") || tag.includes("Văn hóa") || tag.includes("ことわざ") || tag.includes("慣用句")) {
+        groups["🏮 Văn hóa & Thành ngữ (文化・慣用句)"].push(v);
+      } else if (tag.includes("Tiếng lóng") || tag.includes("若者言葉") || tag.includes("俗語")) {
+        groups["🔥 Tiếng lóng & Khẩu ngữ (若者言葉・俗語)"].push(v);
+      } else if (tag.includes("Phương ngữ") || tag.includes("方言")) {
+        groups["🗾 Phương ngữ vùng miền (方言)"].push(v);
+      } else if (tag.includes("Giao tiếp") || pos === "expression") groups["💬 Giao tiếp & Chào hỏi"].push(v);
       else if (tag.includes("Gia đình") || tag.includes("Đời sống")) groups["🏠 Gia đình & Đời sống"].push(v);
-      else if (tag.includes("Ăn uống")) groups["🍣 Món ăn & Nhà hàng"].push(v);
-      else if (tag.includes("Công việc") || tag.includes("Học tập")) groups["💼 Trường học & Công việc"].push(v);
-      else if (tag.includes("Giao thông") || tag.includes("Địa điểm")) groups["🚗 Giao thông & Di chuyển"].push(v);
+      else if (tag.includes("Ăn uống") || tag.includes("Ẩm thực")) groups["🍣 Món ăn & Nhà hàng"].push(v);
+      else if (tag.includes("Công việc") || tag.includes("Học tập") || tag.includes("Công sở")) groups["💼 Trường học & Công việc"].push(v);
+      else if (tag.includes("Giao thông") || tag.includes("Địa điểm") || tag.includes("Du lịch")) groups["🚗 Giao thông & Di chuyển"].push(v);
       else if (tag.includes("Thời tiết") || tag.includes("Thời gian")) groups["☀️ Thời gian & Thời tiết"].push(v);
       else if (pos === "verb" || tag.includes("Động từ")) groups["🏃 Động từ thông dụng"].push(v);
       else if (pos.includes("adjective") || tag.includes("Tính từ")) groups["🎨 Tính từ & Trạng thái"].push(v);
@@ -1276,7 +1363,7 @@ export function VocabKanjiClient({
     }`;
   const viewToggle = (on: boolean) =>
     `inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg transition ${
-      on ? "bg-red-50 text-red-600 dark:bg-red-950/50 dark:text-red-300" : "text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
+      on ? "bg-red-50 text-red-600 dark:bg-red-950/50 dark:text-red-300" : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
     }`;
 
   /* ============================== RENDER ============================== */
@@ -1315,7 +1402,7 @@ export function VocabKanjiClient({
               tiến bộ từng chút!
             </p>
             <Image
-              src="/images/cat_kanji.png"
+              src={BASE64_IMAGES.catKanji}
               alt="Mèo may mắn"
               width={96}
               height={96}
@@ -1345,9 +1432,9 @@ export function VocabKanjiClient({
                 type="button"
                 aria-label="Xóa từ khóa"
                 onClick={() => setQuery("")}
-className="absolute right-0 top-1/2 inline-flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full text-slate-400 transition hover:bg-slate-100 active:scale-90 dark:hover:bg-sumi-800"
-          >
-          <Icon name="close" className="h-4 w-4" />
+                className="absolute right-0 top-1/2 inline-flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full text-slate-400 transition hover:bg-slate-100 active:scale-90 dark:hover:bg-sumi-800"
+              >
+                <Icon name="close" className="h-4 w-4" />
               </button>
             )}
           </div>
@@ -1383,6 +1470,43 @@ className="absolute right-0 top-1/2 inline-flex h-11 w-11 -translate-y-1/2 items
             </button>
           </div>
         </div>
+
+        {/* ---------- Quick Register / Cultural Category Pills ---------- */}
+        {tab === "VOCAB" && (
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <span className="text-xs font-bold text-slate-500 dark:text-slate-400">Chuyên mục sâu:</span>
+            {[
+              { key: "ALL", label: "📚 Tất cả" },
+              { key: "Kính ngữ", label: "🙇 Kính ngữ (尊敬語・謙譲語)" },
+              { key: "Phương ngữ", label: "🗾 Phương ngữ (関西・京都・博多)" },
+              { key: "Tiếng lóng", label: "🔥 Tiếng lóng & Thân mật (若者言葉)" },
+              { key: "Thành ngữ", label: "🏮 Thành ngữ & Tục ngữ" },
+              { key: "Văn hóa Nhật Bản", label: "⛩️ Văn hóa Nhật Bản" },
+            ].map((pill) => {
+              const active = tagFilter === pill.key;
+              return (
+                <button
+                  key={pill.key}
+                  type="button"
+                  onClick={() => {
+                    playClick();
+                    setTagFilter(active ? "ALL" : pill.key);
+                    if (pill.key !== "ALL" && levelFilter !== "ALL") {
+                      setLevelFilter("ALL");
+                    }
+                  }}
+                  className={`rounded-full border px-3 py-1.5 text-xs font-bold transition ${
+                    active
+                      ? "border-red-600 bg-red-600 text-white shadow-sm"
+                      : "border-slate-200 bg-slate-50 text-slate-700 hover:border-red-300 hover:bg-rose-50 dark:border-slate-700 dark:bg-sumi-800 dark:text-slate-200"
+                  }`}
+                >
+                  {pill.label}
+                </button>
+              );
+            })}
+          </div>
+        )}
 
         {advancedOpen && (
           <div className="mt-3 grid gap-4 rounded-2xl border border-slate-200 bg-slate-50/70 p-4 dark:border-slate-800 dark:bg-sumi-950/50 md:grid-cols-3">
@@ -1461,7 +1585,7 @@ className="absolute right-0 top-1/2 inline-flex h-11 w-11 -translate-y-1/2 items
               {rangeFrom.toLocaleString("vi-VN")}-{rangeTo.toLocaleString("vi-VN")}
             </b>{" "}
             {unit}
-            <span className="text-slate-400"> (tổng {totalItems.toLocaleString("vi-VN")})</span>
+            <span className="text-slate-500 dark:text-slate-400"> (tổng {totalItems.toLocaleString("vi-VN")})</span>
           </p>
           <div className="flex items-center gap-3">
             <SelectField plain label="Sắp xếp" value={sortMode} options={sortOptions} onChange={(v) => setSortMode(v as SortMode)} />
@@ -1661,7 +1785,7 @@ className="absolute right-0 top-1/2 inline-flex h-11 w-11 -translate-y-1/2 items
                       )}
                     </div>
                   )}
-                  <div className="flex items-center justify-between border-t border-slate-200/60 pt-4 text-xs font-bold text-slate-400 dark:border-slate-800">
+                  <div className="flex items-center justify-between border-t border-slate-200/60 pt-4 text-xs font-bold text-slate-500 dark:text-slate-400 dark:border-slate-800">
                     <span>{isFlipped ? "Chạm để xem lại mặt trước" : "Chạm để xem nghĩa"}</span>
                     <span>Chủ đề: {flashcard.topic}</span>
                   </div>
@@ -1750,7 +1874,7 @@ className="absolute right-0 top-1/2 inline-flex h-11 w-11 -translate-y-1/2 items
                               type="button"
                               aria-label={`Nghe phát âm ${v.word}`}
                               onClick={() => speak(v.word)}
-                              className="text-slate-400 hover:text-red-600"
+                              className="text-slate-500 hover:text-red-600 dark:text-slate-400"
                             >
                               <Icon name="speaker" className="h-4 w-4" />
                             </button>

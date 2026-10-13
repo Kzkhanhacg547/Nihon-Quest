@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Card, Badge, Button } from "@/components/ui";
+import { UserAvatar } from "@/components/UserAvatar";
 import { type EnrichedLeaderboardUser, type DirectRivalInfo } from "@/lib/rivalBots";
 
 const RANK_ICONS = ["🥇", "🥈", "🥉"];
@@ -110,9 +111,14 @@ export function LeaderboardClient({
         <Card className="p-4 sm:p-5 bg-gradient-to-r from-red-50 via-rose-50 to-amber-50 dark:from-slate-900 dark:to-slate-950 border-2 border-red-200 dark:border-red-900/50 shadow-sm">
           <div className="flex items-center gap-4">
             <div className="relative">
-              <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${getTier(currentUser.xp).color} flex items-center justify-center text-2xl shadow-lg`}>
-                {getTier(currentUser.xp).badge}
-              </div>
+              <UserAvatar
+                src={currentUser.avatar}
+                name={currentUser.displayName || currentUser.name}
+                fallbackText={getTier(currentUser.xp).badge}
+                sizeClass="w-12 h-12 text-2xl rounded-2xl"
+                className={`bg-gradient-to-br ${getTier(currentUser.xp).color} shadow-lg rounded-2xl`}
+                imgClassName="rounded-2xl shadow-lg ring-2 ring-white dark:ring-sumi-800"
+              />
               <div className="absolute -top-1 -right-1 bg-red-600 text-white text-[10px] font-black px-1.5 py-0.5 rounded-full shadow-xs">
                 #{currentUserRank}
               </div>
@@ -165,11 +171,14 @@ export function LeaderboardClient({
                 </div>
 
                 {/* Avatar / Badge */}
-                <div
-                  className={`w-10 h-10 rounded-2xl bg-gradient-to-br ${tier.color} flex items-center justify-center text-lg shadow-sm shrink-0 font-black text-white`}
-                >
-                  {user.avatar || tier.badge}
-                </div>
+                <UserAvatar
+                  src={user.avatar}
+                  name={displayName}
+                  fallbackText={tier.badge}
+                  sizeClass="w-10 h-10 text-lg rounded-2xl"
+                  className={`bg-gradient-to-br ${tier.color} shadow-sm rounded-2xl`}
+                  imgClassName="rounded-2xl shadow-sm ring-1 ring-slate-200 dark:ring-slate-700"
+                />
 
                 {/* Info */}
                 <div className="min-w-0 flex-1">

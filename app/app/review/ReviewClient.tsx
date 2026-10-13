@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import { Button, Card, EmptyState, Icon, Modal, type IconName } from "@/components/ui";
 import { useSoundAndTheme } from "@/components/SoundAndThemeContext";
 import { notifyProgressUpdated } from "@/components/UserProgressContext";
-import { type EnrichedReviewItem } from "@/lib/review/resolveReviewItem";
+import { getReviewFrontPrompt, type EnrichedReviewItem } from "@/lib/review/resolveReviewItem";
 import { updateSrs } from "@/lib/srs";
 
 type Grade = "AGAIN" | "HARD" | "GOOD" | "EASY";
@@ -352,14 +352,19 @@ export function ReviewClient({ initial, backgrounds = [] }: { initial: EnrichedR
     currentItem.contentType === "KANA" || currentItem.contentType === "VOCAB" || currentItem.contentType === "KANJI";
   const jlptLabel = currentItem.contentType === "KANA" ? "KANA" : `JLPT ${currentItem.level || "N5"}`;
   const position = Math.min(done + 1, sessionTotal);
-  const size = termSize(currentItem.title);
+  const frontPrompt = getReviewFrontPrompt(currentItem);
+  const frontSize = termSize(frontPrompt);
+  const rawBackSize = termSize(currentItem.title);
+  const backSize = rawBackSize === "xl" || rawBackSize === "lg" ? "md" : rawBackSize;
   const showReading = Boolean(currentItem.reading) && currentItem.reading !== currentItem.title;
+  const isLongReading = (currentItem.reading || "").length > 16 || currentItem.contentType === "GRAMMAR";
   const romaji = currentItem.romaji;
+  const showRomaji = Boolean(romaji) && romaji !== currentItem.reading && romaji !== currentItem.title;
   const meaning = currentItem.extra || currentItem.subtitle;
   const tip =
     currentItem.contentType === "KANA"
-      ? `Đọc to “${currentItem.title}” ba lần rồi viết ra giấy một lần — vừa nghe vừa viết giúp bạn nhớ nét chữ lâu hơn.`
-      : `Hãy liên tưởng “${currentItem.title}” với một hình ảnh hoặc tình huống thật bạn từng gặp. Hình ảnh cụ thể sẽ giúp bạn nhớ lâu hơn!`;
+      ? `Đọc to “${frontPrompt}” ba lần rồi viết ra giấy một lần — vừa nghe vừa viết giúp bạn nhớ nét chữ lâu hơn.`
+      : `Hãy liên tưởng “${frontPrompt}” với một hình ảnh hoặc tình huống thật bạn từng gặp. Hình ảnh cụ thể sẽ giúp bạn nhớ lâu hơn!`;
 
   const flip = () => setIsFlipped((f) => !f);
 
@@ -378,18 +383,33 @@ export function ReviewClient({ initial, backgrounds = [] }: { initial: EnrichedR
       <div className="rv-face-main">
         <div className="rv-paper">
           <div className="rv-paper-body">
-            <p className={`rv-term-text rv-fs-${back ? "md" : size} jp-text`}>{currentItem.title}</p>
-            {showReading && <p className="rv-reading jp-text">{currentItem.reading}</p>}
-            {!back && romaji && <p className="rv-romaji">{romaji}</p>}
+            <span className={`rv-type-tag ${back ? "is-answer" : ""}`}>
+              {back ? `Đáp án · ${currentItem.subtitle}` : currentItem.subtitle}
+            </span>
+            <p className={`rv-term-text rv-fs-${back ? backSize : frontSize} jp-text`}>
+              {back ? currentItem.title : frontPrompt}
+            </p>
+            {back && showReading && (
+              <p className={`rv-reading jp-text ${isLongReading ? "is-long" : ""}`}>{currentItem.reading}</p>
+            )}
+            {back && showRomaji && <p className="rv-romaji">{romaji}</p>}
             {back && meaning && <p className="rv-meaning">{meaning}</p>}
           </div>
-          {isJapaneseText && <SpeakButton text={currentItem.title} className="rv-speak" size={20} />}
-          {back && (
-            <div className="rv-paper-foot">
-              <span>Đã củng cố: {currentItem.repetitions} lần</span>
-              <span>Chu kỳ hiện tại: {currentItem.interval} ngày</span>
-            </div>
-          )}
+          <div className="rv-paper-bottom">
+            {isJapaneseText ? (
+              <SpeakButton text={back ? currentItem.title : frontPrompt} className="rv-speak" size={20} />
+            ) : (
+              <span />
+            )}
+            {back ? (
+              <div className="rv-paper-foot">
+                <span>Đã củng cố: {currentItem.repetitions} lần</span>
+                <span>Chu kỳ hiện tại: {currentItem.interval} ngày</span>
+              </div>
+            ) : (
+              <span className="rv-flip-prompt">Chạm để lật xem đáp án</span>
+            )}
+          </div>
         </div>
       </div>
     </div>

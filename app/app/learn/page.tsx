@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { BASE64_IMAGES } from "@/lib/assets/base64Images";
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 import { authOptions } from "@/lib/auth-options";
@@ -215,7 +216,7 @@ export default async function LearnPage() {
         </div>
 
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img className="lp-footer" src="/learn/footer.jpg" alt="Tiếng Nhật không khó, chỉ cần bạn bắt đầu đúng cách!" />
+        <img className="lp-footer" src={BASE64_IMAGES.learnFooter} alt="Tiếng Nhật không khó, chỉ cần bạn bắt đầu đúng cách!" />
       </div>
     </div>
   );

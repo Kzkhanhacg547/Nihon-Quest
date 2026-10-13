@@ -248,6 +248,8 @@ export function Japanese3DRoom({
   const [stampPounded, setStampPounded] = useState(false);
   const [exploredItems, setExploredItems] = useState<Set<string>>(new Set());
   const [recentlyExploredId, setRecentlyExploredId] = useState<string | null>(null);
+  const [npcQuestIdx, setNpcQuestIdx] = useState(0);
+  const [npcQuestPicked, setNpcQuestPicked] = useState<number | null>(null);
 
   const scrollContainerRef = useRef<HTMLElement | null>(null);
   const viewTimersRef = useRef<Map<string, NodeJS.Timeout>>(new Map());
@@ -1203,6 +1205,95 @@ export function Japanese3DRoom({
                   );
                 })}
               </div>
+
+              {/* Interactive Local NPC Encounter */}
+              {data.language.length >= 2 && (() => {
+                const targetIdx = npcQuestIdx % data.language.length;
+                const targetPhrase = data.language[targetIdx];
+                const isCorrect = npcQuestPicked === targetIdx;
+
+                return (
+                  <Card className="p-5 sm:p-6 border-2 border-sakura-200 dark:border-sakura-900/60 bg-gradient-to-br from-rose-50/70 via-white to-amber-50/50 dark:from-sumi-900 dark:via-sumi-900 dark:to-sakura-950/20 space-y-4">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div className="flex items-center gap-2.5">
+                        <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-sakura-600 text-white text-lg shadow-sm">
+                          🏮
+                        </span>
+                        <div>
+                          <p className="text-[11px] font-black uppercase tracking-wider text-sakura-600 dark:text-sakura-400">
+                            Thử Thách Người Bản Địa · {data.name} ({data.nameJa})
+                          </p>
+                          <h4 className="text-base font-black text-slate-900 dark:text-white">
+                            Giao tiếp thực tế cùng cư dân địa phương
+                          </h4>
+                        </div>
+                      </div>
+                      <Badge variant="amber">Câu {(npcQuestIdx % data.language.length) + 1}/{data.language.length}</Badge>
+                    </div>
+
+                    <p className="text-sm text-slate-700 dark:text-slate-200 leading-relaxed bg-white/90 dark:bg-sumi-800/90 rounded-2xl p-3.5 border border-slate-200/70 dark:border-slate-700">
+                      🎯 <strong>Tình huống tại {data.name}:</strong> Bạn muốn diễn đạt ý{" "}
+                      <span className="font-bold text-sakura-600 dark:text-sakura-400">“{targetPhrase.meaning}”</span>{" "}
+                      với người dân địa phương. Câu tiếng Nhật / phương ngữ nào dưới đây là chính xác nhất?
+                    </p>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                      {data.language.map((cand, cIdx) => {
+                        const pickedThis = npcQuestPicked === cIdx;
+                        const stateClass =
+                          npcQuestPicked === null
+                            ? "border-slate-200 dark:border-slate-700 bg-white dark:bg-sumi-900 hover:border-sakura-400"
+                            : cIdx === targetIdx
+                            ? "border-emerald-500 bg-emerald-50/80 dark:bg-emerald-950/40 text-emerald-900 dark:text-emerald-200"
+                            : pickedThis
+                            ? "border-rose-400 bg-rose-50/80 dark:bg-rose-950/40 text-rose-900 dark:text-rose-200"
+                            : "border-slate-200 dark:border-slate-800 opacity-60";
+
+                        return (
+                          <button
+                            key={cIdx}
+                            type="button"
+                            onClick={() => {
+                              playClick();
+                              setNpcQuestPicked(cIdx);
+                              speakJapanese(cand.japanese);
+                              if (cIdx === targetIdx) {
+                                playFanfare();
+                                markExplored(`lng-${cIdx}`, true);
+                              }
+                            }}
+                            className={`text-left rounded-2xl border-2 p-3.5 transition-all ${stateClass}`}
+                          >
+                            <p className="font-jp font-black text-sm text-slate-900 dark:text-white">{cand.japanese}</p>
+                            <p className="text-[11px] italic text-slate-500 dark:text-slate-400 mt-0.5">{cand.romaji}</p>
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {npcQuestPicked !== null && (
+                      <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
+                        <p className={`text-xs font-bold ${isCorrect ? "text-emerald-700 dark:text-emerald-300" : "text-rose-600 dark:text-rose-300"}`}>
+                          {isCorrect
+                            ? `✓ Chính xác! Người dân ${data.name} rất ấn tượng khi bạn dùng đúng câu “${targetPhrase.japanese}”.`
+                            : `✗ Chưa đúng. Đáp án phù hợp nhất là “${targetPhrase.japanese}” (${targetPhrase.romaji}).`}
+                        </p>
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          onClick={() => {
+                            playClick();
+                            setNpcQuestPicked(null);
+                            setNpcQuestIdx((i) => (i + 1) % data.language.length);
+                          }}
+                        >
+                          Tình huống tiếp theo →
+                        </Button>
+                      </div>
+                    )}
+                  </Card>
+                );
+              })()}
             </div>
           )}
         </main>
@@ -1211,9 +1302,9 @@ export function Japanese3DRoom({
         <footer className="glass-panel px-6 py-4 border-t border-slate-200/80 dark:border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4 bg-white/95 dark:bg-sumi-900/95 backdrop-blur-md">
           <div className="flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400">
             <span>Trạng thái chặng:</span>
-            {status === "COMPLETED" ? (
+            {status === "COMPLETED" || exploredPercent >= 100 ? (
               <Badge variant="matcha" className="font-bold">
-                ✓ Đã hoàn thành ({xpReward} XP)
+                ✓ Đã hoàn thành (+{xpReward} XP)
               </Badge>
             ) : status === "IN_PROGRESS" ? (
               <Badge variant="sakura" className="font-bold">
@@ -1227,7 +1318,7 @@ export function Japanese3DRoom({
           </div>
 
           <div className="flex items-center gap-3 w-full sm:w-auto">
-            {status !== "COMPLETED" && (
+            {status !== "COMPLETED" && exploredPercent < 100 && (
               <Button
                 variant="sakura"
                 size="md"

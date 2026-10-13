@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import { NihonQuestLogo } from "./NihonQuestLogo";
 import { SPEECH_RATES, useSoundAndTheme } from "./SoundAndThemeContext";
 import { useUserProgress } from "./UserProgressContext";
+import { UserAvatar } from "./UserAvatar";
 import { guessVoiceGender, voiceGenderLabel } from "@/lib/voiceGender";
 import { Icon, IconButton, type IconName } from "./ui";
 
@@ -18,6 +19,8 @@ interface NavItem {
   glyph?: string;
   /** Nhãn rút gọn cho tab bar dưới màn hình */
   short: string;
+  /** Các đường dẫn phụ cũng tính là đang active cho mục này */
+  matchPrefixes?: string[];
 }
 
 const NAV_ITEMS: NavItem[] = [
@@ -30,16 +33,22 @@ const NAV_ITEMS: NavItem[] = [
 ];
 
 const MORE_ITEMS: NavItem[] = [
-  { href: "/app/test", label: "Kiểm tra năng lực", glyph: "★", short: "Test" },
-  { href: "/app/achievements", label: "Huy hiệu & Thành tựu", glyph: "🏆", short: "Huy hiệu" },
-  { href: "/app/journey", label: "Hành trình", glyph: "⌁", short: "Trình" },
-  { href: "/app/learn", label: "Lộ trình học & Kana Lab", glyph: "学", short: "Lộ trình" },
-  { href: "/app/survival", label: "Survival Mode", glyph: "食", short: "Sinh tồn" },
+  { href: "/app/yokai-dash", label: "Yōkai Dash (Mini Game)", glyph: "狐", short: "Dash" },
+  { href: "/app/survival", label: "Survival Mode (Sinh tồn)", glyph: "食", short: "Sinh tồn" },
+  { href: "/app/test", label: "Kiểm tra năng lực (4 kỹ năng)", glyph: "★", short: "Test" },
+  { href: "/app/journey", label: "Hành trình Nhật Bản", glyph: "⌁", short: "Trình" },
+  { href: "/app/learn", label: "Kana Lab & Tổng quan", glyph: "学", short: "Kana" },
   { href: "/app/sensei", label: "AI Kaiwa Sensei", glyph: "話", short: "Sensei" },
+  { href: "/app/achievements", label: "Huy hiệu & Thành tựu", glyph: "🏆", short: "Huy hiệu" },
   { href: "/app/leaderboard", label: "Bảng xếp hạng", glyph: "杯", short: "BXH" },
   { href: "/app/stats", label: "Thống kê học tập", glyph: "計", short: "Thống kê" },
-  { href: "/app/settings", label: "Cài đặt hệ thống", glyph: "設", short: "Cài đặt" },
-  { href: "/app/profile", label: "Hồ sơ cá nhân", glyph: "人", short: "Hồ sơ" },
+  {
+    href: "/app/profile",
+    label: "Hồ sơ & Cài đặt tài khoản",
+    glyph: "人",
+    short: "Tài khoản",
+    matchPrefixes: ["/app/profile", "/app/settings"],
+  },
 ];
 
 function NavGlyph({ item }: { item: NavItem }) {
@@ -71,21 +80,14 @@ function useDismiss(ref: { current: HTMLElement | null }, open: boolean, onClose
 }
 
 function Avatar({ name, image }: { name?: string | null; image?: string | null }) {
-  const initial = (name?.trim()?.[0] ?? "N").toUpperCase();
-  if (image) {
-    return (
-      // eslint-disable-next-line @next/next/no-img-element
-      <img src={image} alt={name ?? "Tài khoản"} className="h-10 w-10 rounded-full object-cover ring-2 ring-white dark:ring-sumi-800" />
-    );
-  }
   return (
-    <span
-      aria-hidden="true"
-      title={name ?? undefined}
-      className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-slate-800 to-red-900 text-sm font-black text-white ring-2 ring-white dark:ring-sumi-800"
-    >
-      {initial}
-    </span>
+    <UserAvatar
+      src={image}
+      name={name}
+      sizeClass="h-10 w-10 text-sm"
+      className="bg-gradient-to-br from-slate-800 to-red-900 ring-2 ring-white dark:ring-sumi-800"
+      imgClassName="ring-2 ring-white dark:ring-sumi-800"
+    />
   );
 }
 
@@ -133,18 +135,22 @@ export function AppNav({
 
   const [moreOpen, setMoreOpen] = useState(false);
   const [speedOpen, setSpeedOpen] = useState(false);
+  const [accountOpen, setAccountOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const moreRef = useRef<HTMLDivElement | null>(null);
   const speedRef = useRef<HTMLDivElement | null>(null);
+  const accountRef = useRef<HTMLDivElement | null>(null);
   const drawerRef = useRef<HTMLDivElement | null>(null);
 
   useDismiss(moreRef, moreOpen, () => setMoreOpen(false));
   useDismiss(speedRef, speedOpen, () => setSpeedOpen(false));
+  useDismiss(accountRef, accountOpen, () => setAccountOpen(false));
 
   // Đổi trang thì đóng mọi menu
   useEffect(() => {
     setMoreOpen(false);
     setSpeedOpen(false);
+    setAccountOpen(false);
     setMobileOpen(false);
   }, [pathname]);
 
@@ -165,8 +171,12 @@ export function AppNav({
     };
   }, [mobileOpen]);
 
-  const active = (href: string) => pathname === href || (href !== "/app" && pathname.startsWith(`${href}/`));
-  const moreActive = MORE_ITEMS.some((item) => active(item.href));
+  const active = (href: string, matchPrefixes?: string[]) => {
+    if (matchPrefixes?.some((p) => pathname === p || pathname.startsWith(`${p}/`))) return true;
+    return pathname === href || (href !== "/app" && pathname.startsWith(`${href}/`));
+  };
+  const moreActive = MORE_ITEMS.some((item) => active(item.href, item.matchPrefixes));
+  const accountActive = active("/app/profile", ["/app/profile", "/app/settings"]);
 
   const linkBase =
     "inline-flex items-center gap-2 rounded-xl px-3 py-2 text-[13px] font-semibold transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-500";
@@ -237,7 +247,7 @@ export function AppNav({
                         setMoreOpen(false);
                       }}
                       className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition ${
-                        active(item.href)
+                        active(item.href, item.matchPrefixes)
                           ? "bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-300"
                           : "text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-sumi-800"
                       }`}
@@ -342,7 +352,7 @@ export function AppNav({
 
             <IconButton
               label={resolvedTheme === "dark" ? "Chuyển sang giao diện sáng" : "Chuyển sang giao diện tối"}
-              className="h-9 w-9 sm:h-10 sm:w-10"
+              className="h-10 w-10 sm:h-10 sm:w-10"
               onClick={() => {
                 playClick();
                 toggleTheme();
@@ -351,30 +361,98 @@ export function AppNav({
               <Icon name={resolvedTheme === "dark" ? "moon" : "sun"} className="h-[18px] w-[18px]" />
             </IconButton>
 
-             <IconButton
-               label="Thông báo"
-               className="relative h-9 w-9 sm:h-10 sm:w-10 max-[420px]:hidden"
-               onClick={() => {
-                 playClick();
-                 showToast({ title: unreadCount > 0 ? `Bạn có ${unreadCount} thông báo mới` : "Chưa có thông báo mới", type: "info" });
-               }}
-             >
-               <Icon name="bell" className="h-[18px] w-[18px]" />
-               {unreadCount > 0 && (
-                 <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-red-500 ring-2 ring-white dark:ring-sumi-900" />
-               )}
-             </IconButton>
-
-            <Link
-              href="/app/profile"
-              onClick={playClick}
-              aria-label="Hồ sơ và cài đặt tài khoản"
-              className="hidden rounded-full transition hover:opacity-80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-500 sm:block"
+            <IconButton
+              label="Thông báo"
+              className="relative h-10 w-10 sm:h-10 sm:w-10 max-[420px]:hidden"
+              onClick={() => {
+                playClick();
+                showToast({ title: unreadCount > 0 ? `Bạn có ${unreadCount} thông báo mới` : "Chưa có thông báo mới", type: "info" });
+              }}
             >
-              <Avatar name={effectiveName} image={effectiveAvatar} />
-            </Link>
+              <Icon name="bell" className="h-[18px] w-[18px]" />
+              {unreadCount > 0 && (
+                <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-red-500 ring-2 ring-white dark:ring-sumi-900" />
+              )}
+            </IconButton>
 
-            <IconButton label="Mở menu" className="h-9 w-9 sm:h-10 sm:w-10 xl:hidden" onClick={() => setMobileOpen(true)}>
+            {/* Unified Account & Settings Popover (Desktop & Tablet) */}
+            <div className="relative hidden sm:block" ref={accountRef}>
+              <button
+                type="button"
+                onClick={() => {
+                  playClick();
+                  setAccountOpen((v) => !v);
+                }}
+                aria-expanded={accountOpen}
+                aria-haspopup="true"
+                aria-label="Hồ sơ và cài đặt tài khoản"
+                className={`flex items-center gap-1.5 rounded-full p-0.5 transition hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-500 ${
+                  accountActive || accountOpen ? "ring-2 ring-red-500" : ""
+                }`}
+              >
+                <Avatar name={effectiveName} image={effectiveAvatar} />
+              </button>
+
+              {accountOpen && (
+                <div className="absolute right-0 top-12 z-50 w-72 rounded-2xl border border-slate-200 bg-white p-3 shadow-xl dark:border-slate-700 dark:bg-sumi-900">
+                  <div className="flex items-center gap-3 border-b border-slate-100 pb-3 dark:border-slate-800">
+                    <Avatar name={effectiveName} image={effectiveAvatar} />
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-black text-slate-900 dark:text-white">
+                        {effectiveName || "Học viên Nihon Quest"}
+                      </p>
+                      <div className="mt-0.5 flex flex-wrap items-center gap-2 text-[11px] font-bold text-slate-500 dark:text-slate-400">
+                        {levelLabel ? <span>{levelLabel}</span> : effectiveLevel ? <span>Lv.{effectiveLevel}</span> : null}
+                        {effectiveXP != null && <span>⚡ {effectiveXP.toLocaleString("vi-VN")} XP</span>}
+                        {effectiveStreak != null && <span>🔥 {effectiveStreak}d</span>}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mt-2 space-y-1">
+                    <Link
+                      href="/app/profile"
+                      onClick={() => {
+                        playClick();
+                        setAccountOpen(false);
+                      }}
+                      className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition ${
+                        pathname.startsWith("/app/profile")
+                          ? "bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-300"
+                          : "text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-sumi-800"
+                      }`}
+                    >
+                      <span className="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-slate-100 text-sm dark:bg-sumi-800">👤</span>
+                      <div className="min-w-0 flex-1">
+                        <b className="block text-xs font-bold">Hồ sơ cá nhân</b>
+                        <span className="block text-[11px] text-slate-400">Ảnh đại diện, cấp độ &amp; bảo mật</span>
+                      </div>
+                    </Link>
+
+                    <Link
+                      href="/app/settings"
+                      onClick={() => {
+                        playClick();
+                        setAccountOpen(false);
+                      }}
+                      className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition ${
+                        pathname.startsWith("/app/settings")
+                          ? "bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-300"
+                          : "text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-sumi-800"
+                      }`}
+                    >
+                      <span className="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-slate-100 text-sm dark:bg-sumi-800">⚙️</span>
+                      <div className="min-w-0 flex-1">
+                        <b className="block text-xs font-bold">Cài đặt hệ thống</b>
+                        <span className="block text-[11px] text-slate-400">Giao diện, giọng đọc &amp; mục tiêu</span>
+                      </div>
+                    </Link>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <IconButton label="Mở menu" className="h-10 w-10 sm:h-10 sm:w-10 xl:hidden" onClick={() => setMobileOpen(true)}>
               <Icon name="menu" className="h-5 w-5" />
             </IconButton>
           </div>
@@ -385,18 +463,18 @@ export function AppNav({
           nằm trong tầm ngón cái thay vì nấp sau nút menu. */}
       <nav
         aria-label="Điều hướng nhanh"
-        className="nq-tabbar fixed inset-x-0 bottom-0 z-40 border-t border-slate-200/80 bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl dark:border-slate-800 dark:bg-sumi-900/95 xl:hidden"
+        className="nq-tabbar fixed inset-x-0 bottom-0 z-40 border-t border-slate-200/80 bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl select-none touch-manipulation dark:border-slate-800 dark:bg-sumi-900/95 xl:hidden"
       >
         <ul className="mx-auto grid max-w-lg grid-cols-6">
           {NAV_ITEMS.map((item) => {
-            const on = active(item.href);
+            const on = active(item.href, item.matchPrefixes);
             return (
               <li key={item.href}>
                 <Link
                   href={item.href}
                   onClick={playClick}
                   aria-current={on ? "page" : undefined}
-                  className={`flex min-h-[56px] min-w-0 flex-col items-center justify-center gap-1 px-0.5 py-1.5 text-[10px] font-bold transition active:scale-95 ${
+                  className={`flex min-h-[56px] min-w-0 flex-col items-center justify-center gap-1 px-0.5 py-1.5 text-[10px] font-bold transition active:scale-95 touch-manipulation ${
                     on ? "text-red-600 dark:text-red-400" : "text-slate-500 dark:text-slate-400"
                   }`}
                 >
@@ -424,7 +502,7 @@ export function AppNav({
           <div
             ref={drawerRef}
             tabIndex={-1}
-            className="ml-auto flex h-full w-[min(88vw,360px)] flex-col overflow-y-auto overscroll-contain bg-white p-4 shadow-2xl outline-none dark:bg-sumi-900"
+            className="ml-auto flex h-full w-[min(88vw,360px)] flex-col overflow-y-auto overscroll-contain bg-white p-4 pb-[calc(2rem+env(safe-area-inset-bottom))] shadow-2xl outline-none dark:bg-sumi-900"
             role="dialog"
             aria-modal="true"
             aria-label="Menu điều hướng"
@@ -436,17 +514,70 @@ export function AppNav({
                 <Icon name="close" className="h-4 w-4" />
               </IconButton>
             </div>
-            {[...NAV_ITEMS, ...MORE_ITEMS].map((item) => (
+
+            {/* Unified Account & Settings Card on Mobile Drawer */}
+            <div className="mb-3 rounded-2xl border border-slate-200/80 bg-slate-50/80 p-3 dark:border-slate-800 dark:bg-sumi-950/60">
+              <div className="flex items-center gap-3">
+                <Avatar name={effectiveName} image={effectiveAvatar} />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-black text-slate-900 dark:text-white">
+                    {effectiveName || "Học viên Nihon Quest"}
+                  </p>
+                  <div className="mt-0.5 flex flex-wrap items-center gap-2 text-[11px] font-bold text-slate-500 dark:text-slate-400">
+                    {effectiveLevel ? <span>🎯 Lv.{effectiveLevel}</span> : null}
+                    {effectiveXP != null && <span>⚡ {effectiveXP.toLocaleString("vi-VN")} XP</span>}
+                    {effectiveStreak != null && <span>🔥 {effectiveStreak} ngày</span>}
+                  </div>
+                </div>
+              </div>
+              <div className="mt-2.5 grid grid-cols-2 gap-2">
+                <Link
+                  href="/app/profile"
+                  onClick={() => {
+                    playClick();
+                    setMobileOpen(false);
+                  }}
+                  className={`flex items-center justify-center gap-1.5 rounded-xl border px-3 py-2 text-xs font-bold transition ${
+                    pathname.startsWith("/app/profile")
+                      ? "border-red-300 bg-red-50 text-red-700 dark:border-red-800 dark:bg-red-950/50 dark:text-red-300"
+                      : "border-slate-200 bg-white text-slate-700 dark:border-slate-700 dark:bg-sumi-900 dark:text-slate-200"
+                  }`}
+                >
+                  <span>👤</span>
+                  <span>Hồ sơ</span>
+                </Link>
+                <Link
+                  href="/app/settings"
+                  onClick={() => {
+                    playClick();
+                    setMobileOpen(false);
+                  }}
+                  className={`flex items-center justify-center gap-1.5 rounded-xl border px-3 py-2 text-xs font-bold transition ${
+                    pathname.startsWith("/app/settings")
+                      ? "border-red-300 bg-red-50 text-red-700 dark:border-red-800 dark:bg-red-950/50 dark:text-red-300"
+                      : "border-slate-200 bg-white text-slate-700 dark:border-slate-700 dark:bg-sumi-900 dark:text-slate-200"
+                  }`}
+                >
+                  <span>⚙️</span>
+                  <span>Cài đặt</span>
+                </Link>
+              </div>
+            </div>
+
+            <p className="px-2 pb-1 pt-1 text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
+              Học tập &amp; Tra cứu
+            </p>
+            {NAV_ITEMS.map((item) => (
               <Link
                 key={item.href}
                 href={item.href}
-                aria-current={active(item.href) ? "page" : undefined}
+                aria-current={active(item.href, item.matchPrefixes) ? "page" : undefined}
                 onClick={() => {
                   playClick();
                   setMobileOpen(false);
                 }}
-                className={`flex min-h-[52px] items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition active:scale-[0.98] ${
-                  active(item.href)
+                className={`flex min-h-[48px] items-center gap-3 rounded-xl px-3 py-2 text-sm font-semibold transition active:scale-[0.98] ${
+                  active(item.href, item.matchPrefixes)
                     ? "bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-300"
                     : "text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-sumi-800"
                 }`}
@@ -458,22 +589,32 @@ export function AppNav({
                 <Icon name="arrow" className="h-3.5 w-3.5 shrink-0 text-slate-400" />
               </Link>
             ))}
-            <div className="mt-auto pt-2">
+
+            <p className="px-2 pb-1 pt-3 text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
+              Mini Game, Kiểm tra &amp; Khám phá
+            </p>
+            {MORE_ITEMS.map((item) => (
               <Link
-                href="/app/profile"
+                key={item.href}
+                href={item.href}
+                aria-current={active(item.href, item.matchPrefixes) ? "page" : undefined}
                 onClick={() => {
                   playClick();
                   setMobileOpen(false);
                 }}
-                className="flex min-h-[52px] items-center gap-3 rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-semibold text-slate-700 transition active:scale-[0.98] dark:border-slate-700 dark:text-slate-200 dark:hover:bg-sumi-800"
+                className={`flex min-h-[48px] items-center gap-3 rounded-xl px-3 py-2 text-sm font-semibold transition active:scale-[0.98] ${
+                  active(item.href, item.matchPrefixes)
+                    ? "bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-300"
+                    : "text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-sumi-800"
+                }`}
               >
-                <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center">
-                  <Avatar name={effectiveName} image={effectiveAvatar} />
+                <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center">
+                  <NavGlyph item={item} />
                 </span>
-                <span className="flex-1 truncate">{effectiveName || "Hồ sơ & Cài đặt"}</span>
+                <span className="flex-1">{item.label}</span>
                 <Icon name="arrow" className="h-3.5 w-3.5 shrink-0 text-slate-400" />
               </Link>
-            </div>
+            ))}
           </div>
         </div>
       )}

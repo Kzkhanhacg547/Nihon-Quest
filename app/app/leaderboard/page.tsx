@@ -20,6 +20,7 @@ export default async function LeaderboardPage() {
     select: {
       id: true,
       name: true,
+      image: true,
       totalXP: true,
       level: true,
       currentStreak: true,
@@ -31,14 +32,15 @@ export default async function LeaderboardPage() {
 
   // Calculate Weekly XP (Last 7 days transactions)
   const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-  const weeklyTransactions = await prisma.xpTransaction.findMany({
+  const weeklyTxSums = await prisma.xpTransaction.groupBy({
+    by: ["userId"],
     where: { createdAt: { gte: sevenDaysAgo } },
-    select: { userId: true, amount: true },
+    _sum: { amount: true },
   });
 
   const weeklyXpMap = new Map<string, number>();
-  weeklyTransactions.forEach((t) => {
-    weeklyXpMap.set(t.userId, (weeklyXpMap.get(t.userId) || 0) + t.amount);
+  weeklyTxSums.forEach((t) => {
+    weeklyXpMap.set(t.userId, t._sum.amount || 0);
   });
 
   const realUsersFormatted = allUsers.map((u) => ({
@@ -48,7 +50,7 @@ export default async function LeaderboardPage() {
     level: u.level,
     currentStreak: u.currentStreak,
     displayName: u.profile?.displayName || u.name,
-    avatar: u.profile?.avatar || null,
+    avatar: u.profile?.avatar || u.image || null,
     weeklyXp: weeklyXpMap.get(u.id) || 0,
   }));
 

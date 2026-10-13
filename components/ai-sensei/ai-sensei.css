@@ -17,6 +17,7 @@
   --ais-on-red: #ffffff;
   --ais-red-soft: #fdebe9;
   --ais-red-line: #f4b9b4;
+  --ais-petal: #f7bfca;
   --ais-indigo: #3b4a6b;
   --ais-user-bg: #fdf3f1;
   --ais-user-line: #f6d3cf;
@@ -53,6 +54,7 @@
   --ais-on-red: #240b09;
   --ais-red-soft: #3a1a19;
   --ais-red-line: #7a2a26;
+  --ais-petal: #8b5a6b;
   --ais-indigo: #a9b8dc;
   --ais-user-bg: #2a1e1e;
   --ais-user-line: #4a2a28;
@@ -205,11 +207,15 @@
   content: "DAILY";
   padding: 1px 6px;
   border-radius: 999px;
-  background: #fcd34d;
-  color: #1c1917;
+  background: var(--ais-on-red);
+  color: var(--ais-on-red);
   font-size: 9px;
   font-weight: 800;
   letter-spacing: 0.04em;
+}
+.dark .ai-sensei-page .ais-tab[data-tab-id="DUNGEON"]::after {
+  background: var(--ais-amber);
+  color: var(--ais-paper);
 }
 
 /* ---------- Topic selector ---------- */
@@ -528,7 +534,7 @@
   width: 10px;
   height: 8px;
   border-radius: 80% 0 80% 0;
-  background: #f7bfca;
+  background: var(--ais-petal);
   opacity: 0;
   animation: ais-fall var(--d) linear var(--delay) infinite;
 }

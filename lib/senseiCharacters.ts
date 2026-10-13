@@ -1,3 +1,4 @@
+import { BASE64_IMAGES } from "@/lib/assets/base64Images";
 export type SenseiCharacterId = "aoi" | "ren";
 export type SenseiGender = "female" | "male";
 
@@ -74,9 +75,9 @@ export const SENSEI_CHARACTERS: Record<SenseiCharacterId, SenseiCharacter> = {
     nameJa: "葵先生",
     nameRomaji: "Aoi Sensei",
     seal: "葵",
-    portrait: "/sensei/aoi-portrait.webp",
+    portrait: BASE64_IMAGES.aoiPortrait,
     art: {
-      src: "/sensei/aoi.webp",
+      src: BASE64_IMAGES.aoi,
       size: 1264,
       viewBox: [170, 120, 900, 820],
       tilt: -15,
@@ -118,9 +119,9 @@ export const SENSEI_CHARACTERS: Record<SenseiCharacterId, SenseiCharacter> = {
     nameJa: "蓮先生",
     nameRomaji: "Ren Sensei",
     seal: "蓮",
-    portrait: "/sensei/ren-portrait.webp",
+    portrait: BASE64_IMAGES.renPortrait,
     art: {
-      src: "/sensei/ren.webp",
+      src: BASE64_IMAGES.ren,
       size: 1264,
       viewBox: [190, 80, 900, 820],
       tilt: -13,

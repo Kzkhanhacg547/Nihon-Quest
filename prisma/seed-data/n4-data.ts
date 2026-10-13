@@ -1,4 +1,4 @@
-import { SeedKanji, SeedVocab } from "./kanji-vocab";
+import { SeedKanji, SeedVocab, SeedGrammar } from "./kanji-vocab";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // JLPT N4 KANJI SEED DATA (58 items)

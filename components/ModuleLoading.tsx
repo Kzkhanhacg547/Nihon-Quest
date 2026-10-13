@@ -38,10 +38,10 @@ export function ModuleLoading({ label = "nội dung" }: { label?: string }) {
     >
       <div className="relative">
         <div className="flex h-24 w-24 items-center justify-center overflow-hidden rounded-3xl border-2 border-sakura-400/50 bg-white shadow-2xl shadow-sakura-500/30 motion-safe:animate-pulse sm:h-28 sm:w-28">
-          {/* Logo chính thức của dự án: app/icon.png (App Router metadata route, phục vụ tại /icon.png). */}
+          {/* Logo chính thức của dự án: app/favicon.ico (App Router metadata route, phục vụ tại /favicon.ico). */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src="/icon.png"
+            src="/favicon.ico"
             alt="Nihon Quest"
             width={112}
             height={112}

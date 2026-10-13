@@ -17,5 +17,5 @@
     "paths": { "@/*": ["./*"] }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
-  "exclude": ["node_modules", "VOCAB", "LOGIN", "HOME", "HÀNH TRÌNH", "LỘ TRÌNH", "THỰC CHIẾN", "ÔN TẬP", "BÀI HỌC", "UI Mẫu"]
+  "exclude": ["node_modules", "scripts", "prisma/seed-data", "VOCAB", "LOGIN", "HOME", "HÀNH TRÌNH", "LỘ TRÌNH", "THỰC CHIẾN", "ÔN TẬP", "BÀI HỌC", "UI Mẫu"]
 }

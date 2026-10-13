@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Image from "next/image";
+import { BASE64_IMAGES } from "@/lib/assets/base64Images";
 import Link from "next/link";
 import { useSoundAndTheme } from "@/components/SoundAndThemeContext";
 
@@ -124,7 +125,7 @@ function GrammarDetail({ item }: { item: GrammarItem }) {
                   onClick={() => speak(ex.japanese)}
                   aria-label="Phát âm ví dụ"
                   title="Phát âm"
-                  className="grid h-11 w-11 shrink-0 place-items-center rounded-xl border border-slate-200 text-slate-500 transition hover:border-sakura-300 hover:text-sakura-500 dark:border-slate-700"
+                  className="grid h-11 w-11 shrink-0 place-items-center rounded-xl border border-slate-200 text-slate-500 transition hover:border-sakura-300 hover:text-sakura-500 dark:border-slate-700 dark:text-slate-300"
                 >
                   🔊
                 </button>
@@ -365,7 +366,7 @@ export function GrammarClient({ grammar, defaultLevel = "N5", displayName = "b�
                 <button
                   onClick={() => setSearch("")}
                   aria-label="Xoá từ khoá tìm kiếm"
-                  className="absolute right-0 top-1/2 grid h-11 w-11 -translate-y-1/2 place-items-center text-slate-400 transition hover:text-slate-600"
+                  className="absolute right-0 top-1/2 grid h-11 w-11 -translate-y-1/2 place-items-center text-slate-400 transition hover:text-slate-600 dark:text-slate-400 dark:hover:text-slate-200"
                 >
                   ✕
                 </button>
@@ -409,7 +410,7 @@ export function GrammarClient({ grammar, defaultLevel = "N5", displayName = "b�
             </div>
 
             {filtered.length === 0 ? (
-              <p className="p-8 text-center text-sm text-slate-400">Không tìm thấy ngữ pháp phù hợp. Thử từ khóa khác nhé！🌸</p>
+              <p className="p-8 text-center text-sm text-slate-500 dark:text-slate-400">Không tìm thấy ngữ pháp phù hợp. Thử từ khóa khác nhé！🌸</p>
             ) : (
               <ul className="max-h-[70vh] min-h-0 flex-1 divide-y divide-slate-100 overflow-y-auto overscroll-contain dark:divide-slate-800 lg:max-h-none">
                 {filtered.map((item, i) => {
@@ -466,7 +467,7 @@ export function GrammarClient({ grammar, defaultLevel = "N5", displayName = "b�
             {selected ? (
               <div className="flex h-full flex-col">
                 <div className="relative h-36 shrink-0 overflow-hidden">
-                  <Image src="/images/grammar.jpeg" alt="" fill sizes="50vw" className="object-cover" />
+                  <Image src={BASE64_IMAGES.grammar} unoptimized alt="" fill sizes="50vw" className="object-cover" />
                   <div className="absolute inset-0 bg-gradient-to-t from-[#0d1535]/95 via-[#0d1535]/50 to-[#0d1535]/10" aria-hidden="true" />
                   <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-3 p-5 text-white">
                     <div className="min-w-0">
@@ -491,7 +492,7 @@ export function GrammarClient({ grammar, defaultLevel = "N5", displayName = "b�
               </div>
             ) : (
               <>
-                <Image src="/images/grammar.jpeg" alt="Thành phố Tokyo về đêm" fill sizes="50vw" className="object-cover" />
+                <Image src={BASE64_IMAGES.grammar} unoptimized alt="Thành phố Tokyo về đêm" fill sizes="50vw" className="object-cover" />
                 <div className="absolute inset-0 bg-gradient-to-t from-[#0d1535]/80 via-transparent to-transparent" aria-hidden="true" />
                 <p className="absolute inset-x-0 bottom-0 p-6 text-sm font-semibold text-white/90">
                   Chọn một điểm ngữ pháp ở danh sách bên trái để xem ý nghĩa, cấu trúc và ví dụ.

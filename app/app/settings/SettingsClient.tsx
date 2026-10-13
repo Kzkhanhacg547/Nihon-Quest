@@ -1,9 +1,11 @@
 "use client";
 
 import React, { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { signOut } from "next-auth/react";
 import { useSoundAndTheme, SPEECH_RATES } from "@/components/SoundAndThemeContext";
+import { notifyProgressUpdated } from "@/components/UserProgressContext";
 import { guessVoiceGender, voiceGenderLabel } from "@/lib/voiceGender";
 import { AvatarEditor } from "../profile/AvatarEditor";
 
@@ -111,6 +113,7 @@ export function SettingsClient({ initial }: { initial: SettingsInitialData }) {
         return;
       }
 
+      notifyProgressUpdated();
       playCorrect();
       showToast({
         title: "Đã lưu cài đặt thành công!",
@@ -197,15 +200,34 @@ export function SettingsClient({ initial }: { initial: SettingsInitialData }) {
   ] as const;
 
   return (
-    <div className="space-y-6 pb-16">
+    <div className="space-y-6 pb-24 sm:pb-16">
+      {/* Unified Account & Settings Switcher */}
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200/80 bg-white/90 px-4 py-2.5 shadow-sm dark:border-slate-800 dark:bg-sumi-900/90">
+        <div className="flex items-center gap-2 text-xs font-bold text-slate-500 dark:text-slate-400">
+          <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300">人</span>
+          <span>Trung tâm Tài khoản &amp; Cài đặt thống nhất</span>
+        </div>
+        <div className="inline-flex rounded-xl bg-slate-100 p-1 dark:bg-sumi-950">
+          <Link
+            href="/app/profile"
+            className="rounded-lg px-3 py-1.5 text-xs font-bold text-slate-600 transition hover:text-slate-900 dark:text-slate-300 dark:hover:text-white"
+          >
+            👤 Hồ sơ tổng quan
+          </Link>
+          <span className="rounded-lg bg-white px-3 py-1.5 text-xs font-extrabold text-rose-600 shadow-xs dark:bg-sumi-800 dark:text-rose-400">
+            ⚙️ Cài đặt chi tiết (7 mục)
+          </span>
+        </div>
+      </div>
+
       {/* Header */}
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between border-b border-slate-200/80 pb-5 dark:border-slate-800">
         <div>
           <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900 dark:text-white">
-            Cài Đặt Hệ Thống
+            Hồ Sơ &amp; Cài Đặt Hệ Thống
           </h1>
           <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-            Tùy chỉnh thông tin cá nhân, giao diện, âm thanh và mục tiêu học tiếng Nhật
+            Tùy chỉnh thông tin cá nhân, ảnh đại diện, giao diện, âm thanh và mục tiêu học tiếng Nhật
           </p>
         </div>
 
@@ -224,7 +246,7 @@ export function SettingsClient({ initial }: { initial: SettingsInitialData }) {
         {/* Navigation Tabs (Sidebar on Desktop, Horizontal Scroll on Mobile) */}
         <nav
           aria-label="Cài đặt danh mục"
-          className="flex gap-1.5 overflow-x-auto rounded-3xl border border-slate-200/80 bg-white p-2 shadow-sm dark:border-slate-800 dark:bg-sumi-900 lg:flex-col lg:overflow-visible"
+          className="flex gap-1.5 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden rounded-3xl border border-slate-200/80 bg-white p-2 shadow-sm dark:border-slate-800 dark:bg-sumi-900 lg:flex-col lg:overflow-visible"
         >
           {TABS.map((tab) => {
             const isActive = activeTab === tab.id;
@@ -313,7 +335,7 @@ export function SettingsClient({ initial }: { initial: SettingsInitialData }) {
                     readOnly
                     className="min-h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 text-sm text-slate-500 outline-none cursor-not-allowed dark:border-slate-800 dark:bg-sumi-950/60 dark:text-slate-400"
                   />
-                  <p className="mt-1 text-[11px] text-slate-400">Email dùng để đăng nhập và bảo mật tài khoản.</p>
+                  <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">Email dùng để đăng nhập và bảo mật tài khoản.</p>
                 </div>
 
                 {/* Bio */}
@@ -346,7 +368,7 @@ export function SettingsClient({ initial }: { initial: SettingsInitialData }) {
                     <option value="Asia/Seoul">Asia/Seoul (GMT+9)</option>
                     <option value="UTC">UTC (Giờ chuẩn quốc tế)</option>
                   </select>
-                  <p className="mt-1 text-[11px] text-slate-400">Múi giờ quyết định chu kỳ reset streak và nhiệm vụ hàng ngày.</p>
+                  <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">Múi giờ quyết định chu kỳ reset streak và nhiệm vụ hàng ngày.</p>
                 </div>
               </div>
             </div>
@@ -447,7 +469,7 @@ export function SettingsClient({ initial }: { initial: SettingsInitialData }) {
                       </button>
                     ))}
                   </div>
-                  <p className="mt-2 text-[11px] text-slate-400">
+                  <p className="mt-2 text-[11px] text-slate-500 dark:text-slate-400">
                     Giá trị này sẽ đồng bộ với tiến độ rèn luyện hiển thị trên Dashboard và thanh mục tiêu ngày.
                   </p>
                 </div>
@@ -621,7 +643,7 @@ export function SettingsClient({ initial }: { initial: SettingsInitialData }) {
                     className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-xs font-bold text-slate-700 hover:border-rose-300 hover:text-rose-600 dark:border-slate-700 dark:bg-sumi-950 dark:text-slate-300"
                   >
                     <span>🔊 Nghe thử giọng đọc mẫu</span>
-                    <span className="text-[11px] text-slate-400">(こんにちは！日本クエストへようこそ！)</span>
+                    <span className="text-[11px] text-slate-500 dark:text-slate-400">(こんにちは！日本クエストへようこそ！)</span>
                   </button>
                 </div>
               </div>

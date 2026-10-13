@@ -20,11 +20,13 @@ export interface VocabView {
   romaji: string;
   meaning: string;
   kanji?: string;
+  tags?: string;
   imageUrl?: string;
 }
 
 export interface GrammarExampleView {
   japanese: string;
+  romaji?: string;
   translation?: string;
 }
 
@@ -34,6 +36,7 @@ export interface GrammarView {
   romaji?: string;
   meaning: string;
   usage?: string;
+  commonMistakes?: string;
   structure: string;
   examples: GrammarExampleView[];
 }
@@ -44,6 +47,24 @@ export interface DialogueLineView {
   japanese: string;
   romaji?: string;
   translation?: string;
+}
+
+export interface LessonObjectiveNoteView {
+  level: string;
+  unitLabel: string;
+  title: string;
+  description: string;
+  objectives: string[];
+  registerComparison: {
+    standard: string;
+    casualOrKeigo: string;
+    contextNote: string;
+  };
+  prerequisiteLesson?: {
+    slug: string;
+    title: string;
+    completed: boolean;
+  } | null;
 }
 
 const HAS_JAPANESE = /[ぁ-んァ-ン一-龯]/;
@@ -318,6 +339,95 @@ export function VocabSection({ words }: { words: VocabView[] }) {
   );
 }
 
+// ─────────────────────────── 0. Mục tiêu bài học & Lưu ý sử dụng ───────────────────────────
+export function LessonObjectivesSection({ info }: { info: LessonObjectiveNoteView }) {
+  const prereqMissing = info.prerequisiteLesson && !info.prerequisiteLesson.completed;
+
+  return (
+    <div className="space-y-4">
+      {prereqMissing && info.prerequisiteLesson && (
+        <div
+          role="region"
+          aria-label="Kiến thức tiên quyết"
+          className="flex flex-col justify-between gap-3 rounded-2xl border border-amber-300 bg-amber-50/90 p-4 shadow-sm dark:border-amber-800/70 dark:bg-amber-950/40 sm:flex-row sm:items-center"
+        >
+          <div className="min-w-0">
+            <p className="text-xs font-extrabold uppercase tracking-wider text-amber-800 dark:text-amber-300">
+              ⚠️ Khuyến nghị học theo thứ tự tiên quyết
+            </p>
+            <p className="mt-1 text-sm font-medium text-amber-900 dark:text-amber-100">
+              Bạn chưa hoàn thành bài trước đó:{" "}
+              <b className="font-bold">「{info.prerequisiteLesson.title}」</b>. Hãy học theo trình tự để tránh hổng kiến thức, hoặc làm bài kiểm tra miễn học phần nếu bạn đã nắm vững.
+            </p>
+          </div>
+          <div className="flex shrink-0 flex-wrap gap-2">
+            <a
+              href={`/app/practice/${info.prerequisiteLesson.slug}`}
+              className="inline-flex min-h-10 items-center rounded-xl bg-amber-600 px-3.5 py-2 text-xs font-bold text-white shadow-sm transition hover:bg-amber-700"
+            >
+              ← Học bài tiên quyết
+            </a>
+            <a
+              href="/app/test"
+              className="inline-flex min-h-10 items-center rounded-xl border border-amber-300 bg-white px-3.5 py-2 text-xs font-bold text-amber-800 transition hover:bg-amber-100 dark:border-amber-700 dark:bg-sumi-900 dark:text-amber-200"
+            >
+              Kiểm tra miễn học phần
+            </a>
+          </div>
+        </div>
+      )}
+
+      <section
+        aria-label="Mục tiêu và lưu ý sử dụng"
+        className="grid gap-4 rounded-3xl border border-slate-200/80 bg-white/95 p-5 shadow-sm dark:border-slate-800 dark:bg-sumi-900/85 md:grid-cols-2"
+      >
+        <div className="space-y-2.5">
+          <div className="flex items-center gap-2">
+            <span className="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-rose-100 text-sm font-black text-red-600 dark:bg-red-950/60 dark:text-red-300">
+              🎯
+            </span>
+            <h2 className="text-sm font-extrabold uppercase tracking-wider text-slate-800 dark:text-slate-100">
+              Mục tiêu bài học (Unit {info.unitLabel})
+            </h2>
+          </div>
+          <ul className="space-y-1.5 text-xs leading-relaxed text-slate-600 dark:text-slate-300 sm:text-sm">
+            {info.objectives.map((obj, idx) => (
+              <li key={idx} className="flex items-start gap-2">
+                <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-red-500" aria-hidden />
+                <span>{obj}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <div className="rounded-2xl border border-indigo-100 bg-indigo-50/60 p-4 dark:border-indigo-900/40 dark:bg-indigo-950/25">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-xs font-extrabold uppercase tracking-wider text-indigo-700 dark:text-indigo-300">
+              💡 Lưu ý Ngữ vực: Chuẩn (標準語) vs. Thực tế
+            </span>
+            <span className="rounded-full bg-white px-2.5 py-0.5 text-[11px] font-bold text-indigo-700 shadow-sm dark:bg-sumi-900 dark:text-indigo-300">
+              JLPT {info.level}
+            </span>
+          </div>
+          <div className="mt-2.5 space-y-1.5 text-xs leading-relaxed text-slate-700 dark:text-slate-200">
+            <p>
+              <b>Lịch sự / Chuẩn (丁寧語・標準語):</b>{" "}
+              <span className="jp-text font-semibold text-slate-900 dark:text-white">{info.registerComparison.standard}</span>
+            </p>
+            <p>
+              <b>Thân mật / Kính ngữ / Vùng miền:</b>{" "}
+              <span className="jp-text font-semibold text-indigo-700 dark:text-indigo-300">{info.registerComparison.casualOrKeigo}</span>
+            </p>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400">
+              <b>Hoàn cảnh sử dụng:</b> {info.registerComparison.contextNote}
+            </p>
+          </div>
+        </div>
+      </section>
+    </div>
+  );
+}
+
 // ─────────────────────────── 2. Ngữ pháp ───────────────────────────
 export function GrammarSection({ items }: { items: GrammarView[] }) {
   const { speak } = useSoundAndTheme();
@@ -326,8 +436,8 @@ export function GrammarSection({ items }: { items: GrammarView[] }) {
     <SectionShell
       id="lesson-grammar"
       icon={<IconBook />}
-      title="2. Ngữ pháp trọng tâm"
-      subtitle="Các mẫu câu cần dùng đúng trong tình huống của bài học."
+      title="2. Ngữ pháp trọng tâm & Phân biệt cách dùng"
+      subtitle="Các mẫu câu cốt lõi, công thức ghép câu và lưu ý tránh nhầm lẫn trong ngữ cảnh thực tế."
     >
       {items.length === 0 ? (
         <p className="rounded-2xl bg-slate-50 p-5 text-center text-sm text-slate-500 dark:bg-sumi-800/60 dark:text-slate-400">
@@ -341,7 +451,7 @@ export function GrammarSection({ items }: { items: GrammarView[] }) {
               className="grid gap-4 rounded-2xl bg-rose-50/60 p-4 dark:bg-sumi-800/50 sm:p-5 md:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)]"
             >
               <div className="min-w-0">
-                <Chip>Mẫu câu cơ bản</Chip>
+                <Chip>Mẫu câu & Giải thích</Chip>
                 <div className="mt-2 flex items-start gap-3">
                   <h3 className="jp-text text-2xl font-black leading-tight text-red-700 dark:text-red-400">{g.title}</h3>
                   <SpeakButton onClick={() => speak(g.title)} label="Nghe mẫu câu" size="sm" />
@@ -355,6 +465,11 @@ export function GrammarSection({ items }: { items: GrammarView[] }) {
                     <b>Cách dùng:</b> {g.usage}
                   </p>
                 )}
+                {g.commonMistakes && (
+                  <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50/80 p-3 text-xs text-amber-900 dark:border-amber-800/60 dark:bg-amber-950/40 dark:text-amber-200">
+                    <b>⚠️ Lưu ý sử dụng & Phân biệt:</b> {g.commonMistakes}
+                  </div>
+                )}
               </div>
 
               <div className="min-w-0 rounded-xl bg-white/80 p-4 dark:bg-sumi-900/60">
@@ -362,15 +477,18 @@ export function GrammarSection({ items }: { items: GrammarView[] }) {
                 <p className="jp-text mt-2 text-sm font-bold text-slate-800 dark:text-slate-100">{g.structure}</p>
                 {g.examples.length > 0 && (
                   <div className="mt-3 text-xs">
-                    <p className="font-semibold text-slate-500 dark:text-slate-400">Ví dụ:</p>
-                    <ul className="mt-1.5 space-y-1.5">
+                    <p className="font-semibold text-slate-500 dark:text-slate-400">Ví dụ đúng ngữ cảnh:</p>
+                    <ul className="mt-1.5 space-y-2">
                       {g.examples.map((ex, i) => (
                         <li key={i} className="flex gap-2 text-slate-700 dark:text-slate-200">
-                          <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-red-500" aria-hidden />
-                          <span>
-                            <span className="jp-text text-sm font-semibold">{ex.japanese}</span>
+                          <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-red-500" aria-hidden />
+                          <span className="min-w-0 flex-1">
+                            <span className="jp-text block text-sm font-semibold">{ex.japanese}</span>
+                            {ex.romaji && (
+                              <span className="block text-[11px] italic text-slate-400 dark:text-slate-500">{ex.romaji}</span>
+                            )}
                             {ex.translation && (
-                              <span className="block text-slate-500 dark:text-slate-400">({ex.translation})</span>
+                              <span className="block text-slate-600 dark:text-slate-300">→ {ex.translation}</span>
                             )}
                           </span>
                         </li>

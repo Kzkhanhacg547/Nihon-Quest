@@ -6,6 +6,7 @@ import { AppNav } from "@/components/AppNav";
 import { JapanBackdrop } from "@/components/JapanIllustration";
 import { SurvivalClient } from "./SurvivalClient";
 import { SafeImg } from "./SafeImg";
+import { BASE64_IMAGES } from "@/lib/assets/base64Images";
 
 const HERO_FEATURES = [
   { icon: "💬", title: "Hội thoại tương tác", sub: "Thực hành như thật", cls: "bg-rose-100 text-rose-500" },
@@ -63,7 +64,7 @@ export default async function SurvivalPage() {
       <div className="relative isolate overflow-hidden rounded-[28px] bg-gradient-to-br from-sky-400 via-indigo-400 to-pink-300 shadow-2xl shadow-indigo-900/20 ring-1 ring-white/40">
         {/* Ảnh nền + lớp phủ giúp chữ dễ đọc */}
         <SafeImg
-          src="/images/survival/hero-banner.webp"
+          src={BASE64_IMAGES.survivalHero}
           alt="Cô gái ngắm núi Phú Sĩ giữa mùa hoa anh đào"
           priority
           className="absolute inset-0 -z-20 h-full w-full object-cover object-[68%_center]"

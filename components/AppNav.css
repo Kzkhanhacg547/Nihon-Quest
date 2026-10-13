@@ -11,6 +11,7 @@
   --nqn-red: #d3261e;
   --nqn-red-soft: #fdebe9;
   --nqn-red-line: #f4b9b4;
+  --nqn-on-red: #fff;
   --nqn-orange: #ee8a14;
   --nqn-orange-soft: #fff3e3;
   --nqn-orange-line: #f6cf9d;
@@ -32,6 +33,7 @@
   --nqn-red: #ff6a60;
   --nqn-red-soft: #3a1a19;
   --nqn-red-line: #7a2a26;
+  --nqn-on-red: #fff;
   --nqn-orange-soft: #3a2a14;
   --nqn-orange-line: #7a5420;
 }
@@ -68,7 +70,7 @@
   padding: 0 6px;
   border-radius: 999px;
   background: var(--nqn-red);
-  color: #fff;
+  color: var(--nqn-on-red);
   font-size: 10px;
   font-weight: 800;
   letter-spacing: 0.02em;
@@ -129,7 +131,7 @@
   padding: 1px 6px;
   border-radius: 999px;
   background: var(--nqn-red);
-  color: #fff;
+  color: var(--nqn-on-red);
   font-size: 10px;
   font-weight: 800;
 }

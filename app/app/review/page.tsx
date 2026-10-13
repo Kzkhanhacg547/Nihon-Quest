@@ -6,11 +6,18 @@ import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 import { authOptions } from "@/lib/auth-options";
 import { prisma } from "@/lib/prisma";
+import { SRS_CARD_BACKS } from "@/lib/assets/base64Images";
 import { AppNav } from "@/components/AppNav";
 import { Icon, type IconName } from "@/components/ui";
 import { JapanBackdrop } from "@/components/JapanIllustration";
 import { ReviewClient, ReviewSettingsButton, SpeakButton } from "./ReviewClient";
-import { resolveReviewItems } from "@/lib/review/resolveReviewItem";
+import {
+  buildKanaMap,
+  buildKanaPrismaWhere,
+  extractValidRecordIds,
+  getReviewFrontPrompt,
+  resolveReviewItems,
+} from "@/lib/review/resolveReviewItem";
 import "./review.css";
 
 const MODES: { href: string; icon: IconName; title: string; desc: string; tone: "red" | "blue"; active?: boolean }[] = [
@@ -32,12 +39,13 @@ const PROMOS: { href: string; glyph: string; title: string; desc: string; tone: 
 function listCardBackgrounds(): string[] {
   try {
     const dir = path.join(process.cwd(), "public", "images", "SRS_card", "back");
-    return readdirSync(dir)
+    const files = readdirSync(dir)
       .filter((f) => /\.(png|jpe?g|webp|avif)$/i.test(f))
       .sort()
       .map((f) => `/images/SRS_card/back/${encodeURIComponent(f)}`);
+    return files.length ? files : SRS_CARD_BACKS;
   } catch {
-    return [];
+    return SRS_CARD_BACKS;
   }
 }
 
@@ -75,37 +83,22 @@ export default async function ReviewPage() {
   });
   const totalDue = await prisma.reviewItem.count({ where: dueWhere });
 
-  // Fetch only the content this session actually references. The previous full
-  // 5-table scan (kana + vocabulary + kanji + grammar + 1500 exercises) shipped
-  // ~464 KB to render at most 30 cards.
-  const idsOf = (type: string) =>
-    Array.from(new Set(items.filter((i) => i.contentType === type).map((i) => i.contentId)));
+  // Fetch only the content this session actually references, with strict sanitization
+  // so null/undefined, legacy prefixes (db_kana_*, db_vocab_*), and duplicates never reach Prisma.
+  const rawIdsOf = (type: string) =>
+    items.filter((i) => i.contentType === type).map((i) => i.contentId);
 
-  const kanaIds = idsOf("KANA");
-  const vocabIds = idsOf("VOCAB");
-  const kanjiIds = idsOf("KANJI");
-  const grammarIds = idsOf("GRAMMAR");
-  const exerciseIds = idsOf("EXERCISE");
-
-  // Kana rows are keyed by a composite `SCRIPT:CHARACTER` id in some paths and by
-  // the bare character in others, so both forms are looked up.
-  const kanaKeys = kanaIds.flatMap((id) => [id, id.replace(/^HIRAGANA:/, "").replace(/^KATAKANA:/, "")]);
-  const kanaScripts = Array.from(
-    new Set(kanaIds.map((id) => (id.includes(":") ? id.split(":")[0] : null))),
-  );
+  const kanaWhere = buildKanaPrismaWhere(rawIdsOf("KANA"));
+  const vocabIds = extractValidRecordIds(rawIdsOf("VOCAB"));
+  const kanjiIds = extractValidRecordIds(rawIdsOf("KANJI"));
+  const grammarIds = extractValidRecordIds(rawIdsOf("GRAMMAR"));
+  const exerciseIds = extractValidRecordIds(rawIdsOf("EXERCISE"));
 
   const [kanaRows, vocabRows, kanjiRows, grammarRows, exerciseRows] = await Promise.all([
-    kanaKeys.length
+    kanaWhere
       ? prisma.kana.findMany({
-          where: {
-            OR: [
-              { character: { in: kanaKeys } },
-              ...(kanaScripts.length
-                ? [{ script: { in: kanaScripts as never[] }, character: { in: kanaKeys } }]
-                : []),
-            ],
-          },
-          select: { character: true, script: true, romaji: true, ipa: true },
+          where: kanaWhere,
+          select: { id: true, character: true, script: true, romaji: true, ipa: true },
         })
       : Promise.resolve([]),
     vocabIds.length
@@ -135,11 +128,7 @@ export default async function ReviewPage() {
       : Promise.resolve([]),
   ]);
 
-  const kanaMap = new Map<string, { character: string; script: string; romaji: string; ipa: string | null }>();
-  kanaRows.forEach((k) => {
-    kanaMap.set(`${k.script}:${k.character}`, k);
-    kanaMap.set(k.character, k);
-  });
+  const kanaMap = buildKanaMap(kanaRows);
   const vocabMap = new Map(vocabRows.map((v) => [v.id, v]));
   const kanjiMap = new Map(kanjiRows.map((k) => [k.id, k]));
   const grammarMap = new Map(grammarRows.map((g) => [g.id, g]));
@@ -348,15 +337,18 @@ export default async function ReviewPage() {
                 </Link>
               </div>
               {queue.length ? (
-                queue.map((item, index) => (
-                  <div className="rv-queue-row" key={item.id}>
-                    <span>{index + 1}</span>
-                    <strong className="jp-text">{item.title}</strong>
-                    <small className="jp-text">{item.reading || item.subtitle}</small>
-                    <em className="rv-pill">{item.contentType === "KANA" ? "KANA" : `JLPT ${item.level || "N5"}`}</em>
-                    <SpeakButton text={item.title} />
-                  </div>
-                ))
+                queue.map((item, index) => {
+                  const promptText = getReviewFrontPrompt(item);
+                  return (
+                    <div className="rv-queue-row" key={item.id}>
+                      <span>{index + 1}</span>
+                      <strong className="jp-text">{promptText}</strong>
+                      <small className="jp-text">{item.subtitle}</small>
+                      <em className="rv-pill">{item.contentType === "KANA" ? "KANA" : `JLPT ${item.level || "N5"}`}</em>
+                      <SpeakButton text={promptText} />
+                    </div>
+                  );
+                })
               ) : (
                 <p className="rv-queue-empty">Không có thẻ đến hạn. Hẹn bạn ở phiên ôn tiếp theo.</p>
               )}

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
+import { BASE64_IMAGES } from "@/lib/assets/base64Images";
 import { NihonQuestLogo } from "@/components/NihonQuestLogo";
 
 /* ───────────────────────── Icons ───────────────────────── */
@@ -275,7 +276,7 @@ export default function RegisterPage() {
       {/* ── Background illustration ── */}
       <div className="fixed inset-0 z-0 pointer-events-none">
         <Image
-          src="/images/auth/register-bg.png"
+          src={BASE64_IMAGES.registerBg} unoptimized
           alt=""
           fill
           priority

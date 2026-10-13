@@ -14,11 +14,16 @@ export function resolveJourneyStatus(args: {
   requirementXp: number;
   totalXP: number;
   previousCompleted: boolean;
+  progress?: number | null;
 }): "LOCKED" | "AVAILABLE" | "IN_PROGRESS" | "COMPLETED" {
   const status = args.currentStatus ?? "LOCKED";
 
-  if (status === "COMPLETED" || status === "IN_PROGRESS") {
-    return status;
+  if (status === "COMPLETED" || (args.progress !== undefined && args.progress !== null && args.progress >= 100)) {
+    return "COMPLETED";
+  }
+
+  if (status === "IN_PROGRESS") {
+    return "IN_PROGRESS";
   }
 
   const unlocked = args.locationOrder === 0 || args.totalXP >= args.requirementXp;

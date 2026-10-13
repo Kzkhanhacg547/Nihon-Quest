@@ -42,22 +42,29 @@ const TABS: { id: TabId; label: string }[] = [
   { id: "COMBO", label: "Âm ghép Yōon" },
 ];
 
-const inTab = (k: KanaRow, tab: TabId) => {
-  if (tab === "COMBO") return k.kind === "COMBO";
-  if (tab === "DAKUTEN") return (k.kind === "DAKUTEN" || k.kind === "HANDAKUTEN") && k.script === "HIRAGANA";
+const inTab = (k: KanaRow, tab: TabId, subScript?: "HIRAGANA" | "KATAKANA") => {
+  if (tab === "COMBO") return k.kind === "COMBO" && (!subScript || k.script === subScript);
+  if (tab === "DAKUTEN") return (k.kind === "DAKUTEN" || k.kind === "HANDAKUTEN") && (!subScript || k.script === subScript);
   return k.script === tab && k.kind === "BASIC";
 };
 
 export function KanaLab({ kana, practiced }: { kana: KanaRow[]; practiced: string[] }) {
   const [activeTab, setActiveTab] = useState<TabId>("HIRAGANA");
+  const [subScript, setSubScript] = useState<"HIRAGANA" | "KATAKANA">("HIRAGANA");
   const [audioSpeed, setAudioSpeed] = useState<number>(1.0);
   const [writingTarget, setWritingTarget] = useState<KanaRow | null>(null);
   const [doneSet, setDoneSet] = useState<Set<string>>(new Set(practiced));
   const [pendingKey, setPendingKey] = useState<string | null>(null);
   const { playClick, playCorrect, showToast, speak: globalSpeak } = useSoundAndTheme();
 
-  const activeKanaList = useMemo(() => kana.filter((k) => inTab(k, activeTab)), [kana, activeTab]);
-  const counts = useMemo(() => Object.fromEntries(TABS.map((t) => [t.id, kana.filter((k) => inTab(k, t.id)).length])) as Record<TabId, number>, [kana]);
+  const activeKanaList = useMemo(
+    () => kana.filter((k) => inTab(k, activeTab, subScript)),
+    [kana, activeTab, subScript]
+  );
+  const counts = useMemo(
+    () => Object.fromEntries(TABS.map((t) => [t.id, kana.filter((k) => inTab(k, t.id)).length])) as Record<TabId, number>,
+    [kana]
+  );
 
   const rowOrder = activeTab === "COMBO" ? COMBO_ROW_ORDER : activeTab === "DAKUTEN" ? DAKUTEN_ROW_ORDER : GOJUON_ROW_ORDER;
   const colOrder = activeTab === "COMBO" ? COMBO_COLUMNS : VOWEL_COLUMNS;
@@ -148,14 +155,34 @@ export function KanaLab({ kana, practiced }: { kana: KanaRow[]; practiced: strin
             </button>
           ))}
         </div>
-        <button
-          type="button"
-          className={`kl-speed ${audioSpeed === 0.75 ? "is-slow" : ""}`}
-          aria-pressed={audioSpeed === 0.75}
-          onClick={() => { playClick(); setAudioSpeed(audioSpeed === 1.0 ? 0.75 : 1.0); }}
-        >
-          {audioSpeed === 0.75 ? "🐢 Đọc chậm 0.75×" : "🐰 Đọc chuẩn 1.0×"}
-        </button>
+        <div className="flex flex-wrap items-center gap-2">
+          {(activeTab === "DAKUTEN" || activeTab === "COMBO") && (
+            <div className="inline-flex rounded-xl border border-slate-200 bg-slate-100 p-1 text-xs font-bold dark:border-slate-700 dark:bg-sumi-900" role="group" aria-label="Chọn bảng chữ biến âm / âm ghép">
+              <button
+                type="button"
+                onClick={() => { playClick(); setSubScript("HIRAGANA"); }}
+                className={`rounded-lg px-3 py-1.5 transition ${subScript === "HIRAGANA" ? "bg-white text-red-600 shadow-xs dark:bg-sumi-800 dark:text-red-400" : "text-slate-600 dark:text-slate-400"}`}
+              >
+                あ Hiragana
+              </button>
+              <button
+                type="button"
+                onClick={() => { playClick(); setSubScript("KATAKANA"); }}
+                className={`rounded-lg px-3 py-1.5 transition ${subScript === "KATAKANA" ? "bg-white text-red-600 shadow-xs dark:bg-sumi-800 dark:text-red-400" : "text-slate-600 dark:text-slate-400"}`}
+              >
+                ア Katakana
+              </button>
+            </div>
+          )}
+          <button
+            type="button"
+            className={`kl-speed ${audioSpeed === 0.75 ? "is-slow" : ""}`}
+            aria-pressed={audioSpeed === 0.75}
+            onClick={() => { playClick(); setAudioSpeed(audioSpeed === 1.0 ? 0.75 : 1.0); }}
+          >
+            {audioSpeed === 0.75 ? "🐢 Đọc chậm 0.75×" : "🐰 Đọc chuẩn 1.0×"}
+          </button>
+        </div>
       </div>
 
       <div className="kl-rows">

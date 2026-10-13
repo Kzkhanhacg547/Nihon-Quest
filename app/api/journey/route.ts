@@ -14,20 +14,32 @@ export async function GET() {
 
   // Sync effective status from the real XP gate instead of stale DB rows across pages.
   for (const loc of locations) {
-    const currentStatus = byId.get(loc.id)?.status ?? "LOCKED";
+    const existing = byId.get(loc.id);
+    const currentStatus = existing?.status ?? "LOCKED";
+    const currentProgress = existing?.progress ?? 0;
     const resolvedStatus = resolveJourneyStatus({
       currentStatus,
       locationOrder: loc.order,
       requirementXp: loc.requirementXp,
       totalXP: user.totalXP,
       previousCompleted: true,
+      progress: currentProgress,
     });
 
     if (!byId.has(loc.id)) {
       const created = await prisma.userJourneyProgress.create({
-        data: { userId, locationId: loc.id, status: resolvedStatus },
+        data: { userId, locationId: loc.id, status: resolvedStatus, progress: currentProgress },
       });
       byId.set(loc.id, created);
+      continue;
+    }
+
+    if (currentProgress >= 100 && existing?.status !== "COMPLETED") {
+      const updated = await prisma.userJourneyProgress.update({
+        where: { userId_locationId: { userId, locationId: loc.id } },
+        data: { status: "COMPLETED", progress: 100, completedAt: existing?.completedAt || new Date() },
+      });
+      byId.set(loc.id, updated);
       continue;
     }
 

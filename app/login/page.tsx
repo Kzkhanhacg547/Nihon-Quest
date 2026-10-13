@@ -1,5 +1,7 @@
 "use client";
 
+import { BASE64_IMAGES } from "@/lib/assets/base64Images";
+
 import { signIn } from "next-auth/react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -124,7 +126,7 @@ export default function LoginPage() {
       <div
         className="nq-auth-bg"
         aria-hidden="true"
-        style={{ backgroundImage: "url(/images/auth/login-bg.jpg)" }}
+        style={{ backgroundImage: `url(${BASE64_IMAGES.loginBg})` }}
       />
 
       <div className="nq-auth-layout">

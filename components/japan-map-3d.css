@@ -1,9 +1,47 @@
 /* Bảng màu: Aizome (chàm) · Washi (giấy) · Shu (son đỏ) · Urushi (sơn mài) */
 .jm-scene {
   --aizome: #12213f;
+  --aizome-light: #2c4a7c;
+  --aizome-mid: #16284a;
+  --aizome-dark: #0c1630;
+  --aizome-shadow: rgba(8, 16, 40, 0.7);
+  --aizome-card-shadow: rgba(5, 10, 30, 0.45);
+  --aizome-hover-shadow: rgba(18, 33, 63, 0.35);
+  --aizome-night-start: #1a1f4a;
+  --aizome-night-mid: #0c1030;
+  --aizome-night-end: #05071a;
+  --aizome-mobile-bg: rgba(10, 20, 40, 0.45);
   --washi: #efe6d2;
+  --washi-light: #f5ecd9;
+  --washi-card: #fbf6ea;
+  --washi-night: #d9d0b8;
+  --washi-night-sun: #fffdf2;
+  --washi-night-sun-mid: #e8e3cc;
   --shu: #d43128;
+  --shu-light: #ee5a4c;
+  --shu-ring-bg: rgba(212, 49, 40, 0.25);
+  --shu-pulse: rgba(212, 49, 40, 0.6);
   --urushi: #7a2e2a;
+  --locked-border: #8791a6;
+  --locked-bg: rgba(135, 145, 166, 0.25);
+  --locked-ico: #8791a6;
+  --next-border: #e0a030;
+  --next-bg: rgba(224, 160, 48, 0.3);
+  --next-ico: #d08a14;
+  --done-border: #2f9e6b;
+  --done-bg: rgba(47, 158, 107, 0.3);
+  --done-ico: #2f9e6b;
+  --ink-dark: #1c2340;
+  --ink-light: #fff;
+  --sea-grid: rgba(255, 255, 255, 0.06);
+  --sea-wave: rgba(255, 255, 255, 0.14);
+  --top-stroke: #c9b78f;
+  --top-shadow: rgba(0, 0, 0, 0.3);
+  --inset-fill: rgba(255, 255, 255, 0.04);
+  --inset-stroke: rgba(255, 255, 255, 0.35);
+  --inset-label: rgba(255, 255, 255, 0.6);
+  --shadow-base: rgba(0, 0, 0, 0.55);
+  --focus-ring: #fff;
   position: relative;
   height: clamp(440px, 66vh, 640px);
   margin-bottom: 24px;
@@ -12,8 +50,8 @@
   display: grid;
   place-items: center;
   perspective: 1500px;
-  background: radial-gradient(120% 90% at 50% 0%, #2c4a7c 0%, #16284a 55%, #0c1630 100%);
-  box-shadow: 0 24px 60px -24px rgba(8, 16, 40, 0.7);
+  background: radial-gradient(120% 90% at 50% 0%, var(--aizome-light) 0%, var(--aizome-mid) 55%, var(--aizome-dark) 100%);
+  box-shadow: 0 24px 60px -24px var(--aizome-shadow);
 }
 
 /* mặt trời đỏ (Hinomaru) làm điểm nhấn duy nhất của nền */
@@ -24,7 +62,7 @@
   width: 260px;
   height: 260px;
   border-radius: 50%;
-  background: radial-gradient(circle at 40% 40%, #ee5a4c, var(--shu) 70%);
+  background: radial-gradient(circle at 40% 40%, var(--shu-light), var(--shu) 70%);
   opacity: 0.9;
   filter: blur(0.5px);
 }
@@ -32,7 +70,7 @@
   position: absolute;
   left: 28px;
   top: 22px;
-  color: #f5ecd9;
+  color: var(--washi-light);
   z-index: 2;
   pointer-events: none;
 }
@@ -55,21 +93,21 @@
 .jm-shadow {
   transform: translateZ(-40px);
   border-radius: 30px;
-  background: rgba(0, 0, 0, 0.55);
+  background: var(--shadow-base);
   filter: blur(34px);
 }
 .jm-sea { transform: translateZ(0); border-radius: 26px; }
-.jm-grid { stroke: rgba(255, 255, 255, 0.06); stroke-width: 1; fill: none; }
-.jm-wave { stroke: rgba(255, 255, 255, 0.14); stroke-width: 2; fill: none; stroke-linecap: round; }
+.jm-grid { stroke: var(--sea-grid); stroke-width: 1; fill: none; }
+.jm-wave { stroke: var(--sea-wave); stroke-width: 2; fill: none; stroke-linecap: round; }
 
 .jm-layer { pointer-events: none; }
 .jm-side path { fill: var(--urushi); }
 .jm-top path {
   fill: var(--washi);
-  stroke: #c9b78f;
+  stroke: var(--top-stroke);
   stroke-width: 2;
   stroke-linejoin: round;
-  filter: drop-shadow(0 0 1px rgba(0, 0, 0, 0.3));
+  filter: drop-shadow(0 0 1px var(--top-shadow));
 }
 .jm-route {
   fill: none;
@@ -97,15 +135,15 @@
   height: 28px;
   border-radius: 50%;
   border: 3px solid var(--shu);
-  background: rgba(212, 49, 40, 0.25);
+  background: var(--shu-ring-bg);
   transform: translateZ(0);
 }
-.jm-pin.is-locked .jm-ring { border-color: #8791a6; background: rgba(135, 145, 166, 0.25); }
-.jm-pin.is-next .jm-ring { border-color: #e0a030; background: rgba(224, 160, 48, 0.3); }
-.jm-pin.is-done .jm-ring { border-color: #2f9e6b; background: rgba(47, 158, 107, 0.3); }
+.jm-pin.is-locked .jm-ring { border-color: var(--locked-border); background: var(--locked-bg); }
+.jm-pin.is-next .jm-ring { border-color: var(--next-border); background: var(--next-bg); }
+.jm-pin.is-done .jm-ring { border-color: var(--done-border); background: var(--done-bg); }
 .jm-pin.is-selected .jm-ring { animation: jm-pulse 1.6s ease-out infinite; }
 @keyframes jm-pulse {
-  0% { box-shadow: 0 0 0 0 rgba(212, 49, 40, 0.6); }
+  0% { box-shadow: 0 0 0 0 var(--shu-pulse); }
   100% { box-shadow: 0 0 0 26px rgba(212, 49, 40, 0); }
 }
 
@@ -130,9 +168,9 @@
   border: 0;
   border-radius: 999px;
   cursor: pointer;
-  color: #1c2340;
-  background: #fbf6ea;
-  box-shadow: 0 8px 18px rgba(5, 10, 30, 0.45);
+  color: var(--ink-dark);
+  background: var(--washi-card);
+  box-shadow: 0 8px 18px var(--aizome-card-shadow);
   transition: transform 0.18s ease, box-shadow 0.18s ease;
 }
 .jm-lead {
@@ -141,24 +179,24 @@
   top: -1px;
   height: 2px;
   transform-origin: 0 50%;
-  background: #fbf6ea;
+  background: var(--washi-card);
   opacity: 0.85;
 }
 .jm-card:hover,
 .jm-pin.is-selected .jm-card { transform: translate(-50%, -50%) translate(var(--dx, 0px), var(--dy, -48px)) scale(1.08); z-index: 2; }
-.jm-card:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
+.jm-card:focus-visible { outline: 3px solid var(--focus-ring); outline-offset: 2px; }
 .jm-ico {
   display: grid;
   place-items: center;
   width: 26px;
   height: 26px;
   border-radius: 50%;
-  color: #fff;
+  color: var(--ink-light);
   background: var(--shu);
 }
-.jm-pin.is-done .jm-ico { background: #2f9e6b; }
-.jm-pin.is-next .jm-ico { background: #d08a14; }
-.jm-pin.is-locked .jm-ico { background: #8791a6; }
+.jm-pin.is-done .jm-ico { background: var(--done-ico); }
+.jm-pin.is-next .jm-ico { background: var(--next-ico); }
+.jm-pin.is-locked .jm-ico { background: var(--locked-ico); }
 .jm-txt { display: flex; flex-direction: column; text-align: left; line-height: 1.15; }
 .jm-txt strong { font-size: 13px; }
 .jm-txt small { font-size: 11px; opacity: 0.65; }
@@ -173,7 +211,7 @@
 }
 .jy-card:hover {
   transform: translateY(-4px) rotateX(3deg) rotateY(-2deg);
-  box-shadow: 0 18px 34px -16px rgba(18, 33, 63, 0.35);
+  box-shadow: 0 18px 34px -16px var(--aizome-hover-shadow);
 }
 
 @media (max-width: 640px) {
@@ -181,7 +219,7 @@
   .jm-title span { font-size: 28px; }
   .jm-txt small { display: none; }
   .jm-hud { left: 16px; top: 14px; max-width: calc(100% - 32px); }
-  .jm-stats { left: 16px; bottom: 14px; min-width: 150px; padding: 8px 12px; border-radius: 12px; background: rgba(10, 20, 40, 0.45); backdrop-filter: blur(8px); }
+  .jm-stats { left: 16px; bottom: 14px; min-width: 150px; padding: 8px 12px; border-radius: 12px; background: var(--aizome-mobile-bg); backdrop-filter: blur(8px); }
   .jm-card { padding: 4px 10px 4px 4px; gap: 6px; }
   .jm-ico { width: 22px; height: 22px; font-size: 11px; }
   .jm-txt strong { font-size: 11px; }
@@ -191,16 +229,16 @@
   .jm-route, .jm-pin.is-selected .jm-ring { animation: none; }
 }
 
-.jm-inset { fill: rgba(255, 255, 255, 0.04); stroke: rgba(255, 255, 255, 0.35); stroke-width: 1.5; stroke-dasharray: 5 5; }
-.jm-inset-label { fill: rgba(255, 255, 255, 0.6); font-size: 16px; }
+.jm-inset { fill: var(--inset-fill); stroke: var(--inset-stroke); stroke-width: 1.5; stroke-dasharray: 5 5; }
+.jm-inset-label { fill: var(--inset-label); font-size: 16px; }
 
 /* chế độ đêm */
-.jm-scene.is-night { background: radial-gradient(120% 90% at 50% 0%, #1a1f4a 0%, #0c1030 60%, #05071a 100%); }
-.jm-scene.is-night .jm-sun { background: radial-gradient(circle at 40% 40%, #fffdf2, #e8e3cc 70%); opacity: 0.85; }
-.jm-scene.is-night .jm-top path { fill: #d9d0b8; }
+.jm-scene.is-night { background: radial-gradient(120% 90% at 50% 0%, var(--aizome-night-start) 0%, var(--aizome-night-mid) 60%, var(--aizome-night-end) 100%); }
+.jm-scene.is-night .jm-sun { background: radial-gradient(circle at 40% 40%, var(--washi-night-sun), var(--washi-night-sun-mid) 70%); opacity: 0.85; }
+.jm-scene.is-night .jm-top path { fill: var(--washi-night); }
 
 /* HUD chữ phủ lên cảnh */
-.jm-hud { position: absolute; left: 24px; top: 20px; z-index: 20; max-width: 380px; color: #f5ecd9; pointer-events: none; }
+.jm-hud { position: absolute; left: 24px; top: 20px; z-index: 20; max-width: 380px; color: var(--washi-light); pointer-events: none; }
 .jm-hud button { pointer-events: auto; }
-.jm-stats { position: absolute; left: 24px; bottom: 20px; z-index: 20; color: #f5ecd9; min-width: 190px; pointer-events: none; }
+.jm-stats { position: absolute; left: 24px; bottom: 20px; z-index: 20; color: var(--washi-light); min-width: 190px; pointer-events: none; }
 @media (max-width: 900px) { .jm-hud p { display: none; } .jm-hud { max-width: 70%; } }

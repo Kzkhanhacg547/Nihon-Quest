@@ -30,7 +30,7 @@ export default async function SettingsPage() {
     <div className="nq-workspace min-h-screen bg-slate-50 text-slate-900 dark:bg-sumi-950 dark:text-white">
       <AppNav
         userName={displayName}
-        avatar={user.profile?.avatar ?? null}
+        avatar={user.profile?.avatar ?? user.image ?? null}
         userLevel={user.level}
         userXP={user.totalXP}
         streak={user.currentStreak}
@@ -42,7 +42,7 @@ export default async function SettingsPage() {
           initial={{
             displayName: user.profile?.displayName || user.name || "",
             email: user.email,
-            avatar: user.profile?.avatar ?? null,
+            avatar: user.profile?.avatar ?? user.image ?? null,
             bio: user.profile?.bio || "",
             timezone: user.timezone || "Asia/Ho_Chi_Minh",
             learningLevel: user.learningLevel || "N5",

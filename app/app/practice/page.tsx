@@ -1,6 +1,7 @@
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 import Image from "next/image";
+import { BASE64_IMAGES } from "@/lib/assets/base64Images";
 import Link from "next/link";
 import { authOptions } from "@/lib/auth-options";
 import { prisma } from "@/lib/prisma";
@@ -24,6 +25,7 @@ const UNITS_BY_LEVEL: Record<string, UnitInfo[]> = {
     { number: 3, title: "Unit 03: Tồn Tại, So Sánh & Thể Te", description: "Tồn tại Arimasu/Imasu, số đếm, so sánh hơn nhất, nguyện vọng & bí quyết chia Thể Te", icon: "🏪", startIndex: 20, endIndex: 30 },
     { number: 4, title: "Unit 04: Thể Nai, Ta, Thể Thường & Định Ngữ", description: "Mẫu câu cấm đoán, bắt buộc làm, thể từ điển, kinh nghiệm từng trải & mệnh đề bổ ngữ danh từ", icon: "⛩️", startIndex: 30, endIndex: 40 },
     { number: 5, title: "Unit 05: Kanji Master & Mock Test JLPT N5", description: "100+ Kanji cốt lõi, 10 trợ từ then chốt, phản xạ 5 thể động từ, đọc hiểu & đề thi thử toàn diện", icon: "🏆", startIndex: 40, endIndex: 50 },
+    { number: 6, title: "Unit 06: Giáo Trình FPT (JPD113・123・133 — Part 1–9)", description: "9 Chuyên đề từ vựng, ngữ pháp và bài tập chuẩn chương trình tiếng Nhật Đại học FPT (Dekiru Nihongo)", icon: "🎓", startIndex: 50, endIndex: 60 },
   ],
   N4: [
     { number: 1, title: "Unit 01: Biến Thể Động Từ & Thể Trạng Thái", description: "Thể てしまう, やすい/にくい, すぎる và các biến thể động từ sơ trung cấp", icon: "🗂️", startIndex: 0, endIndex: 5 },
@@ -67,7 +69,7 @@ export default async function PracticePage() {
   const nextLesson = lessons.find((l) => l.progress[0]?.status !== "COMPLETED") || lessons[0];
   const units = UNITS_BY_LEVEL[userLevel] ?? UNITS_BY_LEVEL["N5"];
 
-  const serializedLessons: PracticeLessonItem[] = lessons.map((l) => ({
+  const serializeLesson = (l: (typeof allLessons)[number]): PracticeLessonItem => ({
     id: l.id,
     order: l.order,
     slug: l.slug,
@@ -78,12 +80,15 @@ export default async function PracticePage() {
     exercisesCount: l._count.exercises,
     progressStatus: l.progress[0]?.status as "COMPLETED" | "IN_PROGRESS" | undefined,
     score: l.progress[0]?.score,
-  }));
+  });
+
+  const serializedLessons: PracticeLessonItem[] = lessons.map(serializeLesson);
+  const serializedAllLessons: PracticeLessonItem[] = allLessons.map(serializeLesson);
 
   const stats = [
-    { icon: "📚", tone: "bg-red-50 text-red-600 dark:bg-red-950/40", value: `${lessons.length} bài học`, label: "có hệ thống" },
+    { icon: "📚", tone: "bg-red-50 text-red-600 dark:bg-red-950/40", value: `${allLessons.length} bài học`, label: "N5・N4・N3 & FPT" },
     { icon: "⏱️", tone: "bg-indigo-50 text-indigo-600 dark:bg-indigo-950/40", value: "~15 phút/bài", label: "học ngắn gọn" },
-    { icon: "📈", tone: "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40", value: `${progressPercent}%`, label: "hoàn thành" },
+    { icon: "📈", tone: "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40", value: `${progressPercent}%`, label: `hoàn thành ${userLevel}` },
   ];
 
   return (
@@ -103,7 +108,7 @@ export default async function PracticePage() {
             }}
           >
             <Image
-              src="/images/dashboard/fuji-hero.webp"
+              src={BASE64_IMAGES.fujiHero} unoptimized
               alt=""
               fill
               priority
@@ -207,14 +212,20 @@ export default async function PracticePage() {
             )}
 
             <div className="relative hidden h-32 w-32 justify-self-end md:block lg:h-36 lg:w-36">
-              <Image src="/cat_hand.png" alt="Mèo thần tài Maneki-neko" fill sizes="144px" className="object-contain drop-shadow-lg" />
+              <Image src={BASE64_IMAGES.catHand} unoptimized alt="Mèo thần tài Maneki-neko" fill sizes="144px" className="object-contain drop-shadow-lg" />
             </div>
           </div>
         </div>
       </section>
 
       <div id="courses" className="mx-auto max-w-[1320px] scroll-mt-24 px-4 pb-20 sm:px-6" data-reveal>
-        <PracticeClient lessons={serializedLessons} units={units} userLevel={userLevel} />
+        <PracticeClient
+          lessons={serializedLessons}
+          allLessons={serializedAllLessons}
+          units={units}
+          unitsByLevel={UNITS_BY_LEVEL}
+          userLevel={userLevel}
+        />
       </div>
     </div>
   );

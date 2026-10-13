@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { Card, Button, Badge } from "@/components/ui";
 import { useSoundAndTheme } from "@/components/SoundAndThemeContext";
+import { getSurvivalLessonImage, getSurvivalCharacterImage } from "@/lib/assets/base64Images";
 import { notifyProgressUpdated } from "@/components/UserProgressContext";
 import { SafeImg } from "./SafeImg";
 
@@ -22,6 +23,7 @@ interface DialogueStep {
     politeness: "POLITE" | "CASUAL" | "RUDE";
     score: number;
     npcFeedback: string;
+    knowledgeNote?: string;
   }>;
 }
 
@@ -517,6 +519,543 @@ const REAL_SCENARIOS: ScenarioDef[] = [
             politeness: "POLITE",
             score: 100,
             npcFeedback: "Bác tài xế cười tươi chỉ vào máy quẹt thẻ: 'Dạ được chứ, thanh toán không chạm rất tiện lợi!'",
+            knowledgeNote: "Mẫu 'お支払いは〜でできますか' dùng tiền tố lịch sự お + danh từ 支払い kết hợp khả năng できます, rất chuẩn mực.",
+          },
+        ],
+      },
+    ],
+  },
+  {
+    id: "sc-n4-baito",
+    slug: "n4-baito-interview",
+    category: "restaurant",
+    title: "Phỏng Vấn Xin Việc Làm Thêm (Baito)",
+    locationName: "Nhà hàng Izakaya Shinjuku, Tokyo",
+    level: "N4 Thực Chiến",
+    xpReward: 50,
+    bgGradient: "from-emerald-700 via-teal-800 to-sumi-950",
+    description: "Ứng tuyển vị trí nhân viên quán ăn tại Tokyo: Chào hỏi bằng khiêm nhường ngữ, trình bày động lực và xác nhận ca làm việc.",
+    steps: [
+      {
+        npcSpeaker: "店長 (CHỦ QUÁN)",
+        npcAvatar: "👔",
+        npcJapanese: "本日は面接にお越しいただきありがとうございます。まず自己紹介をお願いできますか？",
+        npcRomaji: "Honjitsu wa mensetsu ni okoshi itadaki arigatō gozaimasu. Mazu jikoshōkai o onegai dekimasu ka?",
+        npcMeaning: "Cảm ơn bạn hôm nay đã đến phỏng vấn. Trước hết bạn có thể tự giới thiệu đôi nét về bản thân không?",
+        choices: [
+          {
+            textJa: "初めまして。ベトナムから参りましたナムと申します。日本の飲食文化を学びたくて応募いたしました。",
+            textRomaji: "Hajimemashite. Betonamu kara mairimashita Namu to mōshimasu. Nihon no inshoku bunka o manabitakute ōbo itashimashita.",
+            textVi: "Xin chào anh. Tôi là Nam đến từ Việt Nam. Vì muốn học hỏi văn hóa ẩm thực Nhật nên tôi đã ứng tuyển ạ.",
+            politeness: "POLITE",
+            score: 100,
+            npcFeedback: "Chủ quán gật đầu ấn tượng trước cách dùng Khiêm nhường ngữ chuẩn xác của bạn!",
+            knowledgeNote: "Khiêm nhường ngữ (謙譲語): '参りました' (đến từ), 'と申します' (tên là), '応募いたしました' (đã ứng tuyển) cực kỳ ghi điểm khi phỏng vấn.",
+          },
+          {
+            textJa: "ナムです。ベトナムから来ました。よろしく。",
+            textRomaji: "Namu desu. Betonamu kara kimashita. Yoroshiku.",
+            textVi: "Tôi là Nam. Đến từ Việt Nam. Mong giúp đỡ nhé.",
+            politeness: "CASUAL",
+            score: 60,
+            npcFeedback: "Chủ quán ghi chép lại nhưng nhắc nhở nhẹ nhàng về việc dùng kính ngữ với khách hàng.",
+            knowledgeNote: "Nói 'よろしく' trống không trong buổi phỏng vấn bị coi là thiếu trang trọng; cần nói 'よろしくお願いいたします'.",
+          },
+          {
+            textJa: "履歴書に書いてあるから読んで。",
+            textRomaji: "Rirekisho ni kaite aru kara yonde.",
+            textVi: "Có ghi trong sơ yếu lý lịch rồi nên tự đọc đi.",
+            politeness: "RUDE",
+            score: 20,
+            npcFeedback: "Chủ quán cau mày vì thái độ thiếu tôn trọng trong buổi phỏng vấn!",
+            knowledgeNote: "Thể mệnh lệnh/nhờ vả trống không '読んで' với người phỏng vấn sẽ làm mất điểm nghiêm trọng (-1 ❤️).",
+          },
+        ],
+      },
+      {
+        npcSpeaker: "店長 (CHỦ QUÁN)",
+        npcAvatar: "👔",
+        npcJapanese: "日本語がとても丁寧ですね！週に何日くらいシフトに入れますか？",
+        npcRomaji: "Nihongo ga totemo teinei desu ne! Shū ni nannichi kurai shifuto ni hairemasu ka?",
+        npcMeaning: "Tiếng Nhật của bạn rất lịch sự đấy! Một tuần bạn có thể vào ca được khoảng mấy buổi?",
+        choices: [
+          {
+            textJa: "週に3日、平日の夕方と土曜日に働くことができます！",
+            textRomaji: "Shū ni mikka, heijitsu no yūgata to doyōbi ni hataraku koto ga dekimasu!",
+            textVi: "Em có thể làm 3 buổi/tuần vào chiều tối ngày thường và thứ Bảy ạ!",
+            politeness: "POLITE",
+            score: 100,
+            npcFeedback: "Chủ quán mỉm cười: 'Tuyệt vời, quán đang rất cần người vào tối ngày thường và thứ Bảy!'",
+            knowledgeNote: "Mẫu khả năng 'V-ることができます' kết hợp thời gian cụ thể giúp nhà tuyển dụng dễ xếp lịch (シフト).",
+          },
+          {
+            textJa: "いつでもいいですが、忙しい日は急に休みます。",
+            textRomaji: "Itsudemo ii desu ga, isogashii hi wa kyū ni yasumimasu.",
+            textVi: "Lúc nào cũng được nhưng ngày bận thì tôi nghỉ đột xuất.",
+            politeness: "RUDE",
+            score: 30,
+            npcFeedback: "Chủ quán lo ngại: 'Nghỉ đột xuất không báo trước sẽ rất khó cho quán...'",
+            knowledgeNote: "Tại Nhật, nghỉ ca làm thêm đột xuất (無断欠勤 / 急な休み) gây ảnh hưởng lớn đến đồng đội.",
+          },
+        ],
+      },
+    ],
+  },
+  {
+    id: "sc-n4-apartment",
+    slug: "n4-apartment-leasing",
+    category: "other",
+    title: "Thuê Nhà Trọ & Ký Hợp Đồng Bất Động Sản",
+    locationName: "Văn phòng Bất động sản Takadanobaba",
+    level: "N4 Thực Chiến",
+    xpReward: 50,
+    bgGradient: "from-indigo-700 via-sky-800 to-sumi-950",
+    description: "Trao đổi với công ty bất động sản Nhật Bản về tiền đặt cọc (Shikikin), tiền lễ (Reikin) và giấy tờ cần thiết khi ký hợp đồng.",
+    steps: [
+      {
+        npcSpeaker: "不動産屋さん (NHÂN VIÊN BĐS)",
+        npcAvatar: "🏠",
+        npcJapanese: "こちらの部屋は駅から徒歩5分で、敷金・礼金もゼロとなっております。いかがでしょうか？",
+        npcRomaji: "Kochira no heya wa eki kara toho go-fun de, shikikin reikin mo zero to natte orimasu. Ikaga deshō ka?",
+        npcMeaning: "Căn phòng này cách ga 5 phút đi bộ, tiền cọc và tiền lễ đều bằng 0. Quý khách thấy thế nào ạ?",
+        choices: [
+          {
+            textJa: "とても便利そうですね！契約の際に必要な書類は何ですか？",
+            textRomaji: "Totemo benri sō desu ne! Keiyaku no sai ni hitsuyō na shorui wa nan desu ka?",
+            textVi: "Trông rất tiện lợi ạ! Khi làm hợp đồng thì tôi cần chuẩn bị những giấy tờ gì ạ?",
+            politeness: "POLITE",
+            score: 100,
+            npcFeedback: "Nhân viên BĐS lấy danh sách hồ sơ hướng dẫn bạn tận tình từng mục!",
+            knowledgeNote: "Cụm '契約の際に' (Khi ký hợp đồng) là cách diễn đạt N4/N3 lịch sự hơn '契約の時'.",
+          },
+          {
+            textJa: "もっと安い部屋を出して。",
+            textRomaji: "Motto yasui heya o dashite.",
+            textVi: "Đưa phòng rẻ hơn ra đây. (Cộc lốc)",
+            politeness: "RUDE",
+            score: 35,
+            npcFeedback: "Nhân viên BĐS hơi ngượng ngùng lật tìm tập hồ sơ khác.",
+            knowledgeNote: "Khi muốn xem phòng rẻ hơn một cách lịch sự, hãy nói: 'もう少し家賃が安い物件はありますか？'.",
+          },
+        ],
+      },
+      {
+        npcSpeaker: "不動産屋さん (NHÂN VIÊN BĐS)",
+        npcAvatar: "🏠",
+        npcJapanese: "在留カードと学生証、それから銀行口座の通帳をお持ちいただけますか？",
+        npcRomaji: "Zairyū kādo to gakuseishō, sorekara ginkō kōza no tsūchō o omochi itadakemasu ka?",
+        npcMeaning: "Bạn có thể mang theo Thẻ lưu trú, thẻ sinh viên và sổ tài khoản ngân hàng được không?",
+        choices: [
+          {
+            textJa: "はい、すべて揃っています。明日もう一度伺ってもよろしいでしょうか？",
+            textRomaji: "Hai, subete sorotte imasu. Ashita mō ichido ukagatte mo yoroshii deshō ka?",
+            textVi: "Dạ tôi có đủ cả rồi. Ngày mai tôi xin phép ghé lại lần nữa có được không ạ?",
+            politeness: "POLITE",
+            score: 100,
+            npcFeedback: "Nhân viên BĐS hẹn lịch 10h sáng mai và giữ phòng ưu tiên cho bạn!",
+            knowledgeNote: "'伺ってもよろしいでしょうか' (Khiêm nhường ngữ của 行きます + xin phép lịch sự) rất chuẩn mực.",
+          },
+          {
+            textJa: "在留カードと銀行口座の書類を準備しておきます。",
+            textRomaji: "Zairyū kādo to ginkō kōza no shorui o junbi shite okimasu.",
+            textVi: "Tôi sẽ chuẩn bị sẵn thẻ lưu trú và giấy tờ ngân hàng.",
+            politeness: "POLITE",
+            score: 90,
+            npcFeedback: "Nhân viên BĐS gật đầu xác nhận lịch hẹn.",
+            knowledgeNote: "Mẫu 'V-ておきます' diễn tả sự chuẩn bị sẵn sàng cho một việc sắp tới.",
+          },
+        ],
+      },
+    ],
+  },
+  {
+    id: "sc-n4-hospital",
+    slug: "n4-hospital-visit",
+    category: "other",
+    title: "Khám Bệnh Tại Bệnh Viện Nhật Bản",
+    locationName: "Phòng khám Nội khoa Tokyo Clinic",
+    level: "N4 Thực Chiến",
+    xpReward: 50,
+    bgGradient: "from-cyan-700 via-teal-800 to-sumi-950",
+    description: "Diễn tả chi tiết triệu chứng sốt và đau đầu bằng cấu trúc giải thích 〜んです, xét nghiệm cúm và hỏi bác sĩ cách uống thuốc.",
+    steps: [
+      {
+        npcSpeaker: "お医者さん (BÁC SĨ)",
+        npcAvatar: "🩺",
+        npcJapanese: "今日はどうされましたか？どこが調子悪いですか？",
+        npcRomaji: "Kyō wa dō saremashita ka? Doko ga chōshi warui desu ka?",
+        npcMeaning: "Hôm nay bạn bị sao vậy? Trong người thấy khó chịu ở đâu?",
+        choices: [
+          {
+            textJa: "昨日の夜から熱があって、頭も痛いんです。",
+            textRomaji: "Kinō no yoru kara netsu ga atte, atama mo itai n desu.",
+            textVi: "Từ tối hôm qua tôi bị sốt và đầu cũng đau nữa bác sĩ ạ.",
+            politeness: "POLITE",
+            score: 100,
+            npcFeedback: "Bác sĩ gật đầu đo nhiệt độ và kiểm tra cổ họng cho bạn ngay.",
+            knowledgeNote: "Mẫu '〜んです' dùng để trình bày tình trạng/hoàn cảnh bản thân khi khám bệnh hoặc nhờ giúp đỡ.",
+          },
+          {
+            textJa: "薬だけ早くちょうだい。",
+            textRomaji: "Kusuri dake hayaku chōdai.",
+            textVi: "Đưa nhanh thuốc đây cho tôi thôi.",
+            politeness: "RUDE",
+            score: 25,
+            npcFeedback: "Bác sĩ giải thích rằng phải khám triệu chứng trước mới kê đơn an toàn được.",
+            knowledgeNote: "'ちょうだい' là khẩu ngữ thân mật/trẻ con, không dùng với bác sĩ.",
+          },
+        ],
+      },
+      {
+        npcSpeaker: "お医者さん (BÁC SĨ)",
+        npcAvatar: "🩺",
+        npcJapanese: "インフルエンザの検査をしましょう。熱を下げる薬も出しておきますね。",
+        npcRomaji: "Infuruenza no kensa o shimashō. Netsu o sageru kusuri mo dashite okimasu ne.",
+        npcMeaning: "Chúng ta hãy xét nghiệm cúm nhé. Tôi cũng sẽ kê sẵn thuốc hạ sốt cho bạn.",
+        choices: [
+          {
+            textJa: "ありがとうございます。この薬は食後に飲めばいいですか？",
+            textRomaji: "Arigatō gozaimasu. Kono kusuri wa shokugo ni nomeba ii desu ka?",
+            textVi: "Cảm ơn bác sĩ. Thuốc này tôi uống sau bữa ăn là được phải không ạ?",
+            politeness: "POLITE",
+            score: 100,
+            npcFeedback: "Bác sĩ dặn dò kỹ lưỡng và chúc bạn mau bình phục!",
+            knowledgeNote: "Mẫu điều kiện 'V-ばいいですか' dùng để hỏi xác nhận cách làm đúng (Uống sau ăn là được nhỉ?).",
+          },
+          {
+            textJa: "薬は嫌いだから飲みません。",
+            textRomaji: "Kusuri wa kirai dakara nomimasen.",
+            textVi: "Tôi ghét thuốc nên không uống đâu.",
+            politeness: "RUDE",
+            score: 30,
+            npcFeedback: "Bác sĩ thở dài lo lắng cho sức khỏe của bạn.",
+          },
+        ],
+      },
+    ],
+  },
+  {
+    id: "sc-n4-office",
+    slug: "n4-office-reporting",
+    category: "other",
+    title: "Báo Cáo Công Việc Với Cấp Trên (Horenso N4)",
+    locationName: "Văn phòng Công ty IT Shinagawa",
+    level: "N4 Thực Chiến",
+    xpReward: 50,
+    bgGradient: "from-slate-700 via-indigo-900 to-sumi-950",
+    description: "Sử dụng khiêm nhường ngữ (いたしております / ご提出いたします) để báo cáo tiến độ tài liệu với Trưởng phòng.",
+    steps: [
+      {
+        npcSpeaker: "部長 (TRƯỞNG PHÒNG)",
+        npcAvatar: "💼",
+        npcJapanese: "ナムくん、例の会議資料の作成はどこまで進んでいる？",
+        npcRomaji: "Namu-kun, rei no kaigi shiryō no sakusei wa doko made susunde iru?",
+        npcMeaning: "Nam này, việc soạn thảo tài liệu cuộc họp hôm trước tiến triển đến đâu rồi?",
+        choices: [
+          {
+            textJa: "ただいま最終確認をいたしております。午後3時までに部長にご提出いたします。",
+            textRomaji: "Tadaima saishū kakunin o itashite orimasu. Gogo san-ji made ni Buchō ni go-teishutsu itashimasu.",
+            textVi: "Dạ em đang kiểm tra lần cuối ạ. Trước 3 giờ chiều em sẽ nộp trình Trưởng phòng ạ.",
+            politeness: "POLITE",
+            score: 100,
+            npcFeedback: "Trưởng phòng hài lòng: 'Tốt lắm, đúng tinh thần báo cáo Horenso rõ ràng!'",
+            knowledgeNote: "Khiêm nhường ngữ 'いたしております' (đang làm) và 'ご提出いたします' (xin phép nộp) kèm mốc giờ 'までに' (trước hạn).",
+          },
+          {
+            textJa: "まだできていません。明日でいいですか？",
+            textRomaji: "Mada dekite imasen. Ashita de ii desu ka?",
+            textVi: "Vẫn chưa xong. Để mai được không?",
+            politeness: "CASUAL",
+            score: 50,
+            npcFeedback: "Trưởng phòng nhắc nhở: 'Chiều nay họp rồi, em phải báo sớm chứ!'",
+          },
+        ],
+      },
+      {
+        npcSpeaker: "部長 (TRƯỞNG PHÒNG)",
+        npcAvatar: "💼",
+        npcJapanese: "分かった。提出してくれたらすぐに目を通すよ。",
+        npcRomaji: "Wakatta. Teishutsu shite kuretara sugu ni me o tōsu yo.",
+        npcMeaning: "Được rồi. Khi nào em nộp anh sẽ xem qua (目を通す) ngay nhé.",
+        choices: [
+          {
+            textJa: "よろしくお願いいたします。何か修正点がございましたらご指示ください。",
+            textRomaji: "Yoroshiku onegai itashimasu. Nanika shūseiten ga gozaimashitara go-shiji kudasai.",
+            textVi: "Em cảm ơn Trưởng phòng. Nếu có điểm nào cần chỉnh sửa xin anh cứ chỉ đạo ạ.",
+            politeness: "POLITE",
+            score: 100,
+            npcFeedback: "Trưởng phòng khen ngợi thái độ cầu thị và chuyên nghiệp của bạn!",
+            knowledgeNote: "'ございましたら' (lịch sự của ありましたら) + 'ご指示ください' (xin hãy chỉ đạo) là mẫu câu vàng nơi công sở Nhật.",
+          },
+          {
+            textJa: "忙しいから自分で直してください。",
+            textRomaji: "Isogashii kara jibun de naoshite kudasai.",
+            textVi: "Em bận lắm nên anh tự sửa đi.",
+            politeness: "RUDE",
+            score: 15,
+            npcFeedback: "Trưởng phòng sững sờ trước câu trả lời vô lễ!",
+          },
+        ],
+      },
+    ],
+  },
+  {
+    id: "sc-koban-wallet",
+    slug: "koban-lost-wallet",
+    category: "station",
+    title: "Báo Mất Ví Khẩn Cấp Tại Đồn Cảnh Sát (Kōban)",
+    locationName: "Đồn cảnh sát Kōban trước Ga Ikebukuro",
+    level: "N4 Thực Chiến",
+    xpReward: 110,
+    bgGradient: "from-rose-700 via-red-800 to-sumi-950",
+    description: "Tình huống sinh tồn khẩn cấp: Bị rơi ví tiền chứa thẻ lưu trú trên tàu điện. Bình tĩnh mô tả đặc điểm chiếc ví và làm tờ khai thất lạc (遺失届).",
+    steps: [
+      {
+        npcSpeaker: "お巡りさん (CẢNH SÁT KŌBAN)",
+        npcAvatar: "👮",
+        npcJapanese: "どうされましたか？落ち着いて話してくださいね。",
+        npcRomaji: "Dō saremashita ka? Ochitsuite hanashite kudasai ne.",
+        npcMeaning: "Có chuyện gì xảy ra vậy bạn? Hãy bình tĩnh kể cho tôi nghe nhé.",
+        choices: [
+          {
+            textJa: "すみません、さっき山手線の電車の中で財布を落としてしまったんです。",
+            textRomaji: "Sumimasen, sakki Yamanote-sen no densha no naka de saifu o otoshite shimatta n desu.",
+            textVi: "Xin lỗi anh, vừa nãy tôi lỡ đánh rơi mất chiếc ví trên tàu tuyến Yamanote rồi ạ.",
+            politeness: "POLITE",
+            score: 100,
+            npcFeedback: "Viên cảnh sát lấy ngay mẫu đơn báo mất đồ và trấn an bạn!",
+            knowledgeNote: "Cấu trúc '落としてしまったんです' (てしまう diễn tả sự việc đáng tiếc lỡ xảy ra + んです giải thích hoàn cảnh).",
+          },
+          {
+            textJa: "財布がない！早く探して！",
+            textRomaji: "Saifu ga nai! Hayaku sagashite!",
+            textVi: "Mất ví rồi! Tìm nhanh lên!",
+            politeness: "RUDE",
+            score: 35,
+            npcFeedback: "Viên cảnh sát khuyên bạn bình tĩnh nói rõ địa điểm đánh rơi thì mới tra cứu được.",
+          },
+        ],
+      },
+      {
+        npcSpeaker: "お巡りさん (CẢNH SÁT KŌBAN)",
+        npcAvatar: "👮",
+        npcJapanese: "なるほど。どんな特徴の財布ですか？中に何が入っていますか？",
+        npcRomaji: "Naruhodo. Donna tokuchō no saifu desu ka? Naka ni nani ga haitte imasu ka?",
+        npcMeaning: "Tôi hiểu rồi. Chiếc ví có đặc điểm gì và bên trong có những giấy tờ nào?",
+        choices: [
+          {
+            textJa: "黒い革の長財布で、中に在留カードと現金が少し入っています。遺失届をお願いします。",
+            textRomaji: "Kuroi kawa no nagazaifu de, naka ni zairyū kādo to genkin ga sukoshi haitte imasu. Ishitsutodoke o onegaishimasu.",
+            textVi: "Là ví dài bằng da màu đen, bên trong có Thẻ lưu trú và một ít tiền mặt. Cho tôi xin làm tờ khai mất đồ (遺失届) ạ.",
+            politeness: "POLITE",
+            score: 100,
+            npcFeedback: "Cảnh sát tra hệ thống nhà ga và báo tin mừng: Có người vừa nhặt được và nộp ở ga tiếp theo!",
+            knowledgeNote: "Từ khóa sinh tồn quan trọng: '遺失届' (いしつとどけ - Tờ khai báo mất đồ) giúp cảnh sát cấp mã số hồ sơ tìm lại tài sản.",
+          },
+          {
+            textJa: "普通の財布です。",
+            textRomaji: "Futsū no saifu desu.",
+            textVi: "Ví bình thường thôi.",
+            politeness: "CASUAL",
+            score: 50,
+            npcFeedback: "Cảnh sát hỏi thêm về màu sắc và giấy tờ bên trong để xác minh chủ sở hữu.",
+          },
+        ],
+      },
+    ],
+  },
+  {
+    id: "sc-n3-workplace",
+    slug: "n3-workplace-reporting",
+    category: "other",
+    title: "Báo Cáo Tiến Độ Dự Án & Xin Chỉ Đạo (Horenso N3)",
+    locationName: "Trụ sở Tập đoàn Công nghệ Marunouchi, Tokyo",
+    level: "N3 Thực Chiến",
+    xpReward: 60,
+    bgGradient: "from-blue-800 via-slate-900 to-sumi-950",
+    description: "Thực hành giao tiếp thương mại N3: Dùng từ đệm công sở (クッション言葉), báo cáo tỷ lệ hoàn thành dự án và xin phản hồi từ Trưởng phòng Yamada.",
+    steps: [
+      {
+        npcSpeaker: "山田部長 (TRƯỞNG PHÒNG YAMADA)",
+        npcAvatar: "👨‍💼",
+        npcJapanese: "ナムさん、来週のクライアント向けプレゼン資料の進捗状況はどうなっていますか？",
+        npcRomaji: "Namu-san, raishū no kuraianto-muke purezen shiryō no shinchoku jōkyō wa dō natte imasu ka?",
+        npcMeaning: "Nam ơi, tình hình tiến độ tài liệu thuyết trình cho khách hàng tuần sau đến đâu rồi em?",
+        choices: [
+          {
+            textJa: "部長、お疲れ様です。資料のドラフトは8割方完成しており、本日中にご確認いただける予定です。",
+            textRomaji: "Buchō, otsukaresama desu. Shiryō no dorafuto wa hachiwarigata kansei shite ori, honjitsuchū ni go-kakunin itadakeru yotei desu.",
+            textVi: "Dạ chào Trưởng phòng ạ. Bản thảo đã hoàn thiện khoảng 80%, dự kiến trong hôm nay em sẽ gửi trình anh duyệt ạ.",
+            politeness: "POLITE",
+            score: 100,
+            npcFeedback: "Trưởng phòng Yamada gật đầu đánh giá cao cách báo cáo số liệu cụ thể!",
+            knowledgeNote: "Trong văn hóa Horenso N3: Luôn nêu con số cụ thể ('8割方完成しており' - xong 80%) và mốc thời gian ('本日中に' - ngay trong hôm nay).",
+          },
+          {
+            textJa: "今やっているところです。",
+            textRomaji: "Ima yatte iru tokoro desu.",
+            textVi: "Em đang làm đây ạ.",
+            politeness: "CASUAL",
+            score: 55,
+            npcFeedback: "Trưởng phòng hỏi lại: 'Cụ thể là xong được bao nhiêu phần trăm rồi?'",
+          },
+        ],
+      },
+      {
+        npcSpeaker: "山田部長 (TRƯỞNG PHÒNG YAMADA)",
+        npcAvatar: "👨‍💼",
+        npcJapanese: "順調だね。グラフのデータも最新版のものを反映しておいてね。",
+        npcRomaji: "Junchō da ne. Gurafu no dēta mo saishinban no mono o han'ei shite oite ne.",
+        npcMeaning: "Thuận lợi đấy. Em nhớ cập nhật cả dữ liệu biểu đồ bản mới nhất vào luôn nhé.",
+        choices: [
+          {
+            textJa: "承知いたしました。何か修正点がございましたら、遠慮なくご指摘ください。",
+            textRomaji: "Shōchi itashimashita. Nanika shūseiten ga gozaimashitara, enryo naku go-shiteki kudasai.",
+            textVi: "Dạ em đã rõ ạ (承知いたしました). Nếu có điểm nào cần sửa xin anh cứ góp ý chỉ dẫn ạ.",
+            politeness: "POLITE",
+            score: 100,
+            npcFeedback: "Trưởng phòng Yamada khen ngợi phong thái Business Japanese chuyên nghiệp của bạn!",
+            knowledgeNote: "'承知いたしました' là Khiêm nhường ngữ trang trọng hơn '分かりました' khi nhận lệnh từ cấp trên hoặc khách hàng.",
+          },
+          {
+            textJa: "自分で全部完璧にしたので直す必要はありません。",
+            textRomaji: "Jibun de zenbu kanpeki ni shita node naosu hitsuyō wa arimasen.",
+            textVi: "Em tự làm hoàn hảo hết rồi nên không cần sửa đâu.",
+            politeness: "RUDE",
+            score: 20,
+            npcFeedback: "Trưởng phòng Yamada nghiêm mặt nhắc nhở về quy trình duyệt tài liệu nhóm.",
+          },
+        ],
+      },
+    ],
+  },
+  {
+    id: "sc-n3-clinic",
+    slug: "n3-medical-clinic",
+    category: "other",
+    title: "Khám Chuyên Khoa & Khai Báo Dị Ứng Thuốc (N3)",
+    locationName: "Bệnh viện Đa khoa Quốc tế St. Luke, Tokyo",
+    level: "N3 Thực Chiến",
+    xpReward: 60,
+    bgGradient: "from-teal-700 via-cyan-900 to-sumi-950",
+    description: "Trình bày diễn biến bệnh lý chi tiết từ hôm kia, khai báo tiền sử dị ứng kháng sinh và xác nhận đơn thuốc.",
+    steps: [
+      {
+        npcSpeaker: "医師 (BÁC SĨ CHUYÊN KHOA)",
+        npcAvatar: "👩‍⚕️",
+        npcJapanese: "今日はどのような症状でいらっしゃいましたか？いつ頃からですか？",
+        npcRomaji: "Kyō wa dono yō na shōjō de irasshaimashita ka? Itsu goro kara desu ka?",
+        npcMeaning: "Hôm nay bạn đến khám vì triệu chứng gì? Triệu chứng bắt đầu từ khoảng khi nào?",
+        choices: [
+          {
+            textJa: "一昨日から喉が痛くて、昨夜から38度の熱が出てしまいました。",
+            textRomaji: "Ototoi kara nodo ga itakute, yūbe kara sanjūhachi-do no netsu ga dete shimaimashita.",
+            textVi: "Từ hôm kia cổ họng tôi bị đau rát, và từ đêm qua thì bị sốt lên tới 38 độ ạ.",
+            politeness: "POLITE",
+            score: 100,
+            npcFeedback: "Bác sĩ ghi nhận bệnh sử rõ ràng vào hồ sơ bệnh án điện tử.",
+            knowledgeNote: "Cách nêu mốc thời gian y tế chuẩn xác: '一昨日 (おととい) から' (từ hôm kia) + '昨夜 (ゆうべ) から' (từ tối qua).",
+          },
+          {
+            textJa: "熱があります。",
+            textRomaji: "Netsu ga arimasu.",
+            textVi: "Tôi bị sốt.",
+            politeness: "CASUAL",
+            score: 65,
+            npcFeedback: "Bác sĩ phải hỏi thêm bạn sốt bao nhiêu độ và từ bao giờ.",
+          },
+        ],
+      },
+      {
+        npcSpeaker: "医師 (BÁC SĨ CHUYÊN KHOA)",
+        npcAvatar: "👩‍⚕️",
+        npcJapanese: "喉がかなり腫れていますね。抗生物質を出しますが、薬のアレルギーはありますか？",
+        npcRomaji: "Nodo ga kanari harete imasu ne. Kōseibusshitsu o dashimasu ga, kusuri no arerugī wa arimasu ka?",
+        npcMeaning: "Cổ họng bạn sưng khá nặng đấy. Tôi sẽ kê thuốc kháng sinh, bạn có bị dị ứng với loại thuốc nào không?",
+        choices: [
+          {
+            textJa: "薬のアレルギーは特にありません。よろしくお願いいたします。",
+            textRomaji: "Kusuri no arerugī wa toku ni arimasen. Yoroshiku onegai itashimasu.",
+            textVi: "Dạ tôi không bị dị ứng loại thuốc nào đặc biệt cả. Nhờ bác sĩ kê đơn giúp ạ.",
+            politeness: "POLITE",
+            score: 100,
+            npcFeedback: "Bác sĩ in đơn thuốc kháng sinh và hướng dẫn bạn sang quầy dược nhận thuốc!",
+            knowledgeNote: "Từ vựng y tế N3: '腫れる' (はれる - sưng tấy), '抗生物質' (こうせいぶっしつ - thuốc kháng sinh), 'アレルギー' (dị ứng).",
+          },
+          {
+            textJa: "注射は嫌いなので薬だけたくさんください。",
+            textRomaji: "Chūsha wa kirai na node kusuri dake takusan kudasai.",
+            textVi: "Tôi ghét tiêm lắm nên chỉ cho thật nhiều thuốc uống thôi.",
+            politeness: "RUDE",
+            score: 30,
+            npcFeedback: "Bác sĩ giải thích không thể kê quá liều kháng sinh quy định.",
+          },
+        ],
+      },
+    ],
+  },
+  {
+    id: "sc-osaka-kansai",
+    slug: "osaka-takoyaki-kansai",
+    category: "restaurant",
+    title: "Gọi Takoyaki & Giao Tiếp Phương Ngữ Kansai (Osaka)",
+    locationName: "Phố ẩm thực Dōtonbori, Osaka",
+    level: "N3 Thực Chiến",
+    xpReward: 120,
+    bgGradient: "from-orange-600 via-amber-700 to-sumi-950",
+    description: "Trải nghiệm không khí náo nhiệt tại Dōtonbori (Osaka): Nghe hiểu phương ngữ Kansai-ben (まいど / めっちゃ / かまへん / おおきに) và trò chuyện thân thiện với chủ quầy!",
+    steps: [
+      {
+        npcSpeaker: "たこ焼き屋の大将 (CHỦ QUẦY OSAKA)",
+        npcAvatar: "🐙",
+        npcJapanese: "まいど！いらっしゃい！焼きたてのたこ焼き、めっちゃ美味しいで！何個入りにする？",
+        npcRomaji: "Maido! Irasshai! Yakitate no takoyaki, metcha oishii de! Nan-ko iri ni suru?",
+        npcMeaning: "Xin chào khách quý! Bánh Takoyaki vừa nướng nóng hổi cực kỳ ngon đây! Bạn chọn phần mấy viên nào?",
+        choices: [
+          {
+            textJa: "8個入りを一つお願いします！すごくいい匂いですね。",
+            textRomaji: "Hachi-ko iri o hitotsu onegaishimasu! Sugoku ii nioi desu ne.",
+            textVi: "Cho tôi một phần 8 viên ạ! Thơm phức hấp dẫn quá chừng!",
+            politeness: "POLITE",
+            score: 100,
+            npcFeedback: "Ông chủ quầy cười sảng khoái: 'Haha, mắt nhìn tinh đời lắm! Đợi chú 1 phút nghen!'",
+            knowledgeNote: "Phương ngữ Kansai (関西弁): 'まいど' = lời chào thân thuộc; 'めっちゃ' = とても (cực kỳ); '美味しいで' = 美味しいよ.",
+          },
+          {
+            textJa: "関西弁は分かりません。標準語で話してください。",
+            textRomaji: "Kansai-ben wa wakarimasen. Hyōjungo de hanashite kudasai.",
+            textVi: "Tôi không hiểu tiếng Kansai. Hãy nói tiếng Nhật chuẩn đi.",
+            politeness: "RUDE",
+            score: 35,
+            npcFeedback: "Ông chủ quầy hơi cụt hứng nhưng vẫn làm bánh cho bạn.",
+            knowledgeNote: "Người Osaka rất tự hào về văn hóa ẩm thực Kuidaore và giọng Kansai-ben nồng hậu của họ.",
+          },
+        ],
+      },
+      {
+        npcSpeaker: "たこ焼き屋の大将 (CHỦ QUẦY OSAKA)",
+        npcAvatar: "🐙",
+        npcJapanese: "8個入りやね！ソースとマヨネーズは全部かけてもかまへんか？",
+        npcRomaji: "Hachi-ko iri ya ne! Sōsu to mayonēzu wa zenbu kakete mo kamahen ka?",
+        npcMeaning: "Phần 8 viên ha! Chú rưới hết cả sốt và mayonnaise lên luôn có được không (kamahen ka)?",
+        choices: [
+          {
+            textJa: "はい、全部かけてください！おおきに！",
+            textRomaji: "Hai, zenbu kakete kudasai! Ōkini!",
+            textVi: "Dạ vâng, chú rưới hết lên giúp cháu nhé! Cảm ơn chú nhiều (Ōkini)!",
+            politeness: "POLITE",
+            score: 100,
+            npcFeedback: "Ông chủ rắc thêm thật nhiều cá bào Katsuobushi nhảy múa trên bánh và hô to: 'Maido ōkini!'",
+            knowledgeNote: "Trong Kansai-ben: '〜やね' = 〜だね; 'かまへん' = 構わない / 大丈夫 (không sao/được chứ); 'おおきに' = ありがとう!",
+          },
+          {
+            textJa: "マヨネーズは抜きでお願いします。ありがとうございます！",
+            textRomaji: "Mayonēzu wa nuki de onegaishimasu. Arigatō gozaimasu!",
+            textVi: "Làm ơn không cho mayonnaise giúp tôi nhé (〜抜きで). Cảm ơn nhiều ạ!",
+            politeness: "POLITE",
+            score: 95,
+            npcFeedback: "Ông chủ gật đầu: 'Ok, chỉ rưới sốt đặc trưng và cá bào thôi nghen!'",
+            knowledgeNote: "Mẫu câu thực tế cực hữu ích khi gọi món: '[Món/Gia vị] + 抜きでお願いします' (Xin đừng bỏ [gia vị] vào).",
           },
         ],
       },
@@ -619,9 +1158,103 @@ const SCENARIO_META: Record<string, ScenarioMeta> = {
       { ja: "着きました", romaji: "tsukimashita", vi: "đã đến nơi", say: "つきました" },
     ],
   },
+  "n4-baito-interview": {
+    objective: "Tự giới thiệu bằng khiêm nhường ngữ và chốt lịch ca làm thêm (シフト).",
+    stepLabels: ["Tự giới thiệu bản thân (自己紹介)", "Xác nhận số buổi làm trong tuần"],
+    tip: "Trong phỏng vấn Baito, hãy dùng 「〜と申します」(tôi tên là) và 「〜から参りました」(đến từ) thay vì 名前は/来ました.",
+    vocab: [
+      { ja: "面接", romaji: "mensetsu", vi: "phỏng vấn", say: "めんせつ" },
+      { ja: "自己紹介", romaji: "jikoshōkai", vi: "tự giới thiệu", say: "じこしょうかい" },
+      { ja: "応募する", romaji: "ōbo suru", vi: "ứng tuyển", say: "おうぼする" },
+      { ja: "シフト", romaji: "shifuto", vi: "ca làm việc" },
+      { ja: "平日", romaji: "heijitsu", vi: "ngày thường trong tuần", say: "へいじつ" },
+    ],
+  },
+  "n4-apartment-leasing": {
+    objective: "Tìm hiểu điều kiện thuê phòng (Shikikin/Reikin) và hẹn nộp hồ sơ ký hợp đồng.",
+    stepLabels: ["Hỏi thủ tục & giấy tờ hợp đồng", "Xác nhận thẻ lưu trú & hẹn ngày ghé"],
+    tip: "Khi hỏi lịch hẹn ghé thăm văn phòng, dùng Khiêm nhường ngữ 「伺ってもよろしいでしょうか」 sẽ tạo thiện cảm lớn.",
+    vocab: [
+      { ja: "敷金・礼金", romaji: "shikikin / reikin", vi: "tiền cọc / tiền lễ", say: "しききん・れいきん" },
+      { ja: "徒歩", romaji: "toho", vi: "đi bộ", say: "とほ" },
+      { ja: "契約", romaji: "keiyaku", vi: "hợp đồng", say: "けいやく" },
+      { ja: "在留カード", romaji: "zairyū kādo", vi: "thẻ lưu trú" },
+      { ja: "伺う", romaji: "ukagau", vi: "ghé thăm / hỏi (Khiêm nhường)", say: "うかがう" },
+    ],
+  },
+  "n4-hospital-visit": {
+    objective: "Trình bày triệu chứng sốt, đau đầu bằng cấu trúc 〜んです và hỏi cách uống thuốc.",
+    stepLabels: ["Mô tả triệu chứng với bác sĩ", "Xác nhận xét nghiệm & liều uống"],
+    tip: "Dùng 「〜んです」 khi kể triệu chứng bệnh giúp câu nói tự nhiên và thể hiện mong muốn được bác sĩ tư vấn.",
+    vocab: [
+      { ja: "調子が悪い", romaji: "chōshi ga warui", vi: "trong người khó chịu", say: "ちょうしがわるい" },
+      { ja: "検査", romaji: "kensa", vi: "xét nghiệm / kiểm tra", say: "けんさ" },
+      { ja: "熱を下げる", romaji: "netsu o sageru", vi: "hạ sốt", say: "ねつをさげる" },
+      { ja: "食後", romaji: "shokugo", vi: "sau bữa ăn", say: "しょくご" },
+    ],
+  },
+  "n4-office-reporting": {
+    objective: "Báo cáo tiến độ tài liệu rõ ràng và tiếp nhận chỉ đạo từ Trưởng phòng.",
+    stepLabels: ["Báo cáo tiến độ & giờ nộp", "Tiếp nhận phản hồi của cấp trên"],
+    tip: "Quy tắc Hō-Ren-Sō (報連相): Luôn kèm mốc thời gian hoàn thành dự kiến khi báo cáo với cấp trên.",
+    vocab: [
+      { ja: "資料の作成", romaji: "shiryō no sakusei", vi: "soạn thảo tài liệu", say: "しりょうのさくせい" },
+      { ja: "提出する", romaji: "teishutsu suru", vi: "nộp trình", say: "ていしゅつする" },
+      { ja: "目を通す", romaji: "me o tōsu", vi: "đọc lướt / duyệt qua", say: "めをとおす" },
+      { ja: "修正点", romaji: "shūseiten", vi: "điểm cần chỉnh sửa", say: "しゅうせいてん" },
+    ],
+  },
+  "koban-lost-wallet": {
+    objective: "Trình báo mất ví tiền trên tàu điện và điền tờ khai thất lạc (遺失届) tại Kōban.",
+    stepLabels: ["Báo địa điểm & thời gian rơi ví", "Mô tả đặc điểm ví & làm tờ khai 遺失届"],
+    tip: "Khi làm rơi đồ ở Nhật, hãy đến ngay Đồn cảnh sát khu phố (交番 - Kōban) hoặc quầy nhà ga để làm 『遺失届』(Tờ khai mất đồ).",
+    vocab: [
+      { ja: "交番", romaji: "kōban", vi: "đồn cảnh sát khu phố", say: "こうばん" },
+      { ja: "財布を落とす", romaji: "saifu o otosu", vi: "đánh rơi ví", say: "さいふをおとす" },
+      { ja: "長財布", romaji: "nagazaifu", vi: "ví dáng dài", say: "ながざいふ" },
+      { ja: "遺失届", romaji: "ishitsutodoke", vi: "tờ khai báo mất đồ", say: "いしつとどけ" },
+      { ja: "現金", romaji: "genkin", vi: "tiền mặt", say: "げんきん" },
+    ],
+  },
+  "n3-workplace-reporting": {
+    objective: "Thực hành báo cáo tiến độ chuyên sâu N3 (Horenso) và dùng Khiêm nhường ngữ chuẩn công sở.",
+    stepLabels: ["Báo cáo tỷ lệ hoàn thành bản thảo", "Tiếp nhận yêu cầu cập nhật số liệu"],
+    tip: "Trong môi trường công sở N3, hãy dùng 『承知いたしました』 thay cho 『分かりました』 khi nhận chỉ thị từ cấp trên.",
+    vocab: [
+      { ja: "進捗状況", romaji: "shinchoku jōkyō", vi: "tình hình tiến độ", say: "しんちょくじょうきょう" },
+      { ja: "8割方", romaji: "hachiwarigata", vi: "khoảng 80%", say: "はちわりがた" },
+      { ja: "本日中", romaji: "honjitsuchū", vi: "ngay trong hôm nay", say: "ほんじつちゅう" },
+      { ja: "承知いたしました", romaji: "shōchi itashimashita", vi: "tôi đã rõ ạ (Khiêm nhường)" },
+      { ja: "ご指摘", romaji: "go-shiteki", vi: "sự chỉ dẫn / góp ý", say: "ごしてき" },
+    ],
+  },
+  "n3-medical-clinic": {
+    objective: "Mô tả diễn biến bệnh lý nhiều ngày, trả lời câu hỏi về dị ứng kháng sinh tại phòng khám.",
+    stepLabels: ["Mô tả diễn biến đau họng & sốt", "Xác nhận tiền sử dị ứng thuốc"],
+    tip: "Khi khám bệnh ở Nhật, bác sĩ luôn hỏi 『薬のアレルギーはありますか』(Có dị ứng thuốc không) trước khi kê kháng sinh.",
+    vocab: [
+      { ja: "一昨日", romaji: "ototoi", vi: "hôm kia", say: "おととい" },
+      { ja: "腫れる", romaji: "hareru", vi: "sưng tấy", say: "はれる" },
+      { ja: "抗生物質", romaji: "kōseibusshitsu", vi: "thuốc kháng sinh", say: "こうせいぶっしつ" },
+      { ja: "アレルギー", romaji: "arerugī", vi: "dị ứng" },
+      { ja: "症状", romaji: "shōjō", vi: "triệu chứng", say: "しょうじょう" },
+    ],
+  },
+  "osaka-takoyaki-kansai": {
+    objective: "Nghe hiểu phương ngữ Kansai-ben tại Osaka và gọi món Takoyaki tự nhiên.",
+    stepLabels: ["Nghe chủ quầy chào & chọn số viên", "Chọn sốt & cảm ơn bằng tiếng Kansai"],
+    tip: "Ở Osaka/Kyoto, từ 『かまへん』(kamahen) nghĩa là 『大丈夫 / 構わない』(không sao/được chứ), và 『おおきに』 là 『ありがとう』!",
+    vocab: [
+      { ja: "まいど", romaji: "maido", vi: "xin chào / cảm ơn (Kansai)" },
+      { ja: "めっちゃ", romaji: "metcha", vi: "cực kỳ / rất (Kansai)" },
+      { ja: "かまへん", romaji: "kamahen", vi: "được chứ / không sao (Kansai)" },
+      { ja: "おおきに", romaji: "ōkini", vi: "cảm ơn nhiều (Kansai)" },
+      { ja: "〜抜きで", romaji: "~nuki de", vi: "không bỏ (gia vị/hành...)", say: "ぬきで" },
+    ],
+  },
 };
 
-const FEEDBACK_DELAY_MS = 1700;
+const FEEDBACK_DELAY_MS = 2200;
 
 const POLITENESS_TAG: Record<DialogueStep["choices"][0]["politeness"], { label: string; cls: string }> = {
   POLITE: {
@@ -629,11 +1262,11 @@ const POLITENESS_TAG: Record<DialogueStep["choices"][0]["politeness"], { label: 
     cls: "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/50 dark:text-emerald-300 dark:border-emerald-800",
   },
   CASUAL: {
-    label: "Thông dụng",
+    label: "Thông dụng (Thân mật)",
     cls: "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/50 dark:text-amber-300 dark:border-amber-800",
   },
   RUDE: {
-    label: "Không phù hợp",
+    label: "Không phù hợp (-1 ❤️)",
     cls: "bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/50 dark:text-rose-300 dark:border-rose-800",
   },
 };
@@ -645,8 +1278,8 @@ const POLITENESS_TAG: Record<DialogueStep["choices"][0]["politeness"], { label: 
 // Ảnh nhân vật      : /images/survival/character/<slug>.png  (PNG nền trong suốt, nhân vật đứng, cắt từ đầu tới chân)
 // Chưa có file -> tự động dùng gradient + emoji, không bị vỡ giao diện.
 const IMG_BASE = "/images/survival";
-const lessonImg = (slug: string) => `${IMG_BASE}/lesson/${slug}.png`;
-const characterImg = (slug: string) => `${IMG_BASE}/character/${slug}.png`;
+const lessonImg = (slug: string) => getSurvivalLessonImage(slug);
+const characterImg = (slug: string) => getSurvivalCharacterImage(slug);
 
 const SCENARIO_ICON: Record<string, string> = {
   "ordering-ramen": "🍜",
@@ -656,6 +1289,14 @@ const SCENARIO_ICON: Record<string, string> = {
   "hakone-ryokan": "♨️",
   "japanese-pharmacy": "💊",
   "kyoto-taxi": "🚕",
+  "n4-baito-interview": "👔",
+  "n4-apartment-leasing": "🏠",
+  "n4-hospital-visit": "🩺",
+  "n4-office-reporting": "💼",
+  "koban-lost-wallet": "🚓",
+  "n3-workplace-reporting": "📊",
+  "n3-medical-clinic": "🏥",
+  "osaka-takoyaki-kansai": "🐙",
 };
 
 const CATEGORY_TABS: Array<{ key: CategoryKey | "all"; label: string; icon: string }> = [
@@ -727,6 +1368,8 @@ export function SurvivalClient({
   const [maxScore, setMaxScore] = useState(0);
   const [combo, setCombo] = useState(0);
   const [isCompleted, setIsCompleted] = useState(false);
+  const [isFailed, setIsFailed] = useState(false);
+  const [hearts, setHearts] = useState(3);
   const [submitting, setSubmitting] = useState(false);
   const [filter, setFilter] = useState<CategoryKey | "all">("all");
 
@@ -801,6 +1444,8 @@ export function SurvivalClient({
     setRevealed(false);
     setTotalScore(0);
     setCombo(0);
+    setHearts(3);
+    setIsFailed(false);
     setMaxScore(scDef.steps.length * 100);
     setIsCompleted(false);
     speak(scDef.steps[0].npcJapanese);
@@ -818,6 +1463,9 @@ export function SurvivalClient({
     if (!activeScenario || phase !== "choose" || isCompleted) return;
     const scDef = activeScenario;
     const isLast = currentStepIndex >= scDef.steps.length - 1;
+    const nextScore = totalScore + choice.score;
+    const lostHeart = choice.politeness === "RUDE" || choice.score < 50 ? 1 : 0;
+    const nextHearts = Math.max(0, hearts - lostHeart);
 
     if (choice.score >= 80) {
       playCorrect();
@@ -827,13 +1475,17 @@ export function SurvivalClient({
       setCombo(0);
     }
 
-    setTotalScore((prev) => prev + choice.score);
+    if (lostHeart > 0) {
+      setHearts(nextHearts);
+    }
+
+    setTotalScore(nextScore);
     setPicked(choice);
     setPhase("feedback");
 
     timerRef.current = setTimeout(() => {
-      if (isLast) {
-        finishScenario(scDef);
+      if (nextHearts <= 0 || isLast) {
+        finishScenario(scDef, nextScore, nextHearts);
       } else {
         const nextStep = scDef.steps[currentStepIndex + 1];
         setCurrentStepIndex((i) => i + 1);
@@ -896,25 +1548,33 @@ export function SurvivalClient({
     }
   };
 
-  const finishScenario = async (scDef: ScenarioDef) => {
+  const finishScenario = async (scDef: ScenarioDef, finalTotalScore = totalScore, finalHearts = hearts) => {
+    const scenarioMax = scDef.steps.length * 100;
+    const passPct = scenarioMax > 0 ? Math.round((finalTotalScore / scenarioMax) * 100) : 100;
+    if (finalHearts <= 0 || passPct < 60) {
+      setIsFailed(true);
+      setIsCompleted(true);
+      showToast({
+        title: "Chưa vượt qua tình huống sinh tồn!",
+        description:
+          finalHearts <= 0
+            ? "Bạn đã mất hết thiện cảm của người đối thoại do chọn câu kém lịch sự. Hãy thử lại!"
+            : `Điểm phản xạ đạt ${passPct}% (cần tối thiểu 60% để qua màn). Hãy ôn lại từ vựng và thử lại!`,
+        type: "error",
+      });
+      return;
+    }
+
     setSubmitting(true);
     try {
       const dbMatch = scenarios.find((s) => s.slug === scDef.slug);
-      if (!dbMatch) {
-        showToast({
-          title: "Chưa lưu được kết quả.",
-          description: "Kịch bản này chưa được đồng bộ với máy chủ. Vui lòng thử lại.",
-          type: "error",
-        });
-        return;
-      }
 
       // `fetch` resolves on 4xx/5xx, so the response must be checked before any
       // celebration — otherwise a 401/404/500 produced a fake win.
       const res = await fetch("/api/survival/progress", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ scenarioId: dbMatch.id }),
+        body: JSON.stringify({ scenarioId: dbMatch?.id, slug: scDef.slug }),
       });
 
       if (!res.ok) {
@@ -932,6 +1592,7 @@ export function SurvivalClient({
       };
 
       playFanfare();
+      setIsFailed(false);
       setIsCompleted(true);
       showToast({
         title: `Vượt qua thử thách: ${scDef.title}!`,
@@ -1236,6 +1897,18 @@ export function SurvivalClient({
             <p className="text-sm font-black text-slate-900 dark:text-white leading-tight">{stepLabel(Math.min(currentStepIndex, steps.length - 1))}</p>
           </div>
 
+          {/* Thiện cảm / Mạng sinh tồn */}
+          <div className="flex min-w-0 flex-1 flex-col items-center justify-center rounded-2xl border border-slate-200/80 bg-white/95 px-3 py-2.5 shadow-sm dark:border-slate-800 dark:bg-sumi-900/90 sm:min-w-[104px] sm:px-4 sm:py-3">
+            <p className="flex items-center gap-1 text-lg font-black text-slate-900 dark:text-white sm:text-xl" aria-label={`${hearts}/3 thiện cảm`}>
+              {[1, 2, 3].map((idx) => (
+                <span key={idx} aria-hidden className={idx <= hearts ? "text-rose-500" : "opacity-25 grayscale"}>
+                  ❤️
+                </span>
+              ))}
+            </p>
+            <p className="text-xs text-slate-500">Thiện cảm</p>
+          </div>
+
           {/* Combo */}
           <div className="flex min-w-0 flex-1 flex-col items-center justify-center rounded-2xl border border-slate-200/80 bg-white/95 px-3 py-2.5 shadow-sm dark:border-slate-800 dark:bg-sumi-900/90 sm:min-w-[104px] sm:px-4 sm:py-3">
             <p className="flex items-center gap-1.5 text-xl font-black text-slate-900 dark:text-white sm:text-2xl">
@@ -1318,6 +1991,15 @@ export function SurvivalClient({
                     <p className="mt-2 text-sm font-medium leading-relaxed text-slate-800 dark:text-slate-100">
                       💡 {picked.npcFeedback}
                     </p>
+                    <div className="mt-2.5 rounded-2xl border border-slate-200/80 bg-slate-50/90 px-3 py-2 text-xs text-slate-600 dark:border-slate-700 dark:bg-sumi-800/80 dark:text-slate-300">
+                      <span className="font-bold text-slate-800 dark:text-white">📖 Giải thích ngữ vực: </span>
+                      {picked.knowledgeNote ??
+                        (picked.politeness === "POLITE"
+                          ? "Bạn dùng Thể lịch sự (丁寧語 — です/ます) hoặc Kính ngữ (敬語), chuẩn mực và an toàn trong giao tiếp đời sống tại Nhật."
+                          : picked.politeness === "CASUAL"
+                          ? "Bạn dùng Thể thông thường (タメ口), hơi suồng sã khi nói với nhân viên hoặc người lạ nhưng vẫn truyền đạt được ý."
+                          : "Cách nói trống không hoặc mệnh lệnh (RUDE) dễ gây mất thiện cảm nghiêm trọng trong văn hóa giao tiếp Nhật Bản (-1 ❤️).")}
+                    </div>
                     <p
                       className={`mt-3 inline-flex rounded-full px-3 py-1 text-xs font-black ${
                         picked.score >= 80
@@ -1325,7 +2007,7 @@ export function SurvivalClient({
                           : "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300"
                       }`}
                     >
-                      +{picked.score} điểm
+                      +{picked.score} điểm {picked.politeness === "RUDE" || picked.score < 50 ? "· -1 ❤️ Thiện cảm" : ""}
                     </p>
                   </>
                 )}
@@ -1441,6 +2123,27 @@ export function SurvivalClient({
                 </button>
               </div>
             </div>
+          ) : isFailed ? (
+            <Card className="space-y-4 border-2 border-rose-400 p-8 text-center dark:border-rose-800">
+              <div className="text-6xl">💦🙇‍♂️</div>
+              <Badge variant="torii">Chưa Vượt Qua Thử Thách</Badge>
+              <h3 className="text-2xl font-black text-slate-900 dark:text-white sm:text-3xl">
+                Điểm Phản Xạ: {finalPercentage}% · Thiện cảm: {hearts}/3 ❤️
+              </h3>
+              <p className="mx-auto max-w-md text-sm text-slate-600 dark:text-slate-400">
+                {hearts <= 0
+                  ? "Bạn đã chọn nhiều phương án thiếu lịch sự khiến đối phương bối rối. Trong văn hóa Nhật Bản, hãy ưu tiên thể Lịch sự (丁寧語) hoặc Kính ngữ (敬語) khi giao tiếp với người lạ và cấp trên."
+                  : "Bạn cần đạt tối thiểu 60% điểm phản xạ và giữ còn ít nhất 1 ❤️ thiện cảm để hoàn thành tình huống này."}
+              </p>
+              <div className="flex flex-wrap justify-center gap-3 pt-2">
+                <Button variant="sakura" onClick={() => startScenario(activeScenario)} className="px-8 font-bold">
+                  🔄 Thử lại tình huống này
+                </Button>
+                <Button variant="secondary" onClick={exitScenario}>
+                  Quay lại danh sách
+                </Button>
+              </div>
+            </Card>
           ) : (
             <Card className="space-y-4 border-2 border-emerald-400 p-8 text-center dark:border-emerald-800">
               <div className="animate-bounce text-6xl">🎌✨🍜</div>
@@ -1450,7 +2153,7 @@ export function SurvivalClient({
                 {finalPercentage >= 90 ? "Hạng S (Xuất Chúng)" : finalPercentage >= 75 ? "Hạng A (Chuẩn Bản Xứ)" : "Hạng B (Đạt Yêu Cầu)"}!
               </h3>
               <p className="mx-auto max-w-md text-sm text-slate-600 dark:text-slate-400">
-                Bạn đã xử lý tình huống giao tiếp đời thực rất trôi chảy và tự tin.
+                Bạn đã xử lý tình huống giao tiếp đời thực rất trôi chảy và tự tin ({finalPercentage}% · {hearts}/3 ❤️).
               </p>
               <div className="inline-block rounded-2xl border border-amber-300 bg-amber-50 px-5 py-2.5 text-base font-black text-amber-800 shadow-sm dark:bg-amber-950 dark:text-amber-300">
                 ✨ +{activeScenario.xpReward} XP Đã Nhận

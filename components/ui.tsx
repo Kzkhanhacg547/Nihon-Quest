@@ -479,12 +479,12 @@ export function Modal({
         aria-modal="true"
         aria-labelledby={titleId}
         tabIndex={-1}
-        className={`relative max-h-[92dvh] w-full ${maxWidthClass} overflow-y-auto rounded-3xl border border-slate-200/90 bg-white p-6 shadow-2xl motion-safe:animate-in motion-safe:zoom-in-95 motion-safe:duration-150 dark:border-slate-800 dark:bg-sumi-900 sm:p-8`}
+        className={`relative max-h-[90dvh] w-full ${maxWidthClass} overflow-y-auto rounded-2xl sm:rounded-3xl border border-slate-200/90 bg-white p-4 sm:p-8 shadow-2xl motion-safe:animate-in motion-safe:zoom-in-95 motion-safe:duration-150 dark:border-slate-800 dark:bg-sumi-900`}
       >
-        <div className="mb-5 flex items-center justify-between border-b border-slate-100 pb-4 dark:border-slate-800/80">
+        <div className="mb-4 sm:mb-5 flex items-center justify-between border-b border-slate-100 pb-3 sm:pb-4 dark:border-slate-800/80">
           <h3
             id={titleId}
-            className="flex items-center gap-2 text-lg font-black text-slate-900 dark:text-white sm:text-xl"
+            className="flex items-center gap-2 text-base font-black text-slate-900 dark:text-white sm:text-xl"
           >
             {title}
           </h3>
@@ -492,7 +492,7 @@ export function Modal({
             type="button"
             onClick={onClose}
             aria-label="Đóng"
-            className="rounded-xl p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-800 dark:hover:bg-sumi-800 dark:hover:text-white"
+            className="flex h-10 w-10 min-h-[40px] min-w-[40px] items-center justify-center rounded-xl text-slate-400 transition hover:bg-slate-100 hover:text-slate-800 active:scale-90 dark:hover:bg-sumi-800 dark:hover:text-white"
           >
             ✕
           </button>

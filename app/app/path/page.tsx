@@ -2,21 +2,34 @@ import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
+import { BASE64_IMAGES } from "@/lib/assets/base64Images";
 import "./path.css";
 import { authOptions } from "@/lib/auth-options";
 import { prisma } from "@/lib/prisma";
 import { AppNav } from "@/components/AppNav";
 import { JapanBackdrop } from "@/components/JapanIllustration";
-import { PathDecor, PathIcon, type DecorTheme, type PathIconName } from "@/components/PathDecor";
-import { buildLearningPath, sanitizeAnswers, LEVEL_LABELS, GOAL_LABELS, SKILL_LABELS, STYLE_LABELS, type PathModule } from "@/lib/personalization";
+import { PathDecor, PathIcon, type DecorTheme, type PathIconName } from "@/components/Pathdecor";
+import {
+  buildLearningPath,
+  buildRemediationPlan,
+  LEARNING_LIFECYCLE_STAGES,
+  sanitizeAnswers,
+  LEVEL_LABELS,
+  GOAL_LABELS,
+  SKILL_LABELS,
+  STYLE_LABELS,
+  type PathModule,
+} from "@/lib/personalization";
 
 export const metadata = { title: "Lộ Trình Cá Nhân — Nihon Quest" };
 
-type ModuleStatus = "COMPLETED" | "IN_PROGRESS" | "NOT_STARTED" | "AVAILABLE";
+type ModuleStatus = "COMPLETED" | "IN_PROGRESS" | "NOT_STARTED" | "AVAILABLE" | "LOCKED";
 
 interface EnrichedModule extends PathModule {
   status: ModuleStatus;
+  score: number | null;
   exerciseCount: number | null;
+  prerequisiteTitle?: string;
 }
 
 /* ---------- Họa tiết & ký hiệu theo nhóm (không cần ảnh riêng cho từng bài) ---------- */
@@ -94,43 +107,105 @@ export default async function LearningPathPage() {
   });
   const path = buildLearningPath(answers);
 
-  // Enrich LESSON / MOCK modules with real content + progress.
+  // Enrich LESSON / MOCK modules with real content + progress + SRS stats.
   const slugs = path.modules
     .filter((m) => (m.kind === "LESSON" || m.kind === "MOCK") && m.slug)
     .map((m) => m.slug!)
     .filter((s, i, arr) => arr.indexOf(s) === i);
 
-  const lessons = await prisma.lesson.findMany({
-    where: { slug: { in: slugs }, isPublished: true },
-    select: {
-      slug: true,
-      title: true,
-      description: true,
-      xpReward: true,
-      progress: { where: { userId: uid } },
-      _count: { select: { exercises: true } },
-    },
-  });
+  const now = new Date();
+  const [lessons, dueSrsCount, weakSrsCount, userLowLessons] = await Promise.all([
+    prisma.lesson.findMany({
+      where: { slug: { in: slugs }, isPublished: true },
+      select: {
+        slug: true,
+        title: true,
+        description: true,
+        xpReward: true,
+        progress: { where: { userId: uid } },
+        _count: { select: { exercises: true } },
+      },
+    }),
+    prisma.reviewItem.count({
+      where: { userId: uid, dueAt: { lte: now } },
+    }),
+    prisma.reviewItem.count({
+      where: { userId: uid, repetitions: 0 },
+    }),
+    prisma.userLessonProgress.findMany({
+      where: { userId: uid, score: { lt: 75 } },
+      include: { lesson: { select: { slug: true, title: true } } },
+      orderBy: { score: "asc" },
+      take: 3,
+    }),
+  ]);
   const bySlug = new Map(lessons.map((l) => [l.slug, l]));
+
+  let activeLessonSeen = false;
+  let lastIncompleteLessonTitle: string | undefined;
 
   const modules: EnrichedModule[] = path.modules.map((m) => {
     const lesson = m.slug ? bySlug.get(m.slug) : undefined;
     const raw = lesson?.progress[0]?.status;
-    const status: ModuleStatus = lesson
-      ? raw === "COMPLETED"
-        ? "COMPLETED"
-        : raw === "IN_PROGRESS"
-          ? "IN_PROGRESS"
-          : "NOT_STARTED"
-      : "AVAILABLE";
+    const score = lesson?.progress[0]?.score ?? null;
+
+    if (!lesson) {
+      return {
+        ...m,
+        status: "AVAILABLE",
+        score: null,
+        exerciseCount: null,
+      };
+    }
+
+    if (raw === "COMPLETED") {
+      return {
+        ...m,
+        title: lesson.title,
+        description: lesson.description,
+        xp: lesson.xpReward,
+        status: "COMPLETED",
+        score,
+        exerciseCount: lesson._count.exercises,
+      };
+    }
+
+    if (!activeLessonSeen) {
+      activeLessonSeen = true;
+      lastIncompleteLessonTitle = lesson.title;
+      return {
+        ...m,
+        title: lesson.title,
+        description: lesson.description,
+        xp: lesson.xpReward,
+        status: raw === "IN_PROGRESS" ? "IN_PROGRESS" : "NOT_STARTED",
+        score,
+        exerciseCount: lesson._count.exercises,
+      };
+    }
+
     return {
       ...m,
-      title: lesson?.title ?? m.title,
-      description: lesson?.description ?? m.description,
-      xp: lesson?.xpReward ?? m.xp,
-      status,
-      exerciseCount: lesson ? lesson._count.exercises : null,
+      title: lesson.title,
+      description: lesson.description,
+      xp: lesson.xpReward,
+      status: "LOCKED",
+      score,
+      exerciseCount: lesson._count.exercises,
+      prerequisiteTitle: lastIncompleteLessonTitle,
     };
+  });
+
+  const remediationItems = buildRemediationPlan({
+    dueSrsCount,
+    weakSrsCount,
+    lowScoreLessons: userLowLessons
+      .filter((lp) => typeof lp.score === "number")
+      .map((lp) => ({
+        slug: lp.lesson.slug,
+        title: lp.lesson.title,
+        score: lp.score ?? 0,
+      })),
   });
 
   const completed = modules.filter((m) => m.status === "COMPLETED").length;
@@ -159,7 +234,7 @@ export default async function LearningPathPage() {
           <div className="nqp-hero-main">
             <div className="nqp-hero-scene" aria-hidden="true">
               <Image
-                src="/images/dashboard/fuji-hero.webp"
+                src={BASE64_IMAGES.fujiHero} unoptimized
                 alt=""
                 fill
                 priority
@@ -175,7 +250,7 @@ export default async function LearningPathPage() {
             <div className="nqp-hero-copy">
               <span className="nqp-eyebrow">
                 <span className="nqp-eyebrow-ico"><PathIcon name="goal" /></span>
-                LỘ TRÌNH CÁ NHÂN HÓA
+                LỘ TRÌNH CÁ NHÂN HÓA · ĐỒNG BỘ BỀN VỮNG
               </span>
               <h1 className="nqp-title">
                 {titleHead}
@@ -204,6 +279,10 @@ export default async function LearningPathPage() {
                     <span aria-hidden="true">→</span>
                   </Link>
                 )}
+                <Link className="nqp-btn-ghost" href="/app/test">
+                  <span className="nqp-btn-ico"><PathIcon name="target" /></span>
+                  Kiểm tra 4 kỹ năng / Miễn học phần
+                </Link>
                 <Link className="nqp-btn-ghost" href="/app/profile">
                   <span className="nqp-btn-ico"><PathIcon name="refresh" /></span>
                   Thay đổi lộ trình
@@ -224,6 +303,114 @@ export default async function LearningPathPage() {
             ))}
           </div>
         </section>
+
+        {/* ===== CHU TRÌNH HỌC KHOA HỌC 8 BƯỚC ===== */}
+        <section
+          aria-label="Chu trình học tiếng Nhật khoa học 8 bước"
+          className="mb-6 rounded-3xl border border-slate-200/80 bg-white/95 p-5 shadow-sm dark:border-slate-800 dark:bg-sumi-900/90"
+        >
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <h2 className="text-base font-black text-slate-900 dark:text-white">
+                🔄 Chu trình học khoa học 8 bước (N5 → N4 → N3)
+              </h2>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                Đánh giá đầu vào → Xác định trình độ → Lộ trình cá nhân → Học kiến thức → Luyện tập → Kiểm tra → Ôn tập cách quãng → Đánh giá tiến bộ
+              </p>
+            </div>
+            <Link
+              href="/app/test"
+              className="rounded-xl border border-red-200 bg-rose-50 px-3 py-1.5 text-xs font-bold text-red-600 transition hover:bg-rose-100 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-300"
+            >
+              ⚡ Thi vượt cấp / Miễn học phần →
+            </Link>
+          </div>
+          <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4 lg:grid-cols-8">
+            {LEARNING_LIFECYCLE_STAGES.map((stage) => {
+              const isActiveStage =
+                (stage.step === 4 && completed === 0) ||
+                (stage.step === 5 && completed > 0 && percent < 80) ||
+                (stage.step === 7 && dueSrsCount > 0) ||
+                (stage.step === 8 && percent >= 80);
+              return (
+                <Link
+                  key={stage.key}
+                  href={stage.href}
+                  className={`flex flex-col justify-between rounded-2xl border p-3 transition hover:-translate-y-0.5 ${
+                    isActiveStage
+                      ? "border-red-500 bg-rose-50/90 shadow-sm dark:border-red-500/70 dark:bg-red-950/40"
+                      : "border-slate-200/80 bg-slate-50/70 hover:border-red-200 dark:border-slate-800 dark:bg-sumi-800/60"
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-red-600 text-[11px] font-black text-white">
+                      {stage.step}
+                    </span>
+                    <span className="jp-text text-sm font-black text-red-600 dark:text-red-400">{stage.glyph}</span>
+                  </div>
+                  <div className="mt-2">
+                    <b className="block text-xs font-extrabold text-slate-900 dark:text-white">{stage.title}</b>
+                    <small className="mt-0.5 block text-[11px] leading-snug text-slate-500 dark:text-slate-400">
+                      {stage.subtitle}
+                    </small>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        </section>
+
+        {/* ===== TRẠM ÔN TẬP CỦNG CỐ (REMEDIATION) ===== */}
+        {remediationItems.length > 0 && (
+          <section
+            aria-label="Bài ôn tập củng cố kiến thức"
+            className="mb-6 rounded-3xl border border-amber-300/80 bg-gradient-to-r from-amber-50 via-orange-50/70 to-rose-50/60 p-5 shadow-sm dark:border-amber-800/60 dark:from-amber-950/40 dark:via-sumi-900 dark:to-red-950/30"
+          >
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+              <div className="flex items-center gap-2.5">
+                <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-500 text-lg text-white shadow-sm">
+                  🩺
+                </span>
+                <div>
+                  <h2 className="text-base font-black text-slate-900 dark:text-white">
+                    Trạm Ôn Tập Củng Cố (Remediation)
+                  </h2>
+                  <p className="text-xs text-slate-600 dark:text-slate-300">
+                    Hệ thống phát hiện một số kiến thức bạn làm sai nhiều hoặc đã đến hạn ôn tập cách quãng.
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div className="grid gap-3 md:grid-cols-3">
+              {remediationItems.map((item) => (
+                <div
+                  key={item.id}
+                  className="flex flex-col justify-between rounded-2xl border border-amber-200/80 bg-white/90 p-4 dark:border-amber-900/50 dark:bg-sumi-900/90"
+                >
+                  <div>
+                    <span
+                      className={`inline-block rounded-full px-2.5 py-0.5 text-[10px] font-black uppercase ${
+                        item.urgency === "HIGH"
+                          ? "bg-red-100 text-red-700 dark:bg-red-950/60 dark:text-red-300"
+                          : "bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300"
+                      }`}
+                    >
+                      {item.urgency === "HIGH" ? "Cần ôn ngay" : "Khuyến nghị ôn tập"}
+                    </span>
+                    <h3 className="mt-2 text-sm font-black text-slate-900 dark:text-white">{item.title}</h3>
+                    <p className="mt-1 text-xs leading-relaxed text-slate-600 dark:text-slate-300">{item.reason}</p>
+                  </div>
+                  <Link
+                    href={item.href}
+                    className="mt-3 inline-flex min-h-9 w-fit items-center gap-1.5 rounded-xl bg-amber-600 px-3.5 py-1.5 text-xs font-bold text-white transition hover:bg-amber-700"
+                  >
+                    {item.actionLabel} →
+                  </Link>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
 
         <section className="nqp-stats" aria-label="Thống kê lộ trình">
           <div className="nqp-stat s-blue">
@@ -255,12 +442,13 @@ export default async function LearningPathPage() {
                 <span className="nqp-sakura" aria-hidden="true">✿</span>
                 Khóa kiến thức của bạn
               </h2>
-              <span>Được sắp xếp riêng theo 5 lựa chọn khi tạo tài khoản — khác với danh sách Bài học chung.</span>
+              <span>Tuân thủ thứ tự tiên quyết (cần đạt ≥ 60% bài trước để mở khóa bài sau, hoặc thi miễn học phần).</span>
             </div>
 
             <ol className="nqp-timeline">
               {modules.map((m, i) => {
                 const isCurrent = i === currentIdx;
+                const isLocked = m.status === "LOCKED";
                 const theme = pickTheme(m);
                 return (
                   <li
@@ -270,10 +458,11 @@ export default async function LearningPathPage() {
                       `k-${m.kind.toLowerCase()}`,
                       m.status === "COMPLETED" ? "is-done" : "",
                       isCurrent ? "is-current" : "",
+                      isLocked ? "opacity-80" : "",
                     ].join(" ")}
                   >
                     <span className="nqp-node" aria-hidden="true">
-                      {m.status === "COMPLETED" ? "✓" : i + 1}
+                      {m.status === "COMPLETED" ? "✓" : isLocked ? "🔒" : i + 1}
                     </span>
 
                     <div className="nqp-module-body">
@@ -288,9 +477,15 @@ export default async function LearningPathPage() {
                           <span className="nqp-meta">
                             {m.minutes} phút • +{m.xp} XP
                             {m.exerciseCount != null ? ` • ${m.exerciseCount} bài tập` : ""}
+                            {m.score != null ? ` • Điểm: ${m.score}%` : ""}
                           </span>
                           {m.status === "COMPLETED" && <span className="nqp-done">Đã hoàn thành</span>}
                           {isCurrent && <span className="nqp-now">Đang học</span>}
+                          {isLocked && (
+                            <span className="rounded-full bg-slate-200 px-2.5 py-0.5 text-[11px] font-bold text-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                              🔒 Chưa mở khóa
+                            </span>
+                          )}
                         </div>
 
                         <h3>{m.title}</h3>
@@ -307,11 +502,26 @@ export default async function LearningPathPage() {
                           </div>
                         </div>
 
-                        {m.target && (
-                          <Link className={`nqp-go ${isCurrent ? "is-current" : ""}`} href={m.target}>
-                            {m.status === "COMPLETED" ? "Học lại" : isCurrent ? "Tiếp tục ngay" : "Mở mô-đun"}
-                            <span aria-hidden="true">→</span>
-                          </Link>
+                        {isLocked ? (
+                          <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-amber-200/80 bg-amber-50/70 px-3.5 py-2.5 text-xs text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-200">
+                            <span>
+                              🔒 <b>Điều kiện mở khóa:</b> Hoàn thành bài tiên quyết{" "}
+                              {m.prerequisiteTitle ? `「${m.prerequisiteTitle}」` : "trước đó"} với điểm ≥ 60%.
+                            </span>
+                            <Link
+                              href="/app/test"
+                              className="font-extrabold text-red-600 underline hover:text-red-700 dark:text-red-400"
+                            >
+                              Kiểm tra miễn học phần →
+                            </Link>
+                          </div>
+                        ) : (
+                          m.target && (
+                            <Link className={`nqp-go ${isCurrent ? "is-current" : ""}`} href={m.target}>
+                              {m.status === "COMPLETED" ? "Ôn tập lại" : isCurrent ? "Tiếp tục ngay" : "Mở mô-đun"}
+                              <span aria-hidden="true">→</span>
+                            </Link>
+                          )
                         )}
                       </div>
                     </div>

@@ -13,7 +13,7 @@ export function NihonQuestLogo({
           blank while the image decodes, and decoding is left eager. */}
       <span className="nq-brand-mark" aria-hidden="true">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/icon.png" alt="" width={52} height={52} />
+        <img src="/favicon.ico" alt="" width={52} height={52} />
       </span>
       {showText && (
         <span className="nq-brand-type">

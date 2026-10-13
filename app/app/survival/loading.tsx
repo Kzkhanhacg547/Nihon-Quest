@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { SafeImg } from "./SafeImg";
+import { BASE64_IMAGES } from "@/lib/assets/base64Images";
 
 const FEATURES = [
   { icon: "💬", label: "Hội thoại\ntương tác", cls: "bg-rose-100 text-rose-500" },
@@ -28,7 +29,7 @@ export default function Loading() {
       className="fixed inset-0 z-[100] overflow-hidden bg-gradient-to-br from-sky-300 via-indigo-300 to-pink-200"
     >
       <SafeImg
-        src="/images/survival/loading-girl.webp"
+        src={BASE64_IMAGES.survivalLoadingGirl}
         alt=""
         priority
         className="absolute inset-0 h-full w-full object-cover object-[22%_40%] md:object-[50%_40%]"
@@ -42,7 +43,7 @@ export default function Loading() {
           aria-hidden="true"
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/icon.png" alt="" width={40} height={40} className="h-full w-full object-contain" draggable={false} />
+          <img src="/favicon.ico" alt="" width={40} height={40} className="h-full w-full object-contain" draggable={false} />
         </span>
         <span className="text-2xl font-black tracking-tight text-white">
           Nihon&nbsp;<span className="text-rose-400">Quest</span>
@@ -54,10 +55,10 @@ export default function Loading() {
 
       {/* Thẻ loading */}
       <div className="absolute inset-0 flex items-center justify-center px-4 pt-10 md:justify-end md:pr-[10vw] lg:justify-center lg:pl-[12vw]">
-        <div className="relative w-full max-w-[640px] rounded-[32px] border border-white/70 bg-white/75 px-6 pb-7 pt-12 text-center shadow-2xl shadow-indigo-900/20 backdrop-blur-xl sm:px-10 sm:pb-9">
+        <div className="relative w-full max-w-[640px] rounded-[32px] border border-white/70 bg-white/90 dark:bg-sumi-900/90 dark:border-slate-700 px-6 pb-7 pt-12 text-center shadow-2xl shadow-indigo-900/20 backdrop-blur-xl sm:px-10 sm:pb-9">
           <div className="absolute -top-14 left-1/2 -translate-x-1/2">
             <SafeImg
-              src="/icon.png"
+              src="/favicon.ico"
               alt=""
               priority
               className="h-28 w-28 rounded-full border-4 border-white bg-white object-contain shadow-xl shadow-indigo-900/25"
@@ -72,12 +73,12 @@ export default function Loading() {
             />
           </div>
 
-          <p className="text-xs font-bold uppercase tracking-[0.3em] text-indigo-950">Đang tải module</p>
-          <h1 className="mt-3 text-3xl font-black leading-tight tracking-tight text-indigo-950 sm:text-5xl">
+          <p className="text-xs font-bold uppercase tracking-[0.3em] text-indigo-950 dark:text-indigo-300">Đang tải module</p>
+          <h1 className="mt-3 text-3xl font-black leading-tight tracking-tight text-indigo-950 dark:text-white sm:text-5xl">
             Thử thách <span className="text-pink-500">sinh tồn</span>{" "}
             <span className="text-2xl text-pink-400 sm:text-3xl" aria-hidden>🌸</span>
           </h1>
-          <p className="mx-auto mt-4 max-w-md text-sm leading-relaxed text-slate-600 sm:text-base">
+          <p className="mx-auto mt-4 max-w-md text-sm leading-relaxed text-slate-600 dark:text-slate-200 sm:text-base">
             Chuẩn bị tinh thần, chúng ta sắp bước vào những tình huống giao tiếp thực tế tại Nhật Bản!
           </p>
 

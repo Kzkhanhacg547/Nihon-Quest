@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import Image from "next/image";
+import { BASE64_IMAGES } from "@/lib/assets/base64Images";
 import Link from "next/link";
 import { NihonQuestLogo } from "@/components/NihonQuestLogo";
 import {
@@ -124,7 +125,7 @@ export default function Home() {
         <div className="hp-hero__scene" aria-hidden="true">
           {/* Ảnh đặt tại public/images/hero-japan.webp */}
           <Image
-            src="/images/hero-japan.webp"
+            src={BASE64_IMAGES.heroJapan} unoptimized
             alt=""
             fill
             priority
@@ -252,7 +253,7 @@ export default function Home() {
           <div className="hp-footer__pic">
             {/* Ảnh đặt tại public/images/footer-japan.webp */}
             <Image
-              src="/images/footer-japan.webp"
+              src={BASE64_IMAGES.footerJapan} unoptimized
               alt=""
               fill
               sizes="100vw"

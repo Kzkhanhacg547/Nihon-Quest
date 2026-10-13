@@ -24,14 +24,28 @@ export async function POST(req: Request) {
   const displayName = user.profile?.displayName ?? user.name ?? user.email.split("@")[0];
   await prisma.user.update({
     where: { id: user.id },
-    data: { profile: { upsert: { create: { displayName, avatar: avatar }, update: { avatar: avatar } } } },
+    data: {
+      image: avatar,
+      profile: {
+        upsert: {
+          create: { displayName, avatar },
+          update: { avatar },
+        },
+      },
+    },
   });
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({ ok: true, avatar });
 }
 
 export async function DELETE() {
   const user = await currentUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (user.profile) await prisma.profile.update({ where: { userId: user.id }, data: { avatar: null } });
-  return NextResponse.json({ ok: true });
+  await prisma.user.update({
+    where: { id: user.id },
+    data: {
+      image: null,
+      ...(user.profile ? { profile: { update: { avatar: null } } } : {}),
+    },
+  });
+  return NextResponse.json({ ok: true, avatar: null });
 }

@@ -5,6 +5,7 @@ import "./globals.css";
 import "./fonts.css";
 import "./redesign.css";
 import "./nq-ui.css"; // phải import SAU redesign.css để ghi đè
+import "./yokai.css";
 import { MotionEnhancer } from "@/components/MotionEnhancer";
 
 const sans = Be_Vietnam_Pro({
@@ -27,9 +28,9 @@ export const metadata: Metadata = {
     "Học tiếng Nhật cùng Nihon Quest: luyện viết Kana, ôn tập SRS, hội thoại AI và khám phá văn hóa Nhật Bản theo nhịp độ của bạn.",
   keywords: ["learn japanese", "hiragana", "katakana", "kanji", "jlpt", "spaced repetition", "nihon quest"],
   icons: {
-    icon: [{ url: "/icon.png", type: "image/png" }],
-    shortcut: "/icon.png",
-    apple: "/icon.png",
+    icon: [{ url: "/favicon.ico", type: "image/x-icon" }],
+    shortcut: "/favicon.ico",
+    apple: "/favicon.ico",
   },
 };
 

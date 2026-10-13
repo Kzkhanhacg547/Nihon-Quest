@@ -822,7 +822,7 @@ export function StatsClient({
               <dd className="font-black text-rose-600 dark:text-rose-400">
                 {personalRecords.mostXpInOneDay.toLocaleString()} XP
                 {personalRecords.bestDayDate ? (
-                  <span className="ml-1 text-[11px] font-normal text-slate-400">({personalRecords.bestDayDate})</span>
+                  <span className="ml-1 text-[11px] font-normal text-slate-500 dark:text-slate-400">({personalRecords.bestDayDate})</span>
                 ) : null}
               </dd>
             </div>
@@ -871,7 +871,7 @@ export function StatsClient({
               <p className="text-sm font-semibold text-slate-600 dark:text-slate-400">
                 Chưa có hoạt động nào được ghi nhận.
               </p>
-              <p className="mt-1 text-xs text-slate-400">
+              <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
                 Hãy bắt đầu bài học đầu tiên để thấy hoạt động tại đây!
               </p>
             </div>

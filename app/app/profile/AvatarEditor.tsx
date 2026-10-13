@@ -24,12 +24,19 @@ export function AvatarEditor({ src, initial }: { src: string | null; initial: st
   const router = useRouter();
   const { showToast } = useSoundAndTheme();
   const inputRef = useRef<HTMLInputElement>(null);
+  const [currentSrc, setCurrentSrc] = useState<string | null>(src);
+  const [imgError, setImgError] = useState(false);
   const [img, setImg] = useState<HTMLImageElement | null>(null);
   const [zoom, setZoom] = useState(1);
   const [ox, setOx] = useState(0.5);
   const [oy, setOy] = useState(0.25);
   const [preview, setPreview] = useState("");
   const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    setCurrentSrc(src);
+    setImgError(false);
+  }, [src]);
 
   useEffect(() => { if (img) setPreview(crop(img, zoom, ox, oy)); }, [img, zoom, ox, oy]);
   useEffect(() => {
@@ -62,6 +69,8 @@ export function AvatarEditor({ src, initial }: { src: string | null; initial: st
         body: method === "POST" ? JSON.stringify({ avatar: preview }) : undefined,
       });
       if (!res.ok) throw new Error();
+      setCurrentSrc(method === "POST" ? preview : null);
+      setImgError(false);
       notifyProgressUpdated();
       showToast({ title: method === "POST" ? "Đã cập nhật ảnh đại diện" : "Đã xóa ảnh đại diện", type: "success" });
       close();
@@ -73,12 +82,27 @@ export function AvatarEditor({ src, initial }: { src: string | null; initial: st
     }
   }
 
+  const validSrc =
+    currentSrc &&
+    !imgError &&
+    (currentSrc.startsWith("data:image/") ||
+      currentSrc.startsWith("http://") ||
+      currentSrc.startsWith("https://") ||
+      currentSrc.startsWith("/"))
+      ? currentSrc
+      : null;
+
   return (
     <>
       <div className="relative h-28 w-28 shrink-0 sm:h-32 sm:w-32">
-        {src ? (
+        {validSrc ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={src} alt="Ảnh đại diện" className="h-full w-full rounded-full object-cover shadow-lg ring-4 ring-white dark:ring-sumi-900" />
+          <img
+            src={validSrc}
+            alt="Ảnh đại diện"
+            onError={() => setImgError(true)}
+            className="h-full w-full rounded-full object-cover shadow-lg ring-4 ring-white dark:ring-sumi-900"
+          />
         ) : (
           <div className="flex h-full w-full items-center justify-center rounded-full bg-rose-600 text-5xl font-bold text-white shadow-lg ring-4 ring-white dark:ring-sumi-900">{initial}</div>
         )}
@@ -114,7 +138,7 @@ export function AvatarEditor({ src, initial }: { src: string | null; initial: st
         </div>
       ) : null}
 
-      {src && !img ? (
+      {validSrc && !img ? (
         <button type="button" disabled={busy} onClick={() => send("DELETE")} className="mt-3 text-sm font-semibold text-slate-500 underline-offset-4 hover:text-red-600 hover:underline disabled:opacity-50 dark:text-slate-400">Xóa ảnh</button>
       ) : null}
     </>

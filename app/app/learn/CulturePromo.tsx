@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { BASE64_IMAGES } from "@/lib/assets/base64Images";
 import { useEffect, useState } from "react";
 import { IcoArrow } from "@/components/LearnIcons";
 
@@ -25,9 +26,9 @@ export function CulturePromo() {
   return (
     <Link href="/app/journey" className="lp-promo" data-tone={tone}>
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img className="lp-promo-img is-day" src="/learn/promo-day.jpg" alt="" aria-hidden="true" loading="lazy" />
+      <img className="lp-promo-img is-day" src={BASE64_IMAGES.promoDay} alt="" aria-hidden="true" loading="lazy" />
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img className="lp-promo-img is-night" src="/learn/promo-night.jpg" alt="" aria-hidden="true" loading="lazy" />
+      <img className="lp-promo-img is-night" src={BASE64_IMAGES.promoNight} alt="" aria-hidden="true" loading="lazy" />
       <span className="lp-promo-tone" aria-hidden="true">{tone === "day" ? "☀ Ban ngày" : "☾ Ban đêm"}</span>
       <small>TIẾN XA HƠN</small>
       <h3>Khám phá Văn hóa Nhật Bản</h3>

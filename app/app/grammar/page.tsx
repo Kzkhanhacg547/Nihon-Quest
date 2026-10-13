@@ -6,6 +6,7 @@ import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 import { authOptions } from "@/lib/auth-options";
 import { prisma } from "@/lib/prisma";
+import { BASE64_IMAGES, LEVEL_IMAGES } from "@/lib/assets/base64Images";
 import { AppNav } from "@/components/AppNav";
 import { GrammarClient } from "./GrammarClient";
 
@@ -37,7 +38,7 @@ function pickLevelImages(): Record<(typeof LEVELS)[number], string | null> {
   const result = {} as Record<(typeof LEVELS)[number], string | null>;
   LEVELS.forEach((lv, i) => {
     // Nếu thư mục có ít hơn 3 ảnh thì buộc phải lặp lại
-    result[lv] = files.length ? `/images/level/${encodeURIComponent(files[i % files.length])}` : null;
+    result[lv] = LEVEL_IMAGES[i % LEVEL_IMAGES.length] || null;
   });
   return result;
 }
@@ -80,7 +81,7 @@ export default async function GrammarPage() {
       <section className="mx-auto mt-2 max-w-[1320px] px-4 sm:px-6">
         <div className="relative isolate overflow-hidden rounded-3xl bg-[#0b1230]">
           <Image
-            src="/images/dashboard/fuji-hero.webp"
+            src={BASE64_IMAGES.fujiHero} unoptimized
             alt=""
             fill
             priority

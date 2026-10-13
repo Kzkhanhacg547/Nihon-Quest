@@ -2,6 +2,7 @@ import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
+import { BASE64_IMAGES } from "@/lib/assets/base64Images";
 import "./dashboard.css";
 import { authOptions } from "@/lib/auth-options";
 import { prisma } from "@/lib/prisma";
@@ -28,6 +29,7 @@ const DAILY_INSPIRATIONS = [
 ];
 
 const MODES: { tone: "rose" | "blue" | "green" | "amber"; art: ModeArtKind; title: string; body: string; href: string; cta: string }[] = [
+  { tone: "rose", art: "torii", title: "Yōkai Dash — Mini Game 3D", body: "Chạy vô tận 3 làn, né chướng ngại vật & chọn cổng tri thức tiếng Nhật nhận XP.", href: "/app/yokai-dash", cta: "Chơi Yōkai Dash ngay" },
   { tone: "rose", art: "srs", title: "Hàng đợi Ôn tập (SRS)", body: "Chống quên lãng với thuật toán SM-2. Ôn tập thông minh, ghi nhớ dài hạn.", href: "/app/review", cta: "Xem kho thẻ ôn tập" },
   { tone: "blue", art: "kana", title: "Kana Lab — Bảng Chữ Cái", body: "Luyện viết nét Hiragana & Katakana kèm âm thanh chuẩn và vẽ trên canvas.", href: "/app/learn", cta: "Luyện vẽ bảng chữ cái" },
   { tone: "green", art: "mountain", title: "Kho Từ Vựng & Hán Tự", body: "Tra cứu nghĩa, phát âm và ví dụ thực tế, kèm tính năng lưu SRS 1 chạm.", href: "/app/vocabulary", cta: "Tra cứu từ vựng & Kanji" },
@@ -64,11 +66,22 @@ export default async function AppHome() {
   const currentLesson = allLessons.find((l) => l.progress[0]?.status !== "COMPLETED") || allLessons[0];
   const lessonPercent = Math.round((completed / Math.max(1, allLessons.length)) * 100);
 
-  const journeyLocations = await prisma.journeyLocation.findMany({
+  const allJourneyLocations = await prisma.journeyLocation.findMany({
     orderBy: { order: "asc" },
     include: { userProgress: { where: { userId: uid } } },
-    take: 5,
   });
+
+  for (const loc of allJourneyLocations) {
+    const p = loc.userProgress[0];
+    if (p && p.progress >= 100 && p.status !== "COMPLETED") {
+      await prisma.userJourneyProgress.update({
+        where: { id: p.id },
+        data: { status: "COMPLETED", completedAt: p.completedAt || new Date() },
+      });
+      p.status = "COMPLETED";
+    }
+  }
+  const journeyLocations = allJourneyLocations.slice(0, 5);
 
   const dueReviewCount = await prisma.reviewItem.count({
     where: { userId: uid, dueAt: { lte: new Date() } },
@@ -89,23 +102,22 @@ export default async function AppHome() {
   }
 
   const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-  // Scoped to this user: previously loaded every user's XP ledger into one
-  // user's dashboard request.
-  const tx = await prisma.xpTransaction.findMany({
-    where: { userId: uid, createdAt: { gte: sevenDaysAgo } },
-    select: { userId: true, amount: true },
+  const txSums = await prisma.xpTransaction.groupBy({
+    by: ["userId"],
+    where: { createdAt: { gte: sevenDaysAgo } },
+    _sum: { amount: true },
   });
   const weeklyXp = new Map<string, number>();
-  tx.forEach((t) => weeklyXp.set(t.userId, (weeklyXp.get(t.userId) || 0) + t.amount));
+  txSums.forEach((t) => weeklyXp.set(t.userId, t._sum.amount || 0));
 
   const users = await prisma.user.findMany({
-    select: { id: true, name: true, totalXP: true, level: true, currentStreak: true, profile: { select: { displayName: true, avatar: true } } },
+    select: { id: true, name: true, image: true, totalXP: true, level: true, currentStreak: true, profile: { select: { displayName: true, avatar: true } } },
     orderBy: [{ totalXP: "desc" }, { currentStreak: "desc" }],
     take: 20,
   });
   const formatted = users.map((u) => ({
     id: u.id, name: u.name, totalXP: u.totalXP, level: u.level, currentStreak: u.currentStreak,
-    displayName: u.profile?.displayName || u.name, avatar: u.profile?.avatar || null, weeklyXp: weeklyXp.get(u.id) || 0,
+    displayName: u.profile?.displayName || u.name, avatar: u.profile?.avatar || u.image || null, weeklyXp: weeklyXp.get(u.id) || 0,
   }));
   const { weeklyList } = buildEnrichedLeaderboard(formatted, uid);
 
@@ -153,17 +165,20 @@ export default async function AppHome() {
   const quote = DAILY_INSPIRATIONS[new Date().getDate() % DAILY_INSPIRATIONS.length];
   const displayName = user.profile?.displayName || user.name || user.email.split("@")[0];
   const xpPercent = Math.min(100, Math.round((user.totalXP / Math.max(1, level.nextLevelXP)) * 100));
-  const doneJourney = journeyLocations.filter((l) => l.userProgress[0]?.status === "COMPLETED").length;
+  const isLocCompleted = (l: (typeof allJourneyLocations)[number]) =>
+    l.userProgress[0]?.status === "COMPLETED" || (l.userProgress[0]?.progress ?? 0) >= 100;
+  const doneJourney = allJourneyLocations.filter(isLocCompleted).length;
+  const totalJourney = allJourneyLocations.length;
 
   // Bài chưa từng mở → hiện nhãn "New" như trong thiết kế.
   const isNewLesson = !!currentLesson && !currentLesson.progress[0];
-  const journeyPercent = Math.round((doneJourney / Math.max(1, journeyLocations.length)) * 100);
+  const journeyPercent = Math.round((doneJourney / Math.max(1, totalJourney)) * 100);
 
   return (
     <div className="nqd">
       <JapanBackdrop />
       <div className="nqd-footer" aria-hidden="true">
-        <Image src="/images/dashboard/footer-sakura.webp" alt="" fill sizes="100vw" />
+        <Image src={BASE64_IMAGES.footerSakura} unoptimized alt="" fill sizes="100vw" />
       </div>
       <div className="nqd-cheer" aria-hidden="true">一緒にがんばろう!</div>
 
@@ -182,7 +197,7 @@ export default async function AppHome() {
             </nav>
             <div className="nqd-mascot" aria-hidden="true">
               <span className="cheer">がんばろう!</span>
-              <Image src="/images/dashboard/maneki-neko.webp" alt="" width={480} height={518} />
+              <Image src={BASE64_IMAGES.manekiNeko} unoptimized alt="" width={480} height={518} />
             </div>
           </div>
 
@@ -197,7 +212,7 @@ export default async function AppHome() {
                 <p>{intro}{skillIntro ? ` ${skillIntro}` : ""}</p>
               </div>
               <div className="nqd-hero-scene" aria-hidden="true">
-                <Image src="/images/dashboard/fuji-hero.webp" alt="" fill priority sizes="(max-width: 1100px) 100vw, 800px" />
+                <Image src={BASE64_IMAGES.fujiDash} unoptimized alt="" fill priority sizes="(max-width: 1100px) 100vw, 800px" />
               </div>
               <div className="nqd-stamp-wrap" aria-hidden="true">
                 <div className="nqd-stamp"><span>一歩ずつ</span><span>夢に近づく</span></div>
@@ -249,9 +264,9 @@ export default async function AppHome() {
                 <section className="nqd-focus">
                   <div className="nqd-focus-bg" aria-hidden="true">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img className="nqd-bg-light" src="/dash/light.png" alt="" />
+                    <img className="nqd-bg-light" src={BASE64_IMAGES.dashLight} alt="" />
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img className="nqd-bg-dark" src="/dash/dark.png" alt="" />
+                    <img className="nqd-bg-dark" src={BASE64_IMAGES.dashDark} alt="" />
                   </div>
                   <div className="nqd-focus-top">
                     {isNewLesson && <span className="nqd-new">New</span>}
@@ -351,20 +366,25 @@ export default async function AppHome() {
                   </div>
                   {weeklyList.slice(0, 4).map((row, i) => {
                     const label = row.displayName || row.name || "Học viên";
+                    const isImg =
+                      typeof row.avatar === "string" &&
+                      (row.avatar.startsWith("data:image/") ||
+                        row.avatar.startsWith("http://") ||
+                        row.avatar.startsWith("https://") ||
+                        row.avatar.startsWith("/"));
                     return (
                       <div className={`nqd-rank ${row.id === uid ? "me" : ""}`} key={row.id}>
                         <span className={`n ${i < 3 ? `r${i + 1}` : ""}`}>{i + 1}</span>
-                        <span className="av">
-                          {row.avatar && (row.avatar.startsWith("http") || row.avatar.startsWith("/")) ? (
+                        <span className="av overflow-hidden">
+                          {isImg ? (
                             // eslint-disable-next-line @next/next/no-img-element
-                            <img src={row.avatar} alt="" width={36} height={36} />
+                            <img src={row.avatar!} alt={label} width={36} height={36} className="h-9 w-9 rounded-full object-cover" />
                           ) : (
-                            row.avatar || label.slice(0, 1).toUpperCase()
+                            row.avatar && row.avatar.length <= 4 ? row.avatar : label.slice(0, 1).toUpperCase()
                           )}
                         </span>
                         <b>
                           <span className="nqd-rank-name">{label}</span>
-                          {row.isBot && <span className="nqd-bot-badge"></span>}
                         </b>
                         <em>{row.xp.toLocaleString("vi-VN")} XP</em>
                       </div>
@@ -383,16 +403,14 @@ export default async function AppHome() {
                   <div className="nqd-train"><ShinkansenStrip /></div>
                   <div className="nqd-track">
                     {journeyLocations.map((loc) => (
-                      <div key={loc.id} className={`nqd-station ${loc.userProgress[0]?.status === "COMPLETED" ? "is-done" : ""}`}>
+                      <div key={loc.id} className={`nqd-station ${isLocCompleted(loc) ? "is-done" : ""}`}>
                         <i /><span>{loc.name}</span>
                       </div>
                     ))}
                   </div>
                   <div className="nqd-bar thick"><span style={{ width: `${journeyPercent}%` }} /></div>
-                  {/* Progress was screen-reader only, so sighted users saw a train
-                      with no indication of how far along they were. */}
                   <p className="nqd-journey-count">
-                    <b>{doneJourney}</b> / {journeyLocations.length} địa danh đã mở khóa
+                    <b>{doneJourney}</b> / {totalJourney} thành phố đã khám phá
                   </p>
                 </section>
               </aside>

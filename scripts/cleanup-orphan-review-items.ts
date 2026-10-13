@@ -21,9 +21,59 @@ async function main() {
     return stats.get(type)!;
   };
 
-  // Group items by contentType to optimize DB calls
-  const itemsByType = new Map<string, typeof reviewItems>();
+  // Fetch all kanas for normalization and validation
+  const existingKanas = await prisma.kana.findMany({
+    select: { id: true, character: true, script: true },
+  });
+  const kanaByCuid = new Map(existingKanas.map((k) => [k.id, k]));
+
+  // Normalize legacy prefixed contentIds (e.g. db_kana_<cuid>, db_vocab_<cuid>)
+  let migratedCount = 0;
   for (const item of reviewItems) {
+    let targetContentId: string | null = null;
+    if (item.contentType === "KANA" && item.contentId.startsWith("db_kana_")) {
+      const cuid = item.contentId.replace(/^db_kana_/, "");
+      const k = kanaByCuid.get(cuid);
+      if (k) targetContentId = `${k.script}:${k.character}`;
+    } else if (item.contentId.startsWith("db_vocab_")) {
+      targetContentId = item.contentId.replace(/^db_vocab_/, "");
+    } else if (item.contentId.startsWith("db_kanji_")) {
+      targetContentId = item.contentId.replace(/^db_kanji_/, "");
+    } else if (item.contentId.startsWith("db_grammar_")) {
+      targetContentId = item.contentId.replace(/^db_grammar_/, "");
+    }
+
+    if (targetContentId && targetContentId !== item.contentId) {
+      const existingCanonical = await prisma.reviewItem.findUnique({
+        where: {
+          userId_contentType_contentId: {
+            userId: item.userId,
+            contentType: item.contentType,
+            contentId: targetContentId,
+          },
+        },
+      });
+      if (existingCanonical) {
+        await prisma.reviewItem.delete({ where: { id: item.id } });
+      } else {
+        await prisma.reviewItem.update({
+          where: { id: item.id },
+          data: { contentId: targetContentId },
+        });
+        item.contentId = targetContentId;
+      }
+      migratedCount++;
+    }
+  }
+  if (migratedCount > 0) {
+    console.log(`Migrated ${migratedCount} legacy prefixed ReviewItem(s) to canonical IDs.`);
+  }
+
+  const refreshedItems = await prisma.reviewItem.findMany();
+
+  // Group items by contentType to optimize DB calls
+  const itemsByType = new Map<string, typeof refreshedItems>();
+  for (const item of refreshedItems) {
     if (!itemsByType.has(item.contentType)) {
       itemsByType.set(item.contentType, []);
     }
@@ -55,15 +105,11 @@ async function main() {
   // Check Kana
   const kanaItems = itemsByType.get("KANA") || [];
   if (kanaItems.length > 0) {
-    const kanaIds = kanaItems.map((i) => i.contentId); // Format could be "Hira:あ" or "a"
-    // Fetch all kanas
-    const existingKanas = await prisma.kana.findMany({
-      select: { character: true, script: true },
-    });
     const existingSet = new Set<string>();
     existingKanas.forEach((k) => {
       existingSet.add(`${k.script}:${k.character}`);
       existingSet.add(k.character);
+      existingSet.add(k.id);
     });
 
     const s = getStats("KANA");

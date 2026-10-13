@@ -9,11 +9,13 @@ import { QuizRunner } from "./QuizRunner";
 import {
   DialogueSection,
   GrammarSection,
+  LessonObjectivesSection,
   LessonStepsBar,
   SectionShell,
   VocabSection,
   type DialogueLineView,
   type GrammarView,
+  type LessonObjectiveNoteView,
   type VocabView,
 } from "./LessonSections";
 import { IconChart, IconClock, IconBook, IconHome, IconTarget } from "./LessonIcons";
@@ -41,6 +43,29 @@ function scenicVariant(title: string): "konbini" | "ramen" | "street" | "kyoto" 
   return "street";
 }
 
+function buildRegisterComparison(level: string, title: string) {
+  const lower = title.toLowerCase();
+  if (lower.includes("kính ngữ") || level === "N3") {
+    return {
+      standard: "〜ます / 〜です (Lịch sự tiêu chuẩn: 行きます・見ます・言います)",
+      casualOrKeigo: "Tôn kính: いらっしゃる・ご覧になる | Khiêm nhường: 参る・拝見する | Thân mật: 行く・見る",
+      contextNote: "Trong công sở/khách hàng dùng Kính ngữ (尊敬語/謙譲語); với người lạ dùng 丁寧語 (ます/です); với bạn thân dùng thể thường (普通形).",
+    };
+  }
+  if (level === "N4") {
+    return {
+      standard: "Thể lịch sự (丁寧形): 〜と思います / 〜てください / 〜ので",
+      casualOrKeigo: "Thể thông thường (普通形): 〜と思う / 〜て / 〜から | Phương ngữ Kansai: 〜やと思う / 〜てな",
+      contextNote: "Từ N4, bạn cần phân biệt rõ khi nào chia thể thường (đứng trước と思う, から, ので, 時) và khi nào giữ 〜ます ở cuối câu.",
+    };
+  }
+  return {
+    standard: "Thể lịch sự chuẩn (標準語・丁寧語): 〜です / 〜ます / 〜ませんか",
+    casualOrKeigo: "Thân mật (タメ口): 〜だ / Động từ nguyên mẫu | Vùng Kansai: おおきに (Cảm ơn), あかん (Không được)",
+    contextNote: "Người mới bắt đầu (N5) nên ưu tiên dùng 丁寧語 (です/ます) trong mọi tình huống thực tế để luôn lịch sự và an toàn.",
+  };
+}
+
 // Lấy field tuỳ chọn (schema có thể có hoặc không có) mà không làm vỡ type-check
 function pick(source: unknown, keys: string[]): string | undefined {
   if (!source || typeof source !== "object") return undefined;
@@ -66,15 +91,28 @@ export default async function LessonRunnerPage({ params }: { params: { slug: str
   });
   if (!lesson) notFound();
 
-  // Bài kế tiếp cùng cấp độ + số thứ tự "Unit" của bài trong cấp độ đó
-  const [nextLesson, lessonsBefore] = await Promise.all([
+  // Bài kế tiếp, bài tiên quyết ngay trước đó cùng cấp độ + số thứ tự "Unit"
+  const [nextLesson, prevLesson, lessonsBefore] = await Promise.all([
     prisma.lesson.findFirst({
       where: { isPublished: true, level: lesson.level, order: { gt: lesson.order } },
       orderBy: { order: "asc" },
       select: { id: true, slug: true, title: true, level: true, xpReward: true },
     }),
+    prisma.lesson.findFirst({
+      where: { isPublished: true, level: lesson.level, order: { lt: lesson.order } },
+      orderBy: { order: "desc" },
+      select: { id: true, slug: true, title: true },
+    }),
     prisma.lesson.count({ where: { isPublished: true, level: lesson.level, order: { lt: lesson.order } } }),
   ]);
+
+  const prevProgress = prevLesson
+    ? await prisma.userLessonProgress.findUnique({
+        where: { userId_lessonId: { userId: uid, lessonId: prevLesson.id } },
+        select: { status: true },
+      })
+    : null;
+
   const unitLabel = String(lessonsBefore + 1).padStart(2, "0");
 
   const vocabIds = new Set<string>();
@@ -105,6 +143,7 @@ export default async function LessonRunnerPage({ params }: { params: { slug: str
     romaji: w.romaji,
     meaning: w.meaning,
     kanji: w.kanji || undefined,
+    tags: w.tags || undefined,
     imageUrl: pick(w, ["imageUrl", "image", "imagePath"]),
   }));
 
@@ -114,9 +153,11 @@ export default async function LessonRunnerPage({ params }: { params: { slug: str
     romaji: pick(g, ["romaji", "reading"]),
     meaning: g.meaning,
     usage: pick(g, ["usage", "explanation", "note", "notes"]),
+    commonMistakes: g.commonMistakes || undefined,
     structure: g.structure,
-    examples: g.examples.slice(0, 2).map((e) => ({
+    examples: g.examples.slice(0, 3).map((e) => ({
       japanese: e.japanese,
+      romaji: pick(e, ["romaji"]),
       translation: pick(e, ["vietnamese", "translation", "meaning", "english"]),
     })),
   }));
@@ -132,14 +173,14 @@ export default async function LessonRunnerPage({ params }: { params: { slug: str
 
   let dialogue: DialogueLineView[];
   if (grammarSentences.length >= 2) {
-    dialogue = grammarSentences.slice(0, 2).map((s, i) => ({
+    dialogue = grammarSentences.slice(0, 4).map((s, i) => ({
       id: `grammar-${i}`,
       side: i % 2 === 0 ? "a" : "b",
       ...s,
     }));
   } else {
     const fromExercises = lesson.exercises.filter((ex) => ex.prompt || HAS_JAPANESE.test(ex.question));
-    dialogue = (fromExercises.length ? fromExercises : lesson.exercises).slice(0, 2).map((ex, i) => ({
+    dialogue = (fromExercises.length ? fromExercises : lesson.exercises).slice(0, 4).map((ex, i) => ({
       id: ex.id,
       side: i % 2 === 0 ? "a" : "b",
       japanese: ex.question,
@@ -150,6 +191,28 @@ export default async function LessonRunnerPage({ params }: { params: { slug: str
   const heroLine = dialogue.find((line) => HAS_JAPANESE.test(line.japanese));
   const title = cleanLessonTitle(lesson.title);
   const levelLabel = LEVEL_LABEL[lesson.level] ?? lesson.level;
+
+  const objectiveInfo: LessonObjectiveNoteView = {
+    level: lesson.level,
+    unitLabel,
+    title,
+    description: lesson.description,
+    objectives: [
+      `Nắm vững cách đọc, nghĩa và ngữ cảnh của ${vocab.length} từ vựng trọng tâm chủ đề「${title}」.`,
+      grammar.length > 0
+        ? `Vận dụng chính xác mẫu ngữ pháp ${grammar.map((g) => g.title).join(", ")} và phân biệt sắc thái sử dụng.`
+        : `Hiểu và phản xạ tự nhiên với các mẫu câu giao tiếp trong bài.`,
+      `Đạt tối thiểu 60% điểm bài luyện tập (${lesson.exercises.length} câu hỏi) để mở khóa bài tiếp theo và đồng bộ SRS.`,
+    ],
+    registerComparison: buildRegisterComparison(lesson.level, title),
+    prerequisiteLesson: prevLesson
+      ? {
+          slug: prevLesson.slug,
+          title: cleanLessonTitle(prevLesson.title),
+          completed: prevProgress?.status === "COMPLETED",
+        }
+      : null,
+  };
 
   return (
     <div className="nq-workspace">
@@ -206,6 +269,9 @@ export default async function LessonRunnerPage({ params }: { params: { slug: str
             )}
           </div>
         </section>
+
+        {/* ───────── Mục tiêu bài học, Tiên quyết & Lưu ý Ngữ vực ───────── */}
+        <LessonObjectivesSection info={objectiveInfo} />
 
         {/* ───────── Thanh 4 bước ───────── */}
         <LessonStepsBar />

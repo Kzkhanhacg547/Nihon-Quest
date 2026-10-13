@@ -125,4 +125,50 @@ export const DAKUTEN: SeedDakuten[] = [
   { character: "ぴゃ", romaji: "pya", ipa: "pʲa", row: "pya", column: "a", kind: "COMBO", script: "HIRAGANA" },
   { character: "ぴゅ", romaji: "pyu", ipa: "pʲɯ", row: "pya", column: "u", kind: "COMBO", script: "HIRAGANA" },
   { character: "ぴょ", romaji: "pyo", ipa: "pʲo", row: "pya", column: "o", kind: "COMBO", script: "HIRAGANA" },
+
+  // YŌON COMBINATION SOUNDS (KATAKANA)
+  { character: "キャ", romaji: "kya", ipa: "kʲa", row: "kya", column: "a", kind: "COMBO", script: "KATAKANA" },
+  { character: "キュ", romaji: "kyu", ipa: "kʲɯ", row: "kya", column: "u", kind: "COMBO", script: "KATAKANA" },
+  { character: "キョ", romaji: "kyo", ipa: "kʲo", row: "kya", column: "o", kind: "COMBO", script: "KATAKANA" },
+
+  { character: "シャ", romaji: "sha", ipa: "ɕa", row: "sha", column: "a", kind: "COMBO", script: "KATAKANA" },
+  { character: "シュ", romaji: "shu", ipa: "ɕɯ", row: "sha", column: "u", kind: "COMBO", script: "KATAKANA" },
+  { character: "ショ", romaji: "sho", ipa: "ɕo", row: "sha", column: "o", kind: "COMBO", script: "KATAKANA" },
+
+  { character: "チャ", romaji: "cha", ipa: "tɕa", row: "cha", column: "a", kind: "COMBO", script: "KATAKANA" },
+  { character: "チュ", romaji: "chu", ipa: "tɕɯ", row: "cha", column: "u", kind: "COMBO", script: "KATAKANA" },
+  { character: "チョ", romaji: "cho", ipa: "tɕo", row: "cha", column: "o", kind: "COMBO", script: "KATAKANA" },
+
+  { character: "ニャ", romaji: "nya", ipa: "ɲa", row: "nya", column: "a", kind: "COMBO", script: "KATAKANA" },
+  { character: "ニュ", romaji: "nyu", ipa: "ɲɯ", row: "nya", column: "u", kind: "COMBO", script: "KATAKANA" },
+  { character: "ニョ", romaji: "nyo", ipa: "ɲo", row: "nya", column: "o", kind: "COMBO", script: "KATAKANA" },
+
+  { character: "ヒャ", romaji: "hya", ipa: "ça", row: "hya", column: "a", kind: "COMBO", script: "KATAKANA" },
+  { character: "ヒュ", romaji: "hyu", ipa: "çɯ", row: "hya", column: "u", kind: "COMBO", script: "KATAKANA" },
+  { character: "ヒョ", romaji: "hyo", ipa: "ço", row: "hya", column: "o", kind: "COMBO", script: "KATAKANA" },
+
+  { character: "ミャ", romaji: "mya", ipa: "mʲa", row: "mya", column: "a", kind: "COMBO", script: "KATAKANA" },
+  { character: "ミュ", romaji: "myu", ipa: "mʲɯ", row: "mya", column: "u", kind: "COMBO", script: "KATAKANA" },
+  { character: "ミョ", romaji: "myo", ipa: "mʲo", row: "mya", column: "o", kind: "COMBO", script: "KATAKANA" },
+
+  { character: "リャ", romaji: "rya", ipa: "ɾʲa", row: "rya", column: "a", kind: "COMBO", script: "KATAKANA" },
+  { character: "リュ", romaji: "ryu", ipa: "ɾʲɯ", row: "rya", column: "u", kind: "COMBO", script: "KATAKANA" },
+  { character: "リョ", romaji: "ryo", ipa: "ɾʲo", row: "rya", column: "o", kind: "COMBO", script: "KATAKANA" },
+
+  { character: "ギャ", romaji: "gya", ipa: "ɡʲa", row: "gya", column: "a", kind: "COMBO", script: "KATAKANA" },
+  { character: "ギュ", romaji: "gyu", ipa: "ɡʲɯ", row: "gya", column: "u", kind: "COMBO", script: "KATAKANA" },
+  { character: "ギョ", romaji: "gyo", ipa: "ɡʲo", row: "gya", column: "o", kind: "COMBO", script: "KATAKANA" },
+
+  { character: "ジャ", romaji: "ja", ipa: "dʑa", row: "ja", column: "a", kind: "COMBO", script: "KATAKANA" },
+  { character: "ジュ", romaji: "ju", ipa: "dʑɯ", row: "ja", column: "u", kind: "COMBO", script: "KATAKANA" },
+  { character: "ジョ", romaji: "jo", ipa: "dʑo", row: "ja", column: "o", kind: "COMBO", script: "KATAKANA" },
+
+  { character: "ビャ", romaji: "bya", ipa: "bʲa", row: "bya", column: "a", kind: "COMBO", script: "KATAKANA" },
+  { character: "ビュ", romaji: "byu", ipa: "bʲɯ", row: "bya", column: "u", kind: "COMBO", script: "KATAKANA" },
+  { character: "ビョ", romaji: "byo", ipa: "bʲo", row: "bya", column: "o", kind: "COMBO", script: "KATAKANA" },
+
+  { character: "ピャ", romaji: "pya", ipa: "pʲa", row: "pya", column: "a", kind: "COMBO", script: "KATAKANA" },
+  { character: "ピュ", romaji: "pyu", ipa: "pʲɯ", row: "pya", column: "u", kind: "COMBO", script: "KATAKANA" },
+  { character: "ピョ", romaji: "pyo", ipa: "pʲo", row: "pya", column: "o", kind: "COMBO", script: "KATAKANA" },
 ];
+

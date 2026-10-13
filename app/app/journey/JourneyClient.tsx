@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Card, Badge } from "@/components/ui";
 import { useSoundAndTheme } from "@/components/SoundAndThemeContext";
+import { BASE64_IMAGES, getJourneyImage } from "@/lib/assets/base64Images";
 import { notifyProgressUpdated } from "@/components/UserProgressContext";
 import { Japanese3DRoom, CityRoomData } from "@/components/Japanese3DRoom";
 import { CITY_DETAILS, CityGourmet } from "./cityData";
@@ -118,7 +119,7 @@ const ACHIEVEMENTS_HREF = "/app/achievements"; // đổi nếu route huy hiệu 
 
 /** Ảnh minh hoạ: /images/journey/<slug>.png -> fallback landmarkImage -> nền gradient */
 function CityImage({ slug, fallback, className }: { slug: string; fallback?: string; className?: string }) {
-  const [src, setSrc] = useState<string | null>(`${IMG_BASE}/${slug}.png`);
+  const [src, setSrc] = useState<string | null>(getJourneyImage(slug) || `${IMG_BASE}/${slug}.png`);
   const [triedFallback, setTriedFallback] = useState(false);
   if (!src) return <div className={`jy-img-fallback ${className ?? ""}`} />;
   return (
@@ -141,7 +142,8 @@ function CityImage({ slug, fallback, className }: { slug: string; fallback?: str
 function PinThumb({ slug, tone }: { slug: string; tone: MapTone }) {
   if (tone === "locked") return <span>🔒</span>;
   // eslint-disable-next-line @next/next/no-img-element
-  return <img src={`${IMG_BASE}/${slug}.png`} alt="" onError={(e) => ((e.currentTarget.style.display = "none"))} />;
+  const b64 = getJourneyImage(slug);
+  return <img src={b64 || `${IMG_BASE}/${slug}.png`} alt="" onError={(e) => ((e.currentTarget.style.display = "none"))} />;
 }
 
 function ShinkansenArt() {
@@ -263,11 +265,17 @@ export function JourneyClient({
     } catch {}
   };
 
-  const completedCount = rows.filter((r) => r.progress?.status === "COMPLETED").length;
+  const isCityCompleted = (r: RowItem) => {
+    const st = r.progress?.status;
+    const p = cityProgressMap[r.location.id] ?? r.progress?.progress ?? 0;
+    return st === "COMPLETED" || p >= 100;
+  };
+
+  const completedCount = rows.filter(isCityCompleted).length;
 
   const tones: MapTone[] = rows.map((r) => {
     const st = r.progress?.status ?? "LOCKED";
-    if (st === "COMPLETED") return "done";
+    if (isCityCompleted(r)) return "done";
     if (st === "IN_PROGRESS") return "open";
     return r.unlockable ? "next" : "locked";
   });
@@ -305,7 +313,7 @@ export function JourneyClient({
     <div className="jy-shell">
       {/* ============ HERO + BẢN ĐỒ 3D ============ */}
       <section className={`jy-hero ${atmosphere === "NIGHT" ? "is-night" : ""}`}>
-        <div className="jy-hero-bg" style={{ backgroundImage: `url(${IMG_BASE}/hero.png)` }} />
+        <div className="jy-hero-bg" style={{ backgroundImage: `url(${BASE64_IMAGES.journeyHero})` }} />
         <div className="jy-hero-shade" />
         <SakuraFallCanvas mode={atmosphere} />
 
@@ -386,8 +394,8 @@ export function JourneyClient({
             const loc = row.location;
             const details = CITY_DETAILS[loc.slug] || CITY_DETAILS.tokyo;
             const status = row.progress?.status ?? "LOCKED";
-            const isCompleted = status === "COMPLETED";
-            const isInProgress = status === "IN_PROGRESS";
+            const isCompleted = isCityCompleted(row);
+            const isInProgress = !isCompleted && status === "IN_PROGRESS";
             const isLocked = !row.unlockable && !isCompleted && !isInProgress;
             const isStamped = stampedCities.has(loc.slug) || isCompleted;
             const progressPct = isCompleted ? 100 : (cityProgressMap[loc.id] ?? row.progress?.progress ?? 0);
@@ -501,7 +509,7 @@ export function JourneyClient({
             const details = CITY_DETAILS[citySlug] || CITY_DETAILS.tokyo;
             setSelectedCity({ row: foundRow, details });
           }}
-          status={selectedCity.row.progress?.status ?? null}
+          status={isCityCompleted(selectedCity.row) ? "COMPLETED" : (selectedCity.row.progress?.status ?? null)}
           unlockable={selectedCity.row.unlockable}
           requirementXp={selectedCity.row.location.requirementXp}
           xpReward={selectedCity.row.location.xpReward}
@@ -517,6 +525,10 @@ export function JourneyClient({
               ...prev,
               [selectedCity.row.location.id]: newPercent,
             }));
+            if (newPercent >= 100) {
+              notifyProgressUpdated();
+              router.refresh();
+            }
           }}
         />
       )}
@@ -556,7 +568,7 @@ export function JourneyClient({
           <div className="jy-mascot">
             <p className="jy-bubble">Khám phá thêm nhiều thành phố để nhận huy hiệu đặc biệt nhé!</p>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={`${IMG_BASE}/mascot.png`} alt="" onError={(e) => (e.currentTarget.style.display = "none")} />
+            <img src={BASE64_IMAGES.journeyMascot} alt="" onError={(e) => (e.currentTarget.style.display = "none")} />
           </div>
         </div>
       </section>

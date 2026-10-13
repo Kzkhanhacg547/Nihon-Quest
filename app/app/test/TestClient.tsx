@@ -1,279 +1,57 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import Link from "next/link";
 import { useSoundAndTheme } from "@/components/SoundAndThemeContext";
-
-interface Question {
-  id: number;
-  category: "Kanji" | "Từ Vựng" | "Ngữ Pháp" | "Đọc Hiểu";
-  level: "N5" | "N4" | "N3" | "N2";
-  question: string;
-  subText?: string;
-  reading?: string;
-  options: { label: string; text: string; isCorrect: Boolean }[];
-  explanation: string;
-}
-
-const DIAGNOSTIC_QUESTIONS: Question[] = [
-  // N5 Questions
-  {
-    id: 1,
-    category: "Kanji",
-    level: "N5",
-    question: "Cách đọc Hán tự 「日本」 trong câu 「私は日本が好きです」 là gì?",
-    options: [
-      { label: "A", text: "にほん (Nihon)", isCorrect: true },
-      { label: "B", text: "にっぽ (Nippo)", isCorrect: false },
-      { label: "C", text: "ひほん (Hihon)", isCorrect: false },
-      { label: "D", text: "にちほん (Nichihon)", isCorrect: false },
-    ],
-    explanation: "日本 được đọc là にほん (Nihon) nghĩa là Nước Nhật.",
-  },
-  {
-    id: 2,
-    category: "Từ Vựng",
-    level: "N5",
-    question: "Điền từ thích hợp: 「毎朝７時に＿＿＿。」",
-    options: [
-      { label: "A", text: "おきます (Thức dậy)", isCorrect: true },
-      { label: "B", text: "ねます (Đi ngủ)", isCorrect: false },
-      { label: "C", text: "たべます (Ăn)", isCorrect: false },
-      { label: "D", text: "いきます (Đi)", isCorrect: false },
-    ],
-    explanation: "毎朝７時に起きます (Mỗi sáng tôi thức dậy lúc 7 giờ).",
-  },
-  {
-    id: 3,
-    category: "Ngữ Pháp",
-    level: "N5",
-    question: "Chọn trợ từ đúng: 「明日、友達＿＿＿映画を見に行きます。」",
-    options: [
-      { label: "A", text: "と (Với)", isCorrect: true },
-      { label: "B", text: "に (Vào/Tại)", isCorrect: false },
-      { label: "C", text: "を (Tác động)", isCorrect: false },
-      { label: "D", text: "で (Tại/Bằng)", isCorrect: false },
-    ],
-    explanation: "Trợ từ 「と」 dùng chỉ đối tượng thực hiện hành động cùng (Với bạn bè).",
-  },
-  // N4 Questions
-  {
-    id: 4,
-    category: "Kanji",
-    level: "N4",
-    question: "Cách đọc của chữ Hán 「約束」 là gì?",
-    options: [
-      { label: "A", text: "やくそく (Yakusoku)", isCorrect: true },
-      { label: "B", text: "やくそっ (Yakusokku)", isCorrect: false },
-      { label: "C", text: "えくそく (Ekusoku)", isCorrect: false },
-      { label: "D", text: "やくぞく (Yakuzoku)", isCorrect: false },
-    ],
-    explanation: "約束 (Ước Thúc) đọc là やくそく có nghĩa là Lời hứa, cuộc hẹn.",
-  },
-  {
-    id: 5,
-    category: "Ngữ Pháp",
-    level: "N4",
-    question: "Chọn dạng đúng của động từ: 「雨が＿＿＿前に帰りましょう。」",
-    options: [
-      { label: "A", text: "降る (Furu - Thể nguyên mẫu)", isCorrect: true },
-      { label: "B", text: "降り (Furi)", isCorrect: false },
-      { label: "C", text: "降った (Futta - Thể quá khứ)", isCorrect: false },
-      { label: "D", text: "降って (Futte - Thể Te)", isCorrect: false },
-    ],
-    explanation: "Trước 「前に」 (Trước khi...) luôn dùng động từ thể nguyên mẫu (V-ru + 前に).",
-  },
-  {
-    id: 6,
-    category: "Từ Vựng",
-    level: "N4",
-    question: "Từ nào có nghĩa trái ngược với 「危険」 (kiken - nguy hiểm)?",
-    options: [
-      { label: "A", text: "安全 (Anzen - An toàn)", isCorrect: true },
-      { label: "B", text: "安心 (Anshin - An tâm)", isCorrect: false },
-      { label: "C", text: "便利 (Benri - Tiện lợi)", isCorrect: false },
-      { label: "D", text: "複雑 (Fukuzatsu - Phức tạp)", isCorrect: false },
-    ],
-    explanation: "危険 (Nguy hiểm) >< 安全 (An toàn).",
-  },
-  // N3 Questions
-  {
-    id: 7,
-    category: "Ngữ Pháp",
-    level: "N3",
-    question: "Điền ngữ pháp thích hợp: 「彼は日本語が上手な＿＿＿、英語も話せます。」",
-    options: [
-      { label: "A", text: "だけでなく (Không chỉ... mà còn)", isCorrect: true },
-      { label: "B", text: "ために (Vì/Để)", isCorrect: false },
-      { label: "C", text: "かわりに (Thay vì)", isCorrect: false },
-      { label: "D", text: "とおりに (Theo như)", isCorrect: false },
-    ],
-    explanation: "AだけでなくB (Không chỉ A mà còn B). Cấu trúc N3 quen thuộc.",
-  },
-  {
-    id: 8,
-    category: "Kanji",
-    level: "N3",
-    question: "Cách đọc đúng của từ 「解決」 là gì?",
-    options: [
-      { label: "A", text: "かいけつ (Kaiketsu)", isCorrect: true },
-      { label: "B", text: "かいけつう (Kaiketsuu)", isCorrect: false },
-      { label: "C", text: "けいけつ (Keiketsu)", isCorrect: false },
-      { label: "D", text: "かいけつち (Kaiketsuchi)", isCorrect: false },
-    ],
-    explanation: "解決 (Giải Quyết) có cách đọc âm On là かいけつ.",
-  },
-  {
-    id: 9,
-    category: "Đọc Hiểu",
-    level: "N3",
-    subText: "「最近、日本ではキャッシュレス決済を使う人が増えている。現金を持ち歩かなくても、スマートフォンで簡単に買い物ができるからだ。」",
-    question: "Theo đoạn văn, tại sao số người dùng thanh toán không tiền mặt lại tăng lên?",
-    options: [
-      { label: "A", text: "Vì mua sắm dễ dàng bằng smartphone không cần mang tiền mặt", isCorrect: true },
-      { label: "B", text: "Vì tiền mặt ở Nhật Bản bị cấm sử dụng", isCorrect: false },
-      { label: "C", text: "Vì smartphone giá rẻ hơn trước", isCorrect: false },
-      { label: "D", text: "Vì người Nhật không thích đi mua sắm trực tiếp", isCorrect: false },
-    ],
-    explanation: "Đoạn văn nêu rõ: 現金を持ち歩かなくても、スマートフォンで簡単に買い物ができるからだ (Vì không cần mang tiền mặt vẫn mua sắm dễ dàng bằng smartphone).",
-  },
-  // N2 Questions
-  {
-    id: 10,
-    category: "Ngữ Pháp",
-    level: "N2",
-    question: "Chọn mẫu câu N2 đúng: 「どんなに困難であっても、最後まで諦めない＿＿＿。」",
-    options: [
-      { label: "A", text: "つもりだ (Quyết tâm/Ý định)", isCorrect: true },
-      { label: "B", text: "はずがない (Chắc chắn không)", isCorrect: false },
-      { label: "C", text: "わけにはいかない (Không thể vì lý do đạo đức)", isCorrect: false },
-      { label: "D", text: "にちがいない (Chắc chắn là)", isCorrect: false },
-    ],
-    explanation: "どんなに...であっても (Dù cho có khó khăn đến thế nào đi nữa, tôi vẫn có ý định không bỏ cuộc cho đến cùng).",
-  },
-  {
-    id: 11,
-    category: "Từ Vựng",
-    level: "N2",
-    question: "Từ nào đồng nghĩa với 「早速」 (Sassoku)?",
-    options: [
-      { label: "A", text: "すぐに (Ngay lập tức)", isCorrect: true },
-      { label: "B", text: "ゆっくり (Thong thả)", isCorrect: false },
-      { label: "C", text: "ようやく (Cuối cùng thì)", isCorrect: false },
-      { label: "D", text: "たまに (Thỉnh thoảng)", isCorrect: false },
-    ],
-    explanation: "早速 (Sát Tốc) = すぐに (Ngay lập tức, không chần chừ).",
-  },
-  {
-    id: 12,
-    category: "Kanji",
-    level: "N2",
-    question: "Chữ Hán 「矛盾」 đọc là gì?",
-    options: [
-      { label: "A", text: "むじゅん (Mujun)", isCorrect: true },
-      { label: "B", text: "ぼうじゅん (Boujun)", isCorrect: false },
-      { label: "C", text: "むじゅんち (Mujunchi)", isCorrect: false },
-      { label: "D", text: "むどう (Mudou)", isCorrect: false },
-    ],
-    explanation: "矛盾 (Mẫu Thuẫn) đọc là むじゅん.",
-  },
-  {
-    id: 13,
-    category: "Ngữ Pháp",
-    level: "N5",
-    question: "Hoàn thành câu: 「この本は＿＿＿おもしろいです。」",
-    options: [
-      { label: "A", text: "とても (Rất)", isCorrect: true },
-      { label: "B", text: "あまり (Không... lắm)", isCorrect: false },
-      { label: "C", text: "ぜんぜん (Hoàn toàn không)", isCorrect: false },
-      { label: "D", text: "すこしも (Một chút cũng không)", isCorrect: false },
-    ],
-    explanation: "とても đi với tính từ khẳng định để nhấn mạnh (Rất thú vị).",
-  },
-  {
-    id: 14,
-    category: "Từ Vựng",
-    level: "N4",
-    question: "Chỉ ra nghĩa của từ 「遠慮する」 (enryo suru):",
-    options: [
-      { label: "A", text: "Ngần ngại, giữ kẽ, từ chối lịch sự", isCorrect: true },
-      { label: "B", text: "Tất ngầm, lo lắng thái quá", isCorrect: false },
-      { label: "C", text: "Hứa hẹn chắc chắn", isCorrect: false },
-      { label: "D", text: "Giải thích rõ ràng", isCorrect: false },
-    ],
-    explanation: "遠慮する nghĩa là ngại ngùng, kiềm chế, hoặc giữ kẽ khi nhận quà/lời mời.",
-  },
-  {
-    id: 15,
-    category: "Đọc Hiểu",
-    level: "N4",
-    subText: "「図書館では静かにしなければなりません。また、館内での飲食は禁止されています。」",
-    question: "Hành động nào ĐÚNG khi ở trong thư viện?",
-    options: [
-      { label: "A", text: "Giữ trật tự yên lặng và không ăn uống", isCorrect: true },
-      { label: "B", text: "Vừa ăn bánh vừa đọc sách", isCorrect: false },
-      { label: "C", text: "Nói chuyện điện thoại thoải mái", isCorrect: false },
-      { label: "D", text: "Mang đồ ăn vào ăn trưa", isCorrect: false },
-    ],
-    explanation: "Chủ trương: 静かにする (giữ yên lặng) & 飲食禁止 (cấm ăn uống).",
-  },
-];
-
-const TEST_MODES = [
-  {
-    id: "DIAGNOSTIC",
-    title: "Bài Kiểm Tra Phân Loại Trình Độ Nhanh",
-    description: "15 câu hỏi tổng hợp bao gồm N5 đến N2. Giúp xác định trình độ xuất phát chuẩn xác nhất cho bạn.",
-    timeMinutes: 15,
-    questionCount: 15,
-    icon: "★",
-    color: "from-amber-500 to-orange-600",
-    badge: "Phổ biến nhất",
-  },
-  {
-    id: "N5_FULL",
-    title: "Bài Test Năng Lực JLPT N5",
-    description: "Đánh giá toàn diện 20 câu chuẩn JLPT N5 (Hán tự sơ cấp, Từ vựng đời sống, Ngữ pháp Minna).",
-    timeMinutes: 20,
-    questionCount: 15,
-    icon: "🌸",
-    color: "from-rose-500 to-red-600",
-    badge: "Sơ cấp 1",
-  },
-  {
-    id: "N4_FULL",
-    title: "Bài Test Năng Lực JLPT N4",
-    description: "Đánh giá trình độ JLPT N4 (Hán tự trung cấp, Động từ thể Te/Ta/Nai, Mẫu câu giao tiếp).",
-    timeMinutes: 20,
-    questionCount: 15,
-    icon: "⛩️",
-    color: "from-emerald-500 to-teal-600",
-    badge: "Sơ cấp 2",
-  },
-  {
-    id: "N3_FULL",
-    title: "Bài Test Năng Lực JLPT N3",
-    description: "Thử thách trung cấp N3 với bài đọc hiểu, ngữ pháp biểu thái và từ vựng phong phú.",
-    timeMinutes: 25,
-    questionCount: 15,
-    icon: "🗼",
-    color: "from-blue-500 to-indigo-600",
-    badge: "Trung cấp",
-  },
-];
+import { notifyProgressUpdated } from "@/components/UserProgressContext";
+import {
+  TEST_MODES,
+  SKILL_META,
+  getQuestionsForMode,
+  evaluateFreeResponse,
+  type AssessmentQuestion,
+  type SkillKey,
+  type DynamicExamDto,
+} from "@/lib/test-assessment";
+import { DocumentVaultModal } from "./DocumentVaultModal";
 
 interface TestClientProps {
   userLevel: string;
   userXP: number;
   displayName: string;
+  initialExams?: DynamicExamDto[];
+  catalogDocCount?: number;
 }
 
-export function TestClient({ userLevel, userXP: initialXP, displayName }: TestClientProps) {
-  const { playClick, playCorrect, showToast } = useSoundAndTheme();
-  const [selectedMode, setSelectedMode] = useState<string | null>(null);
+const EXAM_CATEGORY_TABS = [
+  { id: "ALL", label: "Tất cả đề thi", icon: "🗂️" },
+  { id: "PLACEMENT_LEVEL", label: "Đầu vào & Vượt cấp (4 kỹ năng)", icon: "🧭" },
+  { id: "FPT_JPD", label: "Giáo trình FPT (JPD113–133)", icon: "🎓" },
+  { id: "SKILL_TEST", label: "Từ vựng・Kanji・Ngữ pháp・Nghe・Đọc", icon: "🎯" },
+  { id: "JLPT_MOCK", label: "Đề thi thử & Đề JLPT gốc", icon: "🏛️" },
+] as const;
+
+export function TestClient({
+  userLevel,
+  userXP: initialXP,
+  displayName,
+  initialExams,
+  catalogDocCount = 249,
+}: TestClientProps) {
+  const { playClick, playCorrect, speak, speakingText, showToast } = useSoundAndTheme();
+  const [selectedMode, setSelectedMode] = useState<string>("DIAGNOSTIC");
   const [currentStep, setCurrentStep] = useState<"SELECT" | "TESTING" | "RESULT">("SELECT");
-  
+  const [selectedCategory, setSelectedCategory] = useState<string>("ALL");
+  const [selectedLevelFilter, setSelectedLevelFilter] = useState<string>("ALL");
+  const [isVaultOpen, setIsVaultOpen] = useState(false);
+
   const [questionIndex, setQuestionIndex] = useState(0);
-  const [userAnswers, setUserAnswers] = useState<Record<number, number>>({});
+  const [mcAnswers, setMcAnswers] = useState<Record<string, number>>({});
+  const [freeTextAnswers, setFreeTextAnswers] = useState<Record<string, string>>({});
+  const [rubricChecks, setRubricChecks] = useState<Record<string, number[]>>({});
+  const [isRecording, setIsRecording] = useState(false);
+  const [speechSupported, setSpeechSupported] = useState(false);
+
   const [timeLeft, setTimeLeft] = useState<number>(0);
   const [isUpdatingLevel, setIsUpdatingLevel] = useState(false);
   const [isClaimingXP, setIsClaimingXP] = useState(false);
@@ -283,14 +61,93 @@ export function TestClient({ userLevel, userXP: initialXP, displayName }: TestCl
   const [levelUpdated, setLevelUpdated] = useState(false);
   const [showReview, setShowReview] = useState(false);
 
-  const questions = DIAGNOSTIC_QUESTIONS; // Default set
+  const examCatalog: DynamicExamDto[] = useMemo(() => {
+    if (initialExams && initialExams.length > 0) {
+      return initialExams;
+    }
+    return TEST_MODES.map((m) => ({
+      id: m.id,
+      slug: m.id,
+      title: m.title,
+      description: m.description,
+      targetLevel: m.targetLevel,
+      skillFocus: "ALL",
+      category: m.id === "DIAGNOSTIC" ? "PLACEMENT" : "LEVEL_TEST",
+      kindLabel: m.kindLabel,
+      badge: m.badge,
+      icon: m.icon,
+      timeMinutes: m.timeMinutes,
+      sourceDocument: "Nihon Quest 4-Skill Core Bank",
+      answerAuthority: "CURATED",
+      hasAudio: true,
+      questions: getQuestionsForMode(m.id),
+    }));
+  }, [initialExams]);
+
+  const filteredExams = useMemo(() => {
+    return examCatalog.filter((exam) => {
+      if (selectedCategory === "PLACEMENT_LEVEL" && exam.category !== "PLACEMENT" && exam.category !== "LEVEL_TEST") {
+        return false;
+      }
+      if (selectedCategory === "FPT_JPD" && exam.category !== "FPT_JPD") {
+        return false;
+      }
+      if (selectedCategory === "SKILL_TEST" && exam.category !== "SKILL_TEST") {
+        return false;
+      }
+      if (selectedCategory === "JLPT_MOCK" && exam.category !== "JLPT_MOCK") {
+        return false;
+      }
+      if (selectedLevelFilter !== "ALL" && exam.targetLevel !== selectedLevelFilter && exam.targetLevel !== "ALL") {
+        return false;
+      }
+      return true;
+    });
+  }, [examCatalog, selectedCategory, selectedLevelFilter]);
+
+  const activeExam = useMemo(
+    () => examCatalog.find((e) => e.slug === selectedMode || e.id === selectedMode) ?? examCatalog[0],
+    [examCatalog, selectedMode]
+  );
+
+  const questions: Array<AssessmentQuestion & { audioUrl?: string | null; answerAuthority?: string }> = useMemo(() => {
+    if (activeExam && activeExam.questions.length > 0) {
+      return activeExam.questions;
+    }
+    return getQuestionsForMode(selectedMode);
+  }, [activeExam, selectedMode]);
+
+  const currentQuestion = questions[questionIndex];
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const recognitionRef = useRef<any>(null);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const w = window as any;
+      if (w.SpeechRecognition || w.webkitSpeechRecognition) {
+        setSpeechSupported(true);
+      }
+    }
+  }, []);
+
+  const stopRecording = useCallback(() => {
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.stop();
+      } catch {
+        // ignore
+      }
+      recognitionRef.current = null;
+    }
+    setIsRecording(false);
+  }, []);
 
   const finishTest = useCallback(() => {
+    stopRecording();
     if (timerRef.current) clearInterval(timerRef.current);
     playCorrect();
     setCurrentStep("RESULT");
-  }, [playCorrect]);
+  }, [playCorrect, stopRecording]);
 
   // Countdown timer
   useEffect(() => {
@@ -311,51 +168,194 @@ export function TestClient({ userLevel, userXP: initialXP, displayName }: TestCl
     };
   }, [currentStep, timeLeft, finishTest]);
 
-  const startTest = (modeId: string) => {
+  const startTest = (modeSlug: string) => {
     playClick();
-    setSelectedMode(modeId);
-    const mode = TEST_MODES.find((m) => m.id === modeId);
-    setTimeLeft((mode?.timeMinutes || 15) * 60);
+    stopRecording();
+    setSelectedMode(modeSlug);
+    const exam = examCatalog.find((m) => m.slug === modeSlug || m.id === modeSlug);
+    setTimeLeft((exam?.timeMinutes || 15) * 60);
     setQuestionIndex(0);
-    setUserAnswers({});
+    setMcAnswers({});
+    setFreeTextAnswers({});
+    setRubricChecks({});
     setXpClaimed(false);
     setLevelUpdated(false);
     setShowReview(false);
     setCurrentStep("TESTING");
   };
 
-  const handleSelectOption = (qId: number, optIdx: number) => {
+  const handleSelectOption = (qId: string, optIdx: number) => {
     playClick();
-    setUserAnswers((prev) => ({ ...prev, [qId]: optIdx }));
+    setMcAnswers((prev) => ({ ...prev, [qId]: optIdx }));
   };
 
-  // Calculations
-  const answeredCount = Object.keys(userAnswers).length;
-  const correctCount = questions.reduce((acc, q) => {
-    const chosenIdx = userAnswers[q.id];
-    if (chosenIdx !== undefined && q.options[chosenIdx]?.isCorrect) {
-      return acc + 1;
+  const handleTextChange = (qId: string, value: string) => {
+    setFreeTextAnswers((prev) => ({ ...prev, [qId]: value }));
+  };
+
+  const handleToggleRubric = (qId: string, idx: number) => {
+    playClick();
+    setRubricChecks((prev) => {
+      const current = prev[qId] ?? [];
+      const next = current.includes(idx) ? current.filter((i) => i !== idx) : [...current, idx];
+      return { ...prev, [qId]: next };
+    });
+  };
+
+  const handleStartSpeechRecognition = (qId: string) => {
+    if (isRecording) {
+      stopRecording();
+      return;
     }
-    return acc;
-  }, 0);
-
-  const scorePercent = Math.round((correctCount / questions.length) * 100);
-
-  // Calculate Breakdown by Category
-  const categoryStats = questions.reduce((acc, q) => {
-    if (!acc[q.category]) acc[q.category] = { total: 0, correct: 0 };
-    acc[q.category].total += 1;
-    const chosen = userAnswers[q.id];
-    if (chosen !== undefined && q.options[chosen]?.isCorrect) {
-      acc[q.category].correct += 1;
+    if (typeof window === "undefined") return;
+    const w = window as any;
+    const SpeechRec = w.SpeechRecognition || w.webkitSpeechRecognition;
+    if (!SpeechRec) {
+      showToast({
+        title: "Trình duyệt chưa hỗ trợ nhận diện giọng nói trực tiếp",
+        description: "Bạn có thể nói to rồi gõ lại câu vừa nói và tích chọn tiêu chí Rubric bên dưới.",
+        type: "info",
+      });
+      return;
     }
-    return acc;
-  }, {} as Record<string, { total: number; correct: number }>);
 
-  // Recommended Level logic
-  const determineRecommendedLevel = (): string => {
-    if (scorePercent >= 85) return "N3";
-    if (scorePercent >= 65) return "N4";
+    try {
+      const recognition = new SpeechRec();
+      recognition.lang = "ja-JP";
+      recognition.interimResults = false;
+      recognition.maxAlternatives = 1;
+
+      recognition.onresult = (event: any) => {
+        const transcript = event?.results?.[0]?.[0]?.transcript || "";
+        if (transcript) {
+          setFreeTextAnswers((prev) => ({
+            ...prev,
+            [qId]: prev[qId] ? `${prev[qId]} ${transcript}` : transcript,
+          }));
+          showToast({
+            title: "Đã thu nhận giọng nói tiếng Nhật!",
+            description: transcript,
+            type: "success",
+          });
+        }
+      };
+
+      recognition.onerror = () => {
+        setIsRecording(false);
+      };
+
+      recognition.onend = () => {
+        setIsRecording(false);
+      };
+
+      recognitionRef.current = recognition;
+      setIsRecording(true);
+      recognition.start();
+    } catch {
+      setIsRecording(false);
+    }
+  };
+
+  const isQuestionAnswered = useCallback(
+    (q: AssessmentQuestion) => {
+      if (q.format === "MULTIPLE_CHOICE") {
+        return mcAnswers[q.id] !== undefined;
+      }
+      const txt = (freeTextAnswers[q.id] ?? "").trim();
+      const checks = rubricChecks[q.id] ?? [];
+      return txt.length > 0 || checks.length > 0;
+    },
+    [mcAnswers, freeTextAnswers, rubricChecks]
+  );
+
+  const isQuestionCorrect = useCallback(
+    (q: AssessmentQuestion): boolean => {
+      if (q.format === "MULTIPLE_CHOICE") {
+        const chosenIdx = mcAnswers[q.id];
+        return chosenIdx !== undefined && Boolean(q.options?.[chosenIdx]?.isCorrect);
+      }
+      const txt = freeTextAnswers[q.id] ?? "";
+      const checks = rubricChecks[q.id] ?? [];
+      return evaluateFreeResponse(q, txt, checks).isPassing;
+    },
+    [mcAnswers, freeTextAnswers, rubricChecks]
+  );
+
+  const answeredCount = useMemo(
+    () => questions.filter((q) => isQuestionAnswered(q)).length,
+    [questions, isQuestionAnswered]
+  );
+
+  const correctCount = useMemo(
+    () => questions.filter((q) => isQuestionCorrect(q)).length,
+    [questions, isQuestionCorrect]
+  );
+
+  const scorePercent = Math.round((correctCount / Math.max(1, questions.length)) * 100);
+
+  // Per-skill 4-Skill Matrix
+  const skillStats = useMemo(() => {
+    const base: Record<SkillKey, { total: number; correct: number; percent: number }> = {
+      LISTENING: { total: 0, correct: 0, percent: 0 },
+      SPEAKING: { total: 0, correct: 0, percent: 0 },
+      READING: { total: 0, correct: 0, percent: 0 },
+      WRITING: { total: 0, correct: 0, percent: 0 },
+    };
+    for (const q of questions) {
+      base[q.skill].total += 1;
+      if (isQuestionCorrect(q)) {
+        base[q.skill].correct += 1;
+      }
+    }
+    (Object.keys(base) as SkillKey[]).forEach((k) => {
+      base[k].percent = base[k].total > 0 ? Math.round((base[k].correct / base[k].total) * 100) : 0;
+    });
+    return base;
+  }, [questions, isQuestionCorrect]);
+
+  const missedQuestions = useMemo(
+    () => questions.filter((q) => !isQuestionCorrect(q)),
+    [questions, isQuestionCorrect]
+  );
+
+  const weakSkills = useMemo(() => {
+    return (Object.keys(skillStats) as SkillKey[]).filter(
+      (k) => skillStats[k].total > 0 && skillStats[k].percent < 70
+    );
+  }, [skillStats]);
+
+  const recommendedLessons = useMemo(() => {
+    const seen = new Set<string>();
+    const list: Array<{ slug: string; title: string; topic: string; skill: SkillKey }> = [];
+    for (const q of missedQuestions) {
+      if (!seen.has(q.recommendedLesson.slug)) {
+        seen.add(q.recommendedLesson.slug);
+        list.push({ ...q.recommendedLesson, skill: q.skill });
+      }
+    }
+    if (list.length === 0 && questions[0]) {
+      list.push({
+        ...questions[0].recommendedLesson,
+        skill: questions[0].skill,
+      });
+    }
+    return list.slice(0, 4);
+  }, [missedQuestions, questions]);
+
+  // Determine recommended level based on mode & score
+  const determineRecommendedLevel = (): "N5" | "N4" | "N3" => {
+    if (selectedMode === "N3_FULL") {
+      return scorePercent >= 65 ? "N3" : "N4";
+    }
+    if (selectedMode === "N4_FULL") {
+      return scorePercent >= 75 ? "N3" : scorePercent >= 55 ? "N4" : "N5";
+    }
+    if (selectedMode === "N5_FULL") {
+      return scorePercent >= 75 ? "N4" : "N5";
+    }
+    // DIAGNOSTIC
+    if (scorePercent >= 80) return "N3";
+    if (scorePercent >= 55) return "N4";
     return "N5";
   };
 
@@ -373,9 +373,10 @@ export function TestClient({ userLevel, userXP: initialXP, displayName }: TestCl
       if (res.ok) {
         setCurrentLevelState(recommendedLevel);
         setLevelUpdated(true);
+        notifyProgressUpdated();
         playCorrect();
         showToast({
-          title: `Đã cập nhật trình độ ${recommendedLevel} vào Hồ sơ của bạn!`,
+          title: `Đã đồng bộ trình độ ${recommendedLevel} vào Hồ sơ & Lộ trình!`,
           type: "success",
         });
       } else {
@@ -402,9 +403,10 @@ export function TestClient({ userLevel, userXP: initialXP, displayName }: TestCl
       if (res.ok) {
         setXpClaimed(true);
         setXpState((prev) => prev + 100);
+        notifyProgressUpdated();
         playCorrect();
         showToast({
-          title: "🎉 Bạn nhận được +100 XP Thưởng Hoàn Thành Bài Kiểm Tra!",
+          title: "🎉 Bạn nhận được +100 XP Thưởng Hoàn Thành Bài Đánh Giá 4 Kỹ Năng!",
           type: "success",
         });
       } else {
@@ -426,77 +428,245 @@ export function TestClient({ userLevel, userXP: initialXP, displayName }: TestCl
 
   return (
     <div className="space-y-8">
-      {/* STEP 1: MODE SELECTION */}
+      {/* STEP 1: MODE SELECTION & 4-SKILL MATRIX OVERVIEW */}
       {currentStep === "SELECT" && (
         <div className="space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200/80 dark:bg-sumi-900 dark:ring-slate-800">
+          <div className="flex flex-col justify-between gap-4 rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200/80 dark:bg-sumi-900 dark:ring-slate-800 sm:flex-row sm:items-center">
             <div>
               <h2 className="text-xl font-bold text-slate-900 dark:text-white">
                 Xin chào, {displayName}! 👋
               </h2>
               <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                Trình độ hiện tại trong hồ sơ: <span className="font-extrabold text-red-600 dark:text-red-400">{currentLevelState}</span> · Tổng XP: <span className="font-extrabold text-amber-500">{xpState} XP</span>
+                Trình độ hiện tại trong hồ sơ:{" "}
+                <span className="font-extrabold text-red-600 dark:text-red-400">{currentLevelState}</span> · Tổng XP:{" "}
+                <span className="font-extrabold text-amber-500">{xpState} XP</span> · Danh mục:{" "}
+                <span className="font-extrabold text-slate-700 dark:text-slate-200">{examCatalog.length} bài thi động</span>
               </p>
             </div>
-            <div className="inline-flex items-center gap-2 rounded-xl bg-red-50 px-4 py-2 text-xs font-bold text-red-700 dark:bg-red-950/40 dark:text-red-300">
-              <span>🎯 Đánh giá năng lực chuẩn JLPT</span>
+            <div className="flex flex-wrap items-center gap-2.5">
+              <div className="inline-flex items-center gap-2 rounded-xl bg-red-50 px-3.5 py-2 text-xs font-bold text-red-700 dark:bg-red-950/40 dark:text-red-300">
+                <span>🎯 Ma trận đánh giá đủ 4 kỹ năng: Nghe・Nói・Đọc・Viết</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  playClick();
+                  setIsVaultOpen(true);
+                }}
+                data-testid="open-document-vault-btn"
+                className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2 text-xs font-extrabold text-slate-700 shadow-sm transition hover:border-red-300 hover:bg-rose-50 hover:text-red-700 dark:border-slate-700 dark:bg-sumi-800 dark:text-slate-200 dark:hover:border-red-700 dark:hover:text-red-300"
+              >
+                <span>📚 Kho tài liệu & Đề thi</span>
+                <span className="rounded-full bg-slate-200/80 px-2 py-0.5 text-[10px] font-black text-slate-700 dark:bg-sumi-700 dark:text-slate-200">
+                  {catalogDocCount}
+                </span>
+              </button>
             </div>
           </div>
 
-          <div className="grid gap-5 sm:grid-cols-2">
-            {TEST_MODES.map((mode) => (
-              <div
-                key={mode.id}
-                className="group relative flex flex-col justify-between overflow-hidden rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200/80 transition hover:shadow-md hover:ring-slate-300 dark:bg-sumi-900 dark:ring-slate-800 dark:hover:ring-slate-700"
-              >
-                <div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-3xl">{mode.icon}</span>
-                    <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-extrabold text-slate-700 dark:bg-sumi-800 dark:text-slate-300">
-                      {mode.badge}
-                    </span>
-                  </div>
-                  <h3 className="mt-4 text-lg font-bold text-slate-900 group-hover:text-red-600 dark:text-white dark:group-hover:text-red-400 transition">
-                    {mode.title}
-                  </h3>
-                  <p className="mt-2 text-sm text-slate-500 leading-relaxed dark:text-slate-400">
-                    {mode.description}
-                  </p>
-                </div>
-
-                <div className="mt-6 flex items-center justify-between border-t border-slate-100 pt-4 dark:border-slate-800">
-                  <div className="flex items-center gap-3 text-xs font-semibold text-slate-500 dark:text-slate-400">
-                    <span>⏱️ {mode.timeMinutes} phút</span>
-                    <span>•</span>
-                    <span>📝 {mode.questionCount} câu hỏi</span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => startTest(mode.id)}
-                    className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-red-600 to-rose-500 px-4 py-2 text-xs font-extrabold text-white shadow hover:brightness-110 active:scale-95 transition"
-                  >
-                    Bắt đầu làm bài
-                    <span>→</span>
-                  </button>
-                </div>
+          {/* 4-SKILL ASSESSMENT MATRIX EXPLANATION */}
+          <div className="rounded-3xl border border-slate-200/80 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-sumi-900">
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <h3 className="text-base font-black text-slate-900 dark:text-white">
+                  📊 Ma Trận Đánh Giá 4 Kỹ Năng & Cam Kết Minh Bạch
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  Không chỉ dừng ở 4 bài thi cố định — hệ thống hỗ trợ {examCatalog.length} bộ đề từ Đầu vào, Vượt cấp N5–N3, Giáo trình FPT (JPD113–133), Chuyên đề kỹ năng đến Đề thi JLPT gốc.
+                </p>
               </div>
-            ))}
+              <span className="rounded-full bg-indigo-50 px-3 py-1 text-xs font-bold text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-300">
+                Hỗ trợ Thi vượt cấp / Miễn học phần
+              </span>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              {(Object.keys(SKILL_META) as SkillKey[]).map((key) => {
+                const m = SKILL_META[key];
+                return (
+                  <div
+                    key={key}
+                    className="rounded-2xl border border-slate-200/70 bg-slate-50/70 p-4 dark:border-slate-800 dark:bg-sumi-800/50"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-2xl">{m.icon}</span>
+                      <span className="jp-text rounded-md bg-white px-2 py-0.5 text-xs font-black text-red-600 shadow-sm dark:bg-sumi-900 dark:text-red-400">
+                        {m.jpLabel}
+                      </span>
+                    </div>
+                    <h4 className="mt-2 text-sm font-black text-slate-900 dark:text-white">{m.label}</h4>
+                    <p className="mt-1 text-xs leading-relaxed text-slate-500 dark:text-slate-400">{m.desc}</p>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="mt-4 rounded-2xl border border-amber-200/80 bg-amber-50/70 p-3.5 text-xs text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-200">
+              <b>ℹ️ Minh bạch công nghệ chấm điểm & Nguồn đáp án:</b> Phần <b>Nghe</b> và <b>Đọc</b> được chấm tự động 100%. Phần <b>Viết</b> và <b>Nói</b> kết hợp nhận diện giọng nói trình duyệt (Web Speech API `ja-JP`), đối chiếu từ khóa/cấu trúc ngữ pháp cốt lõi và <b>Bảng tiêu chí Rubric 3 điểm</b> (có đáp án mẫu đối chiếu), tuyệt đối không giả lập điểm AI cảm tính. Mỗi đề thi đều phân biệt rõ <b>Đáp án chính thức từ đề gốc (OFFICIAL)</b> và <b>Đáp án biên soạn chuẩn hóa (CURATED)</b>.
+            </div>
+          </div>
+
+          {/* DYNAMIC EXAM FILTER BAR */}
+          <div className="flex flex-col justify-between gap-3 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-sumi-900 lg:flex-row lg:items-center">
+            <div className="flex flex-wrap items-center gap-1.5">
+              {EXAM_CATEGORY_TABS.map((tab) => {
+                const active = selectedCategory === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    onClick={() => {
+                      playClick();
+                      setSelectedCategory(tab.id);
+                    }}
+                    className={`inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-extrabold transition ${
+                      active
+                        ? "bg-red-600 text-white shadow-sm"
+                        : "bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-sumi-800 dark:text-slate-300"
+                    }`}
+                  >
+                    <span>{tab.icon}</span>
+                    <span>{tab.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="flex items-center gap-1.5">
+              <span className="text-[11px] font-bold text-slate-400">Cấp độ:</span>
+              {(["ALL", "N5", "N4", "N3"] as const).map((lvl) => (
+                <button
+                  key={lvl}
+                  type="button"
+                  onClick={() => {
+                    playClick();
+                    setSelectedLevelFilter(lvl);
+                  }}
+                  className={`rounded-lg px-2.5 py-1 text-xs font-extrabold transition ${
+                    selectedLevelFilter === lvl
+                      ? "bg-slate-900 text-white dark:bg-white dark:text-slate-900"
+                      : "bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-sumi-800 dark:text-slate-300"
+                  }`}
+                >
+                  {lvl === "ALL" ? "Tất cả" : lvl}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* DYNAMIC EXAM CARDS */}
+          <div className="grid gap-5 sm:grid-cols-2">
+            {filteredExams.map((mode) => {
+              const modeQuestions = mode.questions ?? [];
+              const presentSkills = Array.from(new Set(modeQuestions.map((q) => q.skill)));
+              const isOfficial = mode.answerAuthority === "OFFICIAL";
+              return (
+                <div
+                  key={mode.slug}
+                  className="group relative flex flex-col justify-between overflow-hidden rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200/80 transition hover:shadow-md hover:ring-slate-300 dark:bg-sumi-900 dark:ring-slate-800 dark:hover:ring-slate-700"
+                >
+                  <div>
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-3xl">{mode.icon}</span>
+                      <div className="flex flex-wrap items-center justify-end gap-1.5">
+                        <span className="rounded-full bg-rose-50 px-2.5 py-1 text-[11px] font-bold text-red-600 dark:bg-red-950/50 dark:text-red-300">
+                          {mode.kindLabel}
+                        </span>
+                        <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-extrabold text-slate-700 dark:bg-sumi-800 dark:text-slate-300">
+                          {mode.badge}
+                        </span>
+                      </div>
+                    </div>
+                    <h3 className="mt-4 text-lg font-bold text-slate-900 transition group-hover:text-red-600 dark:text-white dark:group-hover:text-red-400">
+                      {mode.title}
+                    </h3>
+                    <p className="mt-2 text-sm leading-relaxed text-slate-500 dark:text-slate-400">
+                      {mode.description}
+                    </p>
+
+                    {/* Authority & Source Metadata */}
+                    <div className="mt-3 flex flex-wrap items-center gap-1.5">
+                      <span
+                        className={`rounded-md px-2 py-0.5 text-[10px] font-extrabold ${
+                          isOfficial
+                            ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300"
+                            : "bg-indigo-50 text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-300"
+                        }`}
+                      >
+                        {isOfficial ? "✅ Đáp án chính thức từ đề gốc" : "📘 Đáp án biên soạn & giải thích chi tiết"}
+                      </span>
+                      {mode.sourceDocument && (
+                        <span className="truncate rounded-md bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-500 dark:bg-sumi-800 dark:text-slate-400">
+                          📄 Nguồn: {mode.sourceDocument}
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="mt-2.5 flex flex-wrap gap-1.5">
+                      {presentSkills.includes("LISTENING") && (
+                        <span className="rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600 dark:bg-sumi-800 dark:text-slate-300">
+                          🎧 Nghe {mode.hasAudio ? "(Audio)" : ""}
+                        </span>
+                      )}
+                      {presentSkills.includes("READING") && (
+                        <span className="rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600 dark:bg-sumi-800 dark:text-slate-300">
+                          📖 Đọc / Từ vựng / Ngữ pháp
+                        </span>
+                      )}
+                      {presentSkills.includes("WRITING") && (
+                        <span className="rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600 dark:bg-sumi-800 dark:text-slate-300">
+                          ✍️ Viết câu
+                        </span>
+                      )}
+                      {presentSkills.includes("SPEAKING") && (
+                        <span className="rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600 dark:bg-sumi-800 dark:text-slate-300">
+                          🎙️ Nói phản xạ
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="mt-6 flex items-center justify-between border-t border-slate-100 pt-4 dark:border-slate-800">
+                    <div className="flex items-center gap-3 text-xs font-semibold text-slate-500 dark:text-slate-400">
+                      <span>⏱️ {mode.timeMinutes} phút</span>
+                      <span>•</span>
+                      <span>
+                        📝 {modeQuestions.length} nhiệm vụ ({presentSkills.length === 4 ? "4 kỹ năng" : `${presentSkills.length} kỹ năng`})
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => startTest(mode.slug)}
+                      className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-red-600 to-rose-500 px-4 py-2 text-xs font-extrabold text-white shadow transition hover:brightness-110 active:scale-95"
+                    >
+                      Bắt đầu đánh giá
+                      <span>→</span>
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
       )}
 
-      {/* STEP 2: ACTIVE TEST QUIZ RUNNER */}
-      {currentStep === "TESTING" && (
+      {/* STEP 2: ACTIVE 4-SKILL TEST RUNNER */}
+      {currentStep === "TESTING" && currentQuestion && (
         <div className="space-y-6">
           {/* TOP BAR: TIMER & PROGRESS */}
           <div className="sticky top-20 z-30 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-slate-200/80 bg-white/95 px-6 py-4 shadow-lg backdrop-blur dark:border-slate-800 dark:bg-sumi-900/95">
-            <div className="flex items-center gap-4">
+            <div className="flex flex-wrap items-center gap-2.5">
               <span className="rounded-lg bg-red-100 px-3 py-1 text-xs font-black text-red-700 dark:bg-red-950/60 dark:text-red-300">
                 Câu {questionIndex + 1} / {questions.length}
               </span>
-              <span className="hidden sm:inline-block text-xs font-bold text-slate-400">
-                Phần: {questions[questionIndex].category} ({questions[questionIndex].level})
+              <span className="rounded-lg bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-700 dark:bg-sumi-800 dark:text-slate-200">
+                {SKILL_META[currentQuestion.skill].icon} {SKILL_META[currentQuestion.skill].label} · {currentQuestion.level}
               </span>
+              {activeExam && (
+                <span className="hidden rounded-lg bg-indigo-50 px-2.5 py-1 text-[11px] font-bold text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300 md:inline-block">
+                  {activeExam.answerAuthority === "OFFICIAL" ? "✅ Đáp án chính thức" : "📘 Đáp án biên soạn"}
+                </span>
+              )}
             </div>
 
             <div className="flex items-center gap-6">
@@ -510,7 +680,7 @@ export function TestClient({ userLevel, userXP: initialXP, displayName }: TestCl
               <button
                 type="button"
                 onClick={finishTest}
-                className="rounded-xl bg-slate-900 px-4 py-2 text-xs font-bold text-white hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-white transition"
+                className="rounded-xl bg-slate-900 px-4 py-2 text-xs font-bold text-white transition hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-white"
               >
                 Nộp Bài ({answeredCount}/{questions.length})
               </button>
@@ -518,58 +688,197 @@ export function TestClient({ userLevel, userXP: initialXP, displayName }: TestCl
           </div>
 
           {/* QUESTION BOX */}
-          <div className="rounded-3xl bg-white p-6 sm:p-8 shadow-sm ring-1 ring-slate-200/80 dark:bg-sumi-900 dark:ring-slate-800 space-y-6">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-4 dark:border-slate-800">
-              <span className="inline-flex items-center gap-2 text-xs font-bold text-slate-400">
+          <div className="space-y-6 rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200/80 dark:bg-sumi-900 dark:ring-slate-800 sm:p-8">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-4 dark:border-slate-800">
+              <span className="inline-flex items-center gap-2 text-xs font-bold text-slate-600 dark:text-slate-300">
                 <span className="h-2 w-2 rounded-full bg-red-500" />
-                {questions[questionIndex].category} · Cấp độ {questions[questionIndex].level}
+                {SKILL_META[currentQuestion.skill].icon} Kỹ năng: {SKILL_META[currentQuestion.skill].label} ({currentQuestion.subCategory}) · Cấp độ {currentQuestion.level}
               </span>
-              <span className="text-xs font-semibold text-slate-400">
-                Đã trả lời {answeredCount}/{questions.length} câu
+              <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+                Đã hoàn thành {answeredCount}/{questions.length} câu
               </span>
             </div>
 
-            {questions[questionIndex].subText && (
-              <div className="rounded-2xl bg-slate-50 p-4 text-sm font-medium text-slate-700 dark:bg-sumi-800 dark:text-slate-200 border-l-4 border-red-500">
-                <p className="jp-text leading-relaxed">{questions[questionIndex].subText}</p>
+            {/* LISTENING AUDIO PLAYER (REAL MP3 + WEB SPEECH TTS) */}
+            {currentQuestion.skill === "LISTENING" && (currentQuestion.audioScript || currentQuestion.audioUrl) && (
+              <div className="flex flex-col justify-between gap-4 rounded-2xl border border-indigo-200 bg-indigo-50/70 p-4 dark:border-indigo-900/50 dark:bg-indigo-950/30">
+                <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
+                  <div className="space-y-1">
+                    <p className="text-xs font-extrabold uppercase tracking-wider text-indigo-700 dark:text-indigo-300">
+                      🎧 Phần Nghe Hiểu (Listening Audio)
+                    </p>
+                    <p className="text-xs text-slate-600 dark:text-slate-300">
+                      Bấm nút phát để nghe hội thoại tiếng Nhật (kịch bản chữ được ẩn trong lúc làm bài để đánh giá đúng kỹ năng nghe).
+                    </p>
+                  </div>
+                  {currentQuestion.audioScript && (
+                    <div className="flex shrink-0 items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => speak(currentQuestion.audioScript!)}
+                        className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-xs font-extrabold text-white shadow transition hover:bg-indigo-700 active:scale-95"
+                      >
+                        <span>{speakingText === currentQuestion.audioScript ? "🔊 Đang phát..." : "▶️ Nghe Audio"}</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
+                {currentQuestion.audioUrl && (
+                  <div className="rounded-xl border border-indigo-200/80 bg-white/90 p-3 dark:border-indigo-800 dark:bg-sumi-900">
+                    <p className="mb-1.5 text-[11px] font-bold text-indigo-700 dark:text-indigo-300">
+                      🎵 File Audio Gốc Từ Đề Thi ({currentQuestion.level}):
+                    </p>
+                    <audio controls preload="metadata" src={currentQuestion.audioUrl} className="w-full" />
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* READING PASSAGE / CONTEXT */}
+            {currentQuestion.contextPassage && (
+              <div className="rounded-2xl border-l-4 border-red-500 bg-slate-50 p-4 text-sm font-medium text-slate-800 dark:bg-sumi-800 dark:text-slate-100">
+                <p className="jp-text whitespace-pre-line leading-relaxed">{currentQuestion.contextPassage}</p>
               </div>
             )}
 
             <div className="space-y-2">
-              <h3 className="jp-text text-lg sm:text-xl font-bold leading-relaxed text-slate-900 dark:text-white">
-                {questions[questionIndex].question}
+              <h3 className="jp-text text-lg font-bold leading-relaxed text-slate-900 dark:text-white sm:text-xl">
+                {currentQuestion.question}
               </h3>
+              {currentQuestion.promptHint && (
+                <p className="rounded-xl bg-amber-50/80 px-3.5 py-2 text-xs font-medium text-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
+                  💡 {currentQuestion.promptHint}
+                </p>
+              )}
             </div>
 
-            {/* OPTIONS */}
-            <div className="grid gap-3 pt-2">
-              {questions[questionIndex].options.map((opt, oIdx) => {
-                const isSelected = userAnswers[questions[questionIndex].id] === oIdx;
-                return (
-                  <button
-                    key={oIdx}
-                    type="button"
-                    onClick={() => handleSelectOption(questions[questionIndex].id, oIdx)}
-                    className={`flex items-start gap-4 rounded-2xl border p-4 text-left font-medium transition ${
-                      isSelected
-                        ? "border-red-600 bg-red-50/80 text-red-900 shadow-sm ring-2 ring-red-500/20 dark:border-red-500 dark:bg-red-950/40 dark:text-red-100"
-                        : "border-slate-200 bg-white text-slate-800 hover:border-slate-300 hover:bg-slate-50 dark:border-slate-800 dark:bg-sumi-850 dark:text-slate-200 dark:hover:bg-sumi-800"
-                    }`}
-                  >
-                    <span
-                      className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-extrabold ${
+            {/* FORMAT 1: MULTIPLE CHOICE (LISTENING / READING) */}
+            {currentQuestion.format === "MULTIPLE_CHOICE" && currentQuestion.options && (
+              <div className="grid gap-3 pt-2">
+                {currentQuestion.options.map((opt, oIdx) => {
+                  const isSelected = mcAnswers[currentQuestion.id] === oIdx;
+                  return (
+                    <button
+                      key={oIdx}
+                      type="button"
+                      onClick={() => handleSelectOption(currentQuestion.id, oIdx)}
+                      className={`flex items-start gap-4 rounded-2xl border p-4 text-left font-medium transition ${
                         isSelected
-                          ? "bg-red-600 text-white"
-                          : "bg-slate-100 text-slate-600 dark:bg-sumi-750 dark:text-slate-300"
+                          ? "border-red-600 bg-red-50/80 text-red-900 shadow-sm ring-2 ring-red-500/20 dark:border-red-500 dark:bg-red-950/40 dark:text-red-100"
+                          : "border-slate-200 bg-white text-slate-800 hover:border-slate-300 hover:bg-slate-50 dark:border-slate-800 dark:bg-sumi-850 dark:text-slate-200 dark:hover:bg-sumi-800"
                       }`}
                     >
-                      {opt.label}
-                    </span>
-                    <span className="jp-text flex-1 pt-0.5 text-base leading-snug">{opt.text}</span>
-                  </button>
-                );
-              })}
-            </div>
+                      <span
+                        className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-extrabold ${
+                          isSelected
+                            ? "bg-red-600 text-white"
+                            : "bg-slate-100 text-slate-600 dark:bg-sumi-750 dark:text-slate-300"
+                        }`}
+                      >
+                        {opt.label}
+                      </span>
+                      <span className="jp-text flex-1 pt-0.5 text-base leading-snug">{opt.text}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* FORMAT 2 & 3: WRITING INPUT & SPEAKING PROMPT */}
+            {(currentQuestion.format === "WRITING_INPUT" || currentQuestion.format === "SPEAKING_PROMPT") && (
+              <div className="space-y-4 pt-2">
+                {currentQuestion.format === "SPEAKING_PROMPT" && (
+                  <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-rose-200 bg-rose-50/70 p-4 dark:border-red-900/50 dark:bg-red-950/30">
+                    <div className="space-y-1">
+                      <p className="text-xs font-extrabold text-red-700 dark:text-red-300">
+                        🎙️ Thu âm phản xạ nói tiếng Nhật (Web Speech API)
+                      </p>
+                      <p className="text-xs text-slate-600 dark:text-slate-300">
+                        {speechSupported
+                          ? "Bấm nút Ghi âm và nói bằng tiếng Nhật, hoặc tự đọc to rồi nhập lại câu trả lời của bạn vào ô bên dưới."
+                          : "Trình duyệt hiện tại không bật SpeechRecognition tự động. Hãy nói to câu trả lời của bạn, nhập lại vào ô bên dưới và đối chiếu Rubric."}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => handleStartSpeechRecognition(currentQuestion.id)}
+                        className={`inline-flex min-h-11 items-center gap-2 rounded-xl px-4 py-2 text-xs font-extrabold text-white shadow transition ${
+                          isRecording
+                            ? "animate-pulse bg-red-600"
+                            : "bg-slate-900 hover:bg-slate-800 dark:bg-red-600 dark:hover:bg-red-700"
+                        }`}
+                      >
+                        {isRecording ? "⏹️ Đang nghe... (Bấm để dừng)" : "🎙️ Bấm để nói (ja-JP)"}
+                      </button>
+                      {currentQuestion.sampleAnswer && (
+                        <button
+                          type="button"
+                          onClick={() => speak(currentQuestion.sampleAnswer!)}
+                          className="inline-flex min-h-11 items-center gap-1.5 rounded-xl border border-rose-200 bg-white px-3 py-2 text-xs font-bold text-red-600 hover:bg-rose-50 dark:border-red-800 dark:bg-sumi-900 dark:text-red-300"
+                        >
+                          🔊 Nghe ngữ điệu mẫu
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                <div>
+                  <label
+                    htmlFor={`response-${currentQuestion.id}`}
+                    className="mb-1.5 block text-xs font-bold text-slate-700 dark:text-slate-300"
+                  >
+                    {currentQuestion.format === "WRITING_INPUT"
+                      ? "✍️ Nhập câu tiếng Nhật của bạn (Hiragana, Kanji hoặc Romaji):"
+                      : "📝 Bản ghi câu nói của bạn (tự động điền khi nói hoặc nhập trực tiếp):"}
+                  </label>
+                  <textarea
+                    id={`response-${currentQuestion.id}`}
+                    rows={3}
+                    value={freeTextAnswers[currentQuestion.id] ?? ""}
+                    onChange={(e) => handleTextChange(currentQuestion.id, e.target.value)}
+                    placeholder={
+                      currentQuestion.format === "WRITING_INPUT"
+                        ? "Ví dụ: 毎日、電車で学校へ行きます。"
+                        : "Ví dụ: はじめまして。アンと申します。よろしくお願いします。"
+                    }
+                    className="jp-text w-full rounded-2xl border border-slate-200 bg-slate-50/70 p-3.5 text-base text-slate-900 outline-none transition focus:border-red-400 focus:bg-white focus:ring-4 focus:ring-red-500/10 dark:border-slate-700 dark:bg-sumi-800 dark:text-white"
+                  />
+                </div>
+
+                {/* RUBRIC SELF-VERIFICATION CHECKLIST */}
+                {currentQuestion.rubricCriteria && (
+                  <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4 dark:border-slate-800 dark:bg-sumi-800/60">
+                    <p className="text-xs font-extrabold uppercase tracking-wider text-slate-700 dark:text-slate-200">
+                      ✅ Tiêu chí tự kiểm tra & chấm điểm minh bạch (Rubric):
+                    </p>
+                    <p className="mt-0.5 text-[11px] text-slate-500 dark:text-slate-400">
+                      Hãy kiểm tra xem câu trả lời của bạn đã đáp ứng các tiêu chí ngữ pháp & ngữ cảnh dưới đây chưa:
+                    </p>
+                    <div className="mt-2.5 space-y-2">
+                      {currentQuestion.rubricCriteria.map((criterion, cIdx) => {
+                        const checked = (rubricChecks[currentQuestion.id] ?? []).includes(cIdx);
+                        return (
+                          <label
+                            key={cIdx}
+                            className="flex cursor-pointer items-start gap-2.5 rounded-xl border border-slate-200/80 bg-white px-3 py-2 text-xs font-medium text-slate-700 transition hover:border-red-200 dark:border-slate-700 dark:bg-sumi-900 dark:text-slate-200"
+                          >
+                            <input
+                              type="checkbox"
+                              checked={checked}
+                              onChange={() => handleToggleRubric(currentQuestion.id, cIdx)}
+                              className="mt-0.5 h-4 w-4 rounded border-slate-300 text-red-600 focus:ring-red-500"
+                            />
+                            <span>{criterion}</span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* QUESTION NAV & ACTIONS */}
             <div className="flex items-center justify-between border-t border-slate-100 pt-6 dark:border-slate-800">
@@ -578,27 +887,33 @@ export function TestClient({ userLevel, userXP: initialXP, displayName }: TestCl
                 disabled={questionIndex === 0}
                 onClick={() => {
                   playClick();
+                  stopRecording();
                   setQuestionIndex((prev) => Math.max(0, prev - 1));
                 }}
-                className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-2 text-xs font-bold text-slate-700 disabled:opacity-40 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-sumi-800"
+                className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-40 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-sumi-800"
               >
                 ← Câu trước
               </button>
 
-              <div className="hidden sm:flex items-center gap-1.5 overflow-x-auto max-w-xs">
+              <div className="hidden max-w-md items-center gap-1.5 overflow-x-auto sm:flex">
                 {questions.map((q, idx) => {
-                  const isDone = userAnswers[q.id] !== undefined;
+                  const isDone = isQuestionAnswered(q);
                   const isCurrent = idx === questionIndex;
                   return (
                     <button
                       key={q.id}
-                      onClick={() => setQuestionIndex(idx)}
+                      type="button"
+                      onClick={() => {
+                        stopRecording();
+                        setQuestionIndex(idx);
+                      }}
+                      title={`${SKILL_META[q.skill].label} (${q.level})`}
                       className={`h-7 w-7 rounded-lg text-xs font-extrabold transition ${
                         isCurrent
                           ? "bg-red-600 text-white ring-2 ring-red-400"
                           : isDone
                           ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300"
-                          : "bg-slate-100 text-slate-400 dark:bg-sumi-800"
+                          : "bg-slate-100 text-slate-500 dark:bg-sumi-800 dark:text-slate-400"
                       }`}
                     >
                       {idx + 1}
@@ -612,9 +927,10 @@ export function TestClient({ userLevel, userXP: initialXP, displayName }: TestCl
                   type="button"
                   onClick={() => {
                     playClick();
+                    stopRecording();
                     setQuestionIndex((prev) => Math.min(questions.length - 1, prev + 1));
                   }}
-                  className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-5 py-2 text-xs font-bold text-white hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-white transition"
+                  className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-5 py-2 text-xs font-bold text-white transition hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-white"
                 >
                   Câu tiếp →
                 </button>
@@ -622,7 +938,7 @@ export function TestClient({ userLevel, userXP: initialXP, displayName }: TestCl
                 <button
                   type="button"
                   onClick={finishTest}
-                  className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-red-600 to-rose-500 px-6 py-2.5 text-xs font-black text-white shadow hover:brightness-110 transition"
+                  className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-red-600 to-rose-500 px-6 py-2.5 text-xs font-black text-white shadow transition hover:brightness-110"
                 >
                   Hoàn tất & Nộp bài 🎉
                 </button>
@@ -632,63 +948,247 @@ export function TestClient({ userLevel, userXP: initialXP, displayName }: TestCl
         </div>
       )}
 
-      {/* STEP 3: RESULT DASHBOARD */}
+      {/* STEP 3: 4-SKILL RESULT DASHBOARD */}
       {currentStep === "RESULT" && (
         <div className="space-y-8 animate-fadeIn">
           {/* HERO SUMMARY */}
           <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-sumi-900 to-red-950 p-8 text-white shadow-xl">
-            <div className="flex flex-col md:flex-row items-center justify-between gap-8">
+            <div className="flex flex-col items-center justify-between gap-8 md:flex-row">
               <div className="space-y-3 text-center md:text-left">
                 <span className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3.5 py-1 text-xs font-bold text-amber-300 backdrop-blur">
-                  🏆 KẾT QUẢ BÀI KIỂM TRA NĂNG LỰC
+                  🏆 BÁO CÁO ĐÁNH GIÁ NĂNG LỰC 4 KỸ NĂNG
                 </span>
                 <h2 className="text-3xl font-black tracking-tight">
                   {scorePercent >= 80
-                    ? "Xuất Sắc! Bạn Đã Vượt Qua Thử Thách 🎉"
+                    ? "Xuất Sắc! Bạn Đạt Chuẩn Toàn Diện 4 Kỹ Năng 🎉"
                     : scorePercent >= 60
-                    ? "Khá Tốt! Tiếp Tục Phát Huy Nhé 💪"
-                    : "Đạt Mức Cơ Bản! Cố Gắng Thêm Nào 🌱"}
+                    ? "Đạt Yêu Cầu! Nền Tảng Khá Vững Vàng 💪"
+                    : "Cần Củng Cố Thêm Một Số Kỹ Năng Cốt Lõi 🌱"}
                 </h2>
-                <p className="max-w-md text-sm text-slate-300 leading-relaxed">
-                  Bạn đã trả lời đúng <b className="text-white">{correctCount}</b> / {questions.length} câu hỏi. Dưới đây là phân tích chi tiết kỹ năng và đề xuất lộ trình.
+                <p className="max-w-xl text-sm leading-relaxed text-slate-300">
+                  Bạn đạt <b className="text-white">{correctCount}</b> / {questions.length} nhiệm vụ qua 4 kỹ năng (Nghe・Nói・Đọc・Viết). Dưới đây là bảng điểm từng kỹ năng, điểm yếu cần ôn và bài học tiếp theo được cá nhân hóa cho bạn.
                 </p>
               </div>
 
               {/* SCORE BADGE */}
-              <div className="flex shrink-0 flex-col items-center justify-center rounded-3xl bg-white/10 p-6 text-center backdrop-blur ring-1 ring-white/20 min-w-[180px]">
-                <span className="text-xs font-bold text-slate-300">TỔNG ĐIỂM</span>
-                <span className="text-5xl font-black text-amber-400 mt-1">{scorePercent}%</span>
+              <div className="flex min-w-[180px] shrink-0 flex-col items-center justify-center rounded-3xl bg-white/10 p-6 text-center backdrop-blur ring-1 ring-white/20">
+                <span className="text-xs font-bold text-slate-300">ĐIỂM TỔNG HỢP</span>
+                <span className="mt-1 text-5xl font-black text-amber-400">{scorePercent}%</span>
                 <span className="mt-2 rounded-full bg-amber-400/20 px-3 py-0.5 text-xs font-bold text-amber-300">
-                  {scorePercent >= 85 ? "Xếp loại S" : scorePercent >= 70 ? "Xếp loại A" : scorePercent >= 50 ? "Xếp loại B" : "Xếp loại C"}
+                  {scorePercent >= 85
+                    ? "Hạng S (Đủ điều kiện vượt cấp)"
+                    : scorePercent >= 65
+                    ? "Hạng A (Đạt chuẩn)"
+                    : scorePercent >= 50
+                    ? "Hạng B (Cần ôn bổ trợ)"
+                    : "Hạng C (Cần học lại nền tảng)"}
                 </span>
+              </div>
+            </div>
+          </div>
+
+          {/* 4-SKILL BREAKDOWN MATRIX */}
+          <div className="space-y-5 rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200/80 dark:bg-sumi-900 dark:ring-slate-800">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <h3 className="text-lg font-black text-slate-900 dark:text-white">
+                  📊 Điểm Số Theo Từng Kỹ Năng (Listening・Speaking・Reading・Writing)
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  Phân tích độ vững vàng của từng kỹ năng để phân bổ thời gian học hợp lý.
+                </p>
+              </div>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              {(Object.keys(SKILL_META) as SkillKey[]).map((skillKey) => {
+                const meta = SKILL_META[skillKey];
+                const stat = skillStats[skillKey];
+                const isWeak = stat.percent < 70;
+                return (
+                  <div
+                    key={skillKey}
+                    className={`flex flex-col justify-between rounded-2xl border p-4 ${
+                      isWeak
+                        ? "border-amber-200 bg-amber-50/50 dark:border-amber-900/50 dark:bg-amber-950/20"
+                        : "border-emerald-200 bg-emerald-50/40 dark:border-emerald-900/50 dark:bg-emerald-950/20"
+                    }`}
+                  >
+                    <div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-2xl">{meta.icon}</span>
+                        <span
+                          className={`rounded-full px-2.5 py-0.5 text-[10px] font-black ${
+                            isWeak
+                              ? "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300"
+                              : "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300"
+                          }`}
+                        >
+                          {stat.percent >= 80 ? "Vững vàng" : stat.percent >= 65 ? "Đạt yêu cầu" : "Điểm yếu cần ôn"}
+                        </span>
+                      </div>
+                      <h4 className="mt-2 text-sm font-black text-slate-900 dark:text-white">{meta.label}</h4>
+                      <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+                        Đúng {stat.correct} / {stat.total} nhiệm vụ
+                      </p>
+                    </div>
+
+                    <div className="mt-4">
+                      <div className="mb-1 flex items-center justify-between text-xs font-extrabold">
+                        <span className="text-slate-600 dark:text-slate-300">Mức độ hoàn thành</span>
+                        <span className={isWeak ? "text-amber-700 dark:text-amber-300" : "text-emerald-700 dark:text-emerald-300"}>
+                          {stat.percent}%
+                        </span>
+                      </div>
+                      <div className="h-2.5 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-sumi-800">
+                        <div
+                          className={`h-full rounded-full transition-all duration-500 ${
+                            isWeak ? "bg-amber-500" : "bg-emerald-500"
+                          }`}
+                          style={{ width: `${stat.percent}%` }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* WEAKNESSES & RECOMMENDED NEXT LESSONS */}
+          <div className="grid gap-6 lg:grid-cols-2">
+            {/* WEAKNESSES & TOPICS TO REVIEW */}
+            <div className="space-y-4 rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200/80 dark:bg-sumi-900 dark:ring-slate-800">
+              <div className="flex items-center gap-3">
+                <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-amber-100 text-xl text-amber-700 dark:bg-amber-950/60 dark:text-amber-300">
+                  🩺
+                </span>
+                <div>
+                  <h3 className="font-black text-slate-900 dark:text-white">Điểm Yếu & Kiến Thức Cần Ôn Tập</h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    Chẩn đoán tự động từ các câu trả lời chưa chính xác của bạn
+                  </p>
+                </div>
+              </div>
+
+              {missedQuestions.length === 0 ? (
+                <div className="rounded-2xl border border-emerald-200 bg-emerald-50/60 p-4 text-sm font-semibold text-emerald-800 dark:border-emerald-900/50 dark:bg-emerald-950/30 dark:text-emerald-200">
+                  🎉 Tuyệt vời! Bạn không mắc lỗi nào trong bài đánh giá này. Bạn hoàn toàn đủ điều kiện chuyển sang cấp độ tiếp theo.
+                </div>
+              ) : (
+                <ul className="space-y-2.5">
+                  {missedQuestions.map((q) => (
+                    <li
+                      key={q.id}
+                      className="rounded-2xl border border-rose-100 bg-rose-50/50 p-3.5 text-xs dark:border-red-900/40 dark:bg-red-950/20"
+                    >
+                      <div className="flex items-center justify-between font-bold text-red-700 dark:text-red-300">
+                        <span>
+                          {SKILL_META[q.skill].icon} {SKILL_META[q.skill].label} · {q.level}
+                        </span>
+                        <span>Cần ôn lại</span>
+                      </div>
+                      <p className="mt-1 font-bold text-slate-800 dark:text-slate-100">
+                        Chủ điểm: {q.recommendedLesson.topic}
+                      </p>
+                      <p className="mt-0.5 text-slate-600 dark:text-slate-300">{q.explanation}</p>
+                    </li>
+                  ))}
+                </ul>
+              )}
+
+              {weakSkills.length > 0 && (
+                <div className="rounded-2xl bg-slate-50 p-3.5 text-xs text-slate-600 dark:bg-sumi-800 dark:text-slate-300">
+                  <b>Kỹ năng ưu tiên cải thiện:</b>{" "}
+                  {weakSkills.map((k) => SKILL_META[k].label).join(", ")}.
+                </div>
+              )}
+            </div>
+
+            {/* RECOMMENDED NEXT LESSONS */}
+            <div className="space-y-4 rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200/80 dark:bg-sumi-900 dark:ring-slate-800">
+              <div className="flex items-center gap-3">
+                <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-red-100 text-xl text-red-600 dark:bg-red-950/60 dark:text-red-400">
+                  🧭
+                </span>
+                <div>
+                  <h3 className="font-black text-slate-900 dark:text-white">Đề Xuất Bài Học Tiếp Theo</h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    Bấm trực tiếp vào bài học để lấp lỗ hổng kiến thức ngay lập tức
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                {recommendedLessons.map((rec) => (
+                  <Link
+                    key={rec.slug}
+                    href={`/app/practice/${rec.slug}`}
+                    className="flex items-center justify-between gap-3 rounded-2xl border border-slate-200/80 bg-slate-50/70 p-4 transition hover:border-red-300 hover:bg-rose-50/60 dark:border-slate-800 dark:bg-sumi-800/60 dark:hover:border-red-800"
+                  >
+                    <div className="min-w-0">
+                      <span className="text-[11px] font-extrabold text-red-600 dark:text-red-400">
+                        {SKILL_META[rec.skill].icon} Bổ trợ {SKILL_META[rec.skill].label} · {rec.topic}
+                      </span>
+                      <h4 className="mt-0.5 truncate text-sm font-black text-slate-900 dark:text-white">
+                        {rec.title}
+                      </h4>
+                    </div>
+                    <span className="shrink-0 rounded-xl bg-red-600 px-3 py-1.5 text-xs font-extrabold text-white">
+                      Học ngay →
+                    </span>
+                  </Link>
+                ))}
+
+                <div className="grid grid-cols-2 gap-2.5 pt-2">
+                  <Link
+                    href="/app/path"
+                    className="flex items-center justify-center gap-1.5 rounded-2xl border border-slate-200 bg-white py-3 text-xs font-bold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-sumi-800 dark:text-slate-200"
+                  >
+                    🗺️ Về Lộ trình cá nhân
+                  </Link>
+                  <Link
+                    href="/app/review"
+                    className="flex items-center justify-center gap-1.5 rounded-2xl border border-slate-200 bg-white py-3 text-xs font-bold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-sumi-800 dark:text-slate-200"
+                  >
+                    🔄 Ôn tập thẻ SRS
+                  </Link>
+                </div>
               </div>
             </div>
           </div>
 
           {/* ACTION CARDS: RECOMMENDED LEVEL & XP REWARD */}
           <div className="grid gap-6 md:grid-cols-2">
-            {/* CARD 1: LEVEL RECOMMENDATION */}
-            <div className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200/80 dark:bg-sumi-900 dark:ring-slate-800 space-y-4">
+            {/* CARD 1: LEVEL RECOMMENDATION & EXEMPTION */}
+            <div className="space-y-4 rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200/80 dark:bg-sumi-900 dark:ring-slate-800">
               <div className="flex items-center gap-3">
                 <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-red-100 text-xl text-red-600 dark:bg-red-950/60 dark:text-red-400">
                   🎯
                 </span>
                 <div>
-                  <h3 className="font-bold text-slate-900 dark:text-white">Trình Độ Khuyên Dùng</h3>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">Dựa trên kết quả bài test của bạn</p>
+                  <h3 className="font-bold text-slate-900 dark:text-white">
+                    Xác Nhận Trình Độ & Miễn Học Phần
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    Đồng bộ kết quả đánh giá vào lộ trình học cá nhân của bạn
+                  </p>
                 </div>
               </div>
 
-              <div className="rounded-2xl bg-red-50/70 p-4 dark:bg-red-950/30 border border-red-100 dark:border-red-900/50">
+              <div className="rounded-2xl border border-red-100 bg-red-50/70 p-4 dark:border-red-900/50 dark:bg-red-950/30">
                 <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">
-                  Lộ trình khuyến nghị: <span className="font-black text-red-600 dark:text-red-400 text-lg">JLPT {recommendedLevel}</span>
+                  Trình độ đề xuất:{" "}
+                  <span className="text-lg font-black text-red-600 dark:text-red-400">
+                    JLPT {recommendedLevel}
+                  </span>
                 </p>
                 <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
                   {recommendedLevel === "N3"
-                    ? "Bạn có nền tảng vững chắc N5 & N4. Hãy tự tin bắt đầu khóa N3!"
+                    ? "Bạn đã vượt qua chuẩn N5 & N4 ở cả 4 kỹ năng. Bạn được miễn học phần sơ cấp và mở khóa thẳng lộ trình N3!"
                     : recommendedLevel === "N4"
-                    ? "Bạn đã nắm chắc N5 và sẵn sàng chinh phục trình độ N4."
-                    : "Hãy bắt đầu củng cố nền tảng kiến thức từ trình độ N5 nhé!"}
+                    ? "Bạn đã nắm vững nền tảng N5 và đủ điều kiện mở khóa lộ trình sơ trung cấp N4."
+                    : "Lộ trình N5 sẽ giúp bạn xây chắc gốc từ vựng, ngữ pháp và phản xạ nghe nói."}
                 </p>
               </div>
 
@@ -696,40 +1196,43 @@ export function TestClient({ userLevel, userXP: initialXP, displayName }: TestCl
                 type="button"
                 disabled={isUpdatingLevel || levelUpdated}
                 onClick={handleUpdateLevel}
-                className={`w-full rounded-2xl py-3 text-xs font-extrabold text-white shadow transition flex items-center justify-center gap-2 ${
+                className={`flex w-full items-center justify-center gap-2 rounded-2xl py-3 text-xs font-extrabold text-white shadow transition ${
                   levelUpdated
                     ? "bg-emerald-600"
                     : "bg-gradient-to-r from-red-600 to-rose-500 hover:brightness-110 active:scale-95"
                 }`}
               >
                 {isUpdatingLevel ? (
-                  <span>Đang cập nhật...</span>
+                  <span>Đang đồng bộ lộ trình...</span>
                 ) : levelUpdated ? (
                   <span>✓ Đã cập nhật trình độ {recommendedLevel} vào Hồ sơ!</span>
                 ) : (
-                  <span>Cập nhật trình độ {recommendedLevel} vào Hồ sơ →</span>
+                  <span>Áp dụng trình độ {recommendedLevel} cho Lộ trình của tôi →</span>
                 )}
               </button>
             </div>
 
             {/* CARD 2: XP REWARD */}
-            <div className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200/80 dark:bg-sumi-900 dark:ring-slate-800 space-y-4">
+            <div className="space-y-4 rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200/80 dark:bg-sumi-900 dark:ring-slate-800">
               <div className="flex items-center gap-3">
                 <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-amber-100 text-xl text-amber-600 dark:bg-amber-950/60 dark:text-amber-400">
                   ⭐
                 </span>
                 <div>
                   <h3 className="font-bold text-slate-900 dark:text-white">Phần Thưởng Kinh Nghiệm</h3>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">Phần thưởng cho sự nỗ lực làm bài</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    Đồng bộ XP với tài khoản, Journey và Bảng xếp hạng
+                  </p>
                 </div>
               </div>
 
-              <div className="rounded-2xl bg-amber-50/70 p-4 dark:bg-amber-950/30 border border-amber-100 dark:border-amber-900/50">
+              <div className="rounded-2xl border border-amber-100 bg-amber-50/70 p-4 dark:border-amber-900/50 dark:bg-amber-950/30">
                 <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">
-                  Phần thưởng bài test: <span className="font-black text-amber-600 dark:text-amber-400 text-lg">+100 XP</span>
+                  Phần thưởng hoàn thành:{" "}
+                  <span className="text-lg font-black text-amber-600 dark:text-amber-400">+100 XP</span>
                 </p>
                 <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                  Cộng điểm trực tiếp vào tổng tích lũy và tăng thứ hạng trên Bảng xếp hạng.
+                  Cộng điểm trực tiếp vào tổng tích lũy và mở khóa các chặng trên bản đồ Journey.
                 </p>
               </div>
 
@@ -737,7 +1240,7 @@ export function TestClient({ userLevel, userXP: initialXP, displayName }: TestCl
                 type="button"
                 disabled={isClaimingXP || xpClaimed}
                 onClick={handleClaimXP}
-                className={`w-full rounded-2xl py-3 text-xs font-extrabold text-white shadow transition flex items-center justify-center gap-2 ${
+                className={`flex w-full items-center justify-center gap-2 rounded-2xl py-3 text-xs font-extrabold text-white shadow transition ${
                   xpClaimed
                     ? "bg-emerald-600"
                     : "bg-gradient-to-r from-amber-500 to-orange-600 hover:brightness-110 active:scale-95"
@@ -754,66 +1257,42 @@ export function TestClient({ userLevel, userXP: initialXP, displayName }: TestCl
             </div>
           </div>
 
-          {/* CATEGORY BREAKDOWN BARS */}
-          <div className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200/80 dark:bg-sumi-900 dark:ring-slate-800 space-y-6">
-            <h3 className="font-bold text-slate-900 dark:text-white">Phân Tích Chi Tiết Kỹ Năng</h3>
-            
-            <div className="grid gap-4 sm:grid-cols-2">
-              {Object.entries(categoryStats).map(([cat, stat]) => {
-                const percent = Math.round((stat.correct / stat.total) * 100);
-                return (
-                  <div key={cat} className="space-y-2 rounded-2xl bg-slate-50 p-4 dark:bg-sumi-850">
-                    <div className="flex items-center justify-between text-xs font-bold text-slate-700 dark:text-slate-300">
-                      <span>{cat}</span>
-                      <span>{stat.correct} / {stat.total} câu ({percent}%)</span>
-                    </div>
-                    <div className="h-2.5 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-sumi-750">
-                      <div
-                        className="h-full rounded-full bg-gradient-to-r from-red-500 to-rose-500 transition-all duration-500"
-                        style={{ width: `${percent}%` }}
-                      />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
           {/* ACTION BUTTONS & ANSWER REVIEW TOGGLE */}
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4">
+          <div className="flex flex-col items-center justify-between gap-4 pt-4 sm:flex-row">
             <button
               type="button"
               onClick={() => setCurrentStep("SELECT")}
-              className="w-full sm:w-auto rounded-2xl border border-slate-300 bg-white px-6 py-3 text-xs font-bold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-sumi-900 dark:text-slate-200 dark:hover:bg-sumi-800 transition"
+              className="w-full rounded-2xl border border-slate-300 bg-white px-6 py-3 text-xs font-bold text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:bg-sumi-900 dark:text-slate-200 dark:hover:bg-sumi-800 sm:w-auto"
             >
-              ← Chọn Bài Test Khác
+              ← Chọn Bài Đánh Giá Khác
             </button>
 
             <button
               type="button"
               onClick={() => setShowReview((prev) => !prev)}
-              className="w-full sm:w-auto rounded-2xl bg-slate-900 px-6 py-3 text-xs font-bold text-white hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-white transition"
+              className="w-full rounded-2xl bg-slate-900 px-6 py-3 text-xs font-bold text-white transition hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-white sm:w-auto"
             >
-              {showReview ? "Ẩn Chi Tiết Đáp Án" : "Xem Chi Tiết Đáp Án & Giải Thích 📖"}
+              {showReview ? "Ẩn Chi Tiết Đáp Án" : "Xem Chi Tiết Đáp Án, Kịch Bản Nghe & Câu Mẫu 📖"}
             </button>
           </div>
 
           {/* DETAILED ANSWER REVIEW */}
           {showReview && (
             <div className="space-y-4 rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200/80 dark:bg-sumi-900 dark:ring-slate-800 animate-fadeIn">
-              <h3 className="font-bold text-slate-900 dark:text-white border-b border-slate-100 pb-3 dark:border-slate-800">
-                Chi Tiết Đáp Án & Giải Thích
+              <h3 className="border-b border-slate-100 pb-3 font-bold text-slate-900 dark:border-slate-800 dark:text-white">
+                Chi Tiết Đáp Án, Kịch Bản Audio & Giải Thích
               </h3>
 
               <div className="space-y-6 pt-2">
                 {questions.map((q, idx) => {
-                  const userChoice = userAnswers[q.id];
-                  const isCorrect = userChoice !== undefined && q.options[userChoice]?.isCorrect;
+                  const isCorrect = isQuestionCorrect(q);
+                  const userChoice = mcAnswers[q.id];
+                  const userText = freeTextAnswers[q.id] ?? "";
 
                   return (
                     <div
                       key={q.id}
-                      className={`rounded-2xl border p-5 space-y-3 ${
+                      className={`space-y-3 rounded-2xl border p-5 ${
                         isCorrect
                           ? "border-emerald-200 bg-emerald-50/40 dark:border-emerald-900/50 dark:bg-emerald-950/20"
                           : "border-rose-200 bg-rose-50/40 dark:border-rose-900/50 dark:bg-rose-950/20"
@@ -821,7 +1300,7 @@ export function TestClient({ userLevel, userXP: initialXP, displayName }: TestCl
                     >
                       <div className="flex items-center justify-between text-xs font-bold">
                         <span className="text-slate-500 dark:text-slate-400">
-                          Câu {idx + 1} ({q.category} · {q.level})
+                          Câu {idx + 1} ({SKILL_META[q.skill].icon} {SKILL_META[q.skill].label} · {q.level})
                         </span>
                         <span
                           className={`rounded-full px-2.5 py-0.5 text-[11px] font-extrabold ${
@@ -830,39 +1309,76 @@ export function TestClient({ userLevel, userXP: initialXP, displayName }: TestCl
                               : "bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300"
                           }`}
                         >
-                          {isCorrect ? "✓ Đúng" : "✗ Sai"}
+                          {isCorrect ? "✓ Đạt" : "✗ Cần cải thiện"}
                         </span>
                       </div>
 
-                      <p className="jp-text font-bold text-slate-900 dark:text-white text-base">
+                      {q.audioScript && (
+                        <div className="flex items-center justify-between gap-2 rounded-xl bg-indigo-50/80 px-3.5 py-2 text-xs text-indigo-950 dark:bg-indigo-950/40 dark:text-indigo-200">
+                          <span className="jp-text font-semibold">🎧 Kịch bản Nghe: 「{q.audioScript}」</span>
+                          <button
+                            type="button"
+                            onClick={() => speak(q.audioScript!)}
+                            className="shrink-0 rounded-lg bg-indigo-600 px-2.5 py-1 text-[11px] font-bold text-white"
+                          >
+                            🔊 Nghe lại
+                          </button>
+                        </div>
+                      )}
+                      {q.audioUrl && (
+                        <div className="rounded-xl border border-indigo-200 bg-white/90 p-3 dark:border-indigo-900 dark:bg-sumi-900">
+                          <audio controls preload="metadata" src={q.audioUrl} className="w-full" />
+                        </div>
+                      )}
+
+                      <p className="jp-text text-base font-bold text-slate-900 dark:text-white">
                         {q.question}
                       </p>
 
-                      <div className="grid gap-2 pt-1 text-sm">
-                        {q.options.map((opt, oIdx) => {
-                          const wasChosen = userChoice === oIdx;
-                          return (
-                            <div
-                              key={oIdx}
-                              className={`flex items-center justify-between rounded-xl px-3 py-2 text-xs font-medium ${
-                                opt.isCorrect
-                                  ? "bg-emerald-200/60 font-bold text-emerald-900 dark:bg-emerald-900/60 dark:text-emerald-100"
-                                  : wasChosen
-                                  ? "bg-rose-200/60 font-bold text-rose-900 dark:bg-rose-900/60 dark:text-rose-100"
-                                  : "bg-slate-100/60 text-slate-600 dark:bg-sumi-800 dark:text-slate-400"
-                              }`}
-                            >
-                              <span>
-                                {opt.label}. {opt.text}
+                      {q.format === "MULTIPLE_CHOICE" && q.options ? (
+                        <div className="grid gap-2 pt-1 text-sm">
+                          {q.options.map((opt, oIdx) => {
+                            const wasChosen = userChoice === oIdx;
+                            return (
+                              <div
+                                key={oIdx}
+                                className={`flex items-center justify-between rounded-xl px-3 py-2 text-xs font-medium ${
+                                  opt.isCorrect
+                                    ? "bg-emerald-200/60 font-bold text-emerald-900 dark:bg-emerald-900/60 dark:text-emerald-100"
+                                    : wasChosen
+                                    ? "bg-rose-200/60 font-bold text-rose-900 dark:bg-rose-900/60 dark:text-rose-100"
+                                    : "bg-slate-100/60 text-slate-600 dark:bg-sumi-800 dark:text-slate-400"
+                                }`}
+                              >
+                                <span>
+                                  {opt.label}. {opt.text}
+                                </span>
+                                {opt.isCorrect && <span>Đáp án đúng</span>}
+                                {wasChosen && !opt.isCorrect && <span>Lựa chọn của bạn</span>}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <div className="space-y-2 rounded-xl bg-white/80 p-3 text-xs dark:bg-sumi-900/70">
+                          <p>
+                            <b>Câu trả lời của bạn:</b>{" "}
+                            <span className="jp-text font-semibold text-slate-800 dark:text-slate-200">
+                              {userText || "(Chưa nhập nội dung)"}
+                            </span>
+                          </p>
+                          {q.sampleAnswer && (
+                            <p>
+                              <b>Câu trả lời mẫu chuẩn:</b>{" "}
+                              <span className="jp-text font-bold text-emerald-700 dark:text-emerald-300">
+                                {q.sampleAnswer}
                               </span>
-                              {opt.isCorrect && <span>Đáp án đúng</span>}
-                              {wasChosen && !opt.isCorrect && <span>Lựa chọn của bạn</span>}
-                            </div>
-                          );
-                        })}
-                      </div>
+                            </p>
+                          )}
+                        </div>
+                      )}
 
-                      <div className="rounded-xl bg-white/80 p-3 text-xs text-slate-600 dark:bg-sumi-950/60 dark:text-slate-300 border-l-2 border-amber-400">
+                      <div className="rounded-xl border-l-2 border-amber-400 bg-white/80 p-3 text-xs text-slate-600 dark:bg-sumi-950/60 dark:text-slate-300">
                         <b>💡 Giải thích:</b> {q.explanation}
                       </div>
                     </div>
@@ -873,6 +1389,9 @@ export function TestClient({ userLevel, userXP: initialXP, displayName }: TestCl
           )}
         </div>
       )}
+
+      {/* DOCUMENT & EXAM VAULT DRAWER / MODAL */}
+      <DocumentVaultModal isOpen={isVaultOpen} onClose={() => setIsVaultOpen(false)} />
     </div>
   );
 }
