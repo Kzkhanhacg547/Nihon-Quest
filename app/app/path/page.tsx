@@ -283,6 +283,10 @@ export default async function LearningPathPage() {
                   <span className="nqp-btn-ico"><PathIcon name="target" /></span>
                   Kiểm tra 4 kỹ năng / Miễn học phần
                 </Link>
+                <Link className="nqp-btn-ghost" href="/app/analytics">
+                  <span className="nqp-btn-ico"><PathIcon name="cap" /></span>
+                  Đánh giá tiến bộ
+                </Link>
                 <Link className="nqp-btn-ghost" href="/app/profile">
                   <span className="nqp-btn-ico"><PathIcon name="refresh" /></span>
                   Thay đổi lộ trình
