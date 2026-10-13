@@ -31,7 +31,7 @@ export function matchesMode(q: YokaiQuestion, mode: YokaiQuestionMode): boolean 
     return q.questionType === "SENTENCE_TO_MEANING" || q.questionType === "MEANING_TO_SENTENCE";
   }
   if (mode === "LESSON_GRAMMAR") {
-    return q.questionType === "LESSON_GRAMMAR" || q.category === "GRAMMAR";
+    return q.questionType === "LESSON_GRAMMAR";
   }
   return true;
 }
@@ -309,6 +309,539 @@ export const CURATED_QUESTIONS: Record<YokaiLevel, YokaiQuestion[]> = {
       options: ["は (wa)", "に (ni)", "で (de)"],
       correctLane: 0,
       explanation: "Trợ từ 'は' (viết là HA nhưng phát âm là WA) dùng để đánh dấu chủ ngữ / chủ đề câu.",
+    },
+    {
+      id: "cur_kana_20",
+      category: "KANA",
+      questionType: "LESSON_GRAMMAR",
+      prompt: "Điền trợ từ sở hữu: わたし [ ? ] ほん (Sách của tôi)",
+      subPrompt: "Trợ từ nối 2 danh từ chỉ quan hệ sở hữu",
+      audioText: "わたしのほん",
+      targetLevel: "KANA",
+      correctAnswer: "の (no)",
+      options: ["の (no)", "は (wa)", "を (wo)"],
+      correctLane: 0,
+      explanation: "Trợ từ 'の' (no) dùng để nối hai danh từ (N1 の N2) biểu thị sở hữu hoặc thuộc tính: わたし の ほん = sách của tôi.",
+    },
+    {
+      id: "cur_kana_21",
+      category: "KANA",
+      questionType: "LESSON_GRAMMAR",
+      prompt: "Điền trợ từ tân ngữ: ごはん [ ? ] たべます (Ăn cơm)",
+      subPrompt: "Trợ từ đứng trước động từ chỉ đối tượng của hành động",
+      audioText: "ごはんをたべます",
+      targetLevel: "KANA",
+      correctAnswer: "を (wo)",
+      options: ["に (ni)", "を (wo)", "で (de)"],
+      correctLane: 1,
+      explanation: "Trợ từ 'を' (viết wo, đọc o) chỉ tân ngữ trực tiếp chịu tác động của hành động: ごはん を たべます = ăn cơm.",
+    },
+    {
+      id: "cur_kana_22",
+      category: "KANA",
+      questionType: "LESSON_GRAMMAR",
+      prompt: "Điền trợ từ phương hướng: とうきょう [ ? ] いきます (Đi Tokyo)",
+      subPrompt: "Trợ từ chỉ hướng đi (viết là he, đọc là e)",
+      audioText: "とうきょうへいきます",
+      targetLevel: "KANA",
+      correctAnswer: "へ (e)",
+      options: ["へ (e)", "を (wo)", "の (no)"],
+      correctLane: 0,
+      explanation: "Trợ từ 'へ' (viết he, đọc e) chỉ hướng di chuyển tới địa điểm: とうきょう へ いきます = đi đến Tokyo.",
+    },
+    {
+      id: "cur_kana_23",
+      category: "KANA",
+      questionType: "LESSON_GRAMMAR",
+      prompt: "Điền trợ từ thời gian: 7じ [ ? ] おきます (Thức dậy lúc 7 giờ)",
+      subPrompt: "Trợ từ đứng sau mốc thời gian cụ thể có con số",
+      audioText: "しちじにおきます",
+      targetLevel: "KANA",
+      correctAnswer: "に (ni)",
+      options: ["で (de)", "に (ni)", "へ (e)"],
+      correctLane: 1,
+      explanation: "Trợ từ 'に' (ni) đi sau mốc thời gian cụ thể (giờ, ngày, tháng) biểu thị thời điểm diễn ra hành động.",
+    },
+    {
+      id: "cur_kana_24",
+      category: "KANA",
+      questionType: "LESSON_GRAMMAR",
+      prompt: "Điền trợ từ phương tiện: ばす [ ? ] いきます (Đi bằng xe buýt)",
+      subPrompt: "Trợ từ chỉ phương tiện hoặc công cụ thực hiện",
+      audioText: "ばすでいきます",
+      targetLevel: "KANA",
+      correctAnswer: "で (de)",
+      options: ["で (de)", "に (ni)", "を (wo)"],
+      correctLane: 0,
+      explanation: "Trợ từ 'で' (de) đi sau danh từ phương tiện (xe buýt, tàu điện, máy bay) để chỉ cách thức di chuyển: ばす で = bằng xe buýt.",
+    },
+    {
+      id: "cur_kana_25",
+      category: "KANA",
+      questionType: "LESSON_GRAMMAR",
+      prompt: "Điền trợ từ cũng: たなかさん [ ? ] がくせい です (Anh Tanaka cũng là học sinh)",
+      subPrompt: "Trợ từ biểu thị ý đồng nhất 'cũng'",
+      audioText: "たなかさんもがくせいです",
+      targetLevel: "KANA",
+      correctAnswer: "も (mo)",
+      options: ["は (wa)", "も (mo)", "の (no)"],
+      correctLane: 1,
+      explanation: "Trợ từ 'も' (mo) mang nghĩa 'cũng', thay thế cho 'は' khi thông tin đồng nhất với vế trước.",
+    },
+    {
+      id: "cur_kana_26",
+      category: "KANA",
+      questionType: "LESSON_GRAMMAR",
+      prompt: "Điền trợ từ nối danh từ (và): りんご [ ? ] みかん (Táo và quýt)",
+      subPrompt: "Trợ từ liệt kê toàn bộ giữa các danh từ",
+      audioText: "りんごとみかん",
+      targetLevel: "KANA",
+      correctAnswer: "と (to)",
+      options: ["と (to)", "や (ya)", "も (mo)"],
+      correctLane: 0,
+      explanation: "Trợ từ 'と' (to) dùng để nối hai hay nhiều danh từ với ý nghĩa 'và' (liệt kê trọn vẹn).",
+    },
+    {
+      id: "cur_kana_27",
+      category: "KANA",
+      questionType: "LESSON_GRAMMAR",
+      prompt: "Điền trợ từ nghi vấn kết thúc câu: これ は ぺん です [ ? ] (Đây là cái bút phải không?)",
+      subPrompt: "Trợ từ đặt ở cuối câu để tạo câu hỏi",
+      audioText: "これはぺんですか",
+      targetLevel: "KANA",
+      correctAnswer: "か (ka)",
+      options: ["ね (ne)", "か (ka)", "よ (yo)"],
+      correctLane: 1,
+      explanation: "Trợ từ 'か' (ka) đặt ở cuối câu khẳng định biến câu thành câu hỏi trong tiếng Nhật: ... ですか？",
+    },
+    {
+      id: "cur_kana_28",
+      category: "KANA",
+      questionType: "LESSON_GRAMMAR",
+      prompt: "Chọn đuôi phủ định lịch sự: わたし は いしゃ [ ? ] (Tôi không phải bác sĩ)",
+      subPrompt: "Dạng phủ định lịch sự của 'です'",
+      audioText: "わたしはいしゃじゃありません",
+      targetLevel: "KANA",
+      correctAnswer: "じゃ ありません",
+      options: ["じゃ ありません", "です", "でした"],
+      correctLane: 0,
+      explanation: "'〜じゃ ありません' (hoặc '〜では ありません') là dạng phủ định thì hiện tại/tương lai của '〜です'.",
+    },
+    {
+      id: "cur_kana_29",
+      category: "KANA",
+      questionType: "LESSON_GRAMMAR",
+      prompt: "Mẫu câu rủ rê lịch sự: いっしょに ごはん を [ ? ] (Cùng ăn cơm nhé?)",
+      subPrompt: "Đuôi động từ dùng để rủ rê đối phương",
+      audioText: "いっしょにごはんをたべませんか",
+      targetLevel: "KANA",
+      correctAnswer: "たべませんか",
+      options: ["たべます", "たべませんか", "たべました"],
+      correctLane: 1,
+      explanation: "Mẫu câu 'V-ませんか' (masenka) dùng để rủ rê, mời mọc ai đó cùng làm việc gì một cách lịch sự.",
+    },
+    {
+      id: "cur_kana_30",
+      category: "KANA",
+      questionType: "LESSON_GRAMMAR",
+      prompt: "Mẫu câu đề nghị cùng làm: すこし [ ? ] (Chúng ta cùng nghỉ một chút nào)",
+      subPrompt: "Đuôi động từ hô hào, đồng lòng thực hiện",
+      audioText: "すこしやすみましょう",
+      targetLevel: "KANA",
+      correctAnswer: "やすみましょう",
+      options: ["やすみましょう", "やすみません", "やすみました"],
+      correctLane: 0,
+      explanation: "Mẫu câu 'V-ましょう' (mashou) dùng để đề nghị hoặc đồng ý cùng nhau làm một việc: やすみましょう = Hãy nghỉ ngơi nào.",
+    },
+    {
+      id: "cur_kana_31",
+      category: "KANA",
+      questionType: "LESSON_GRAMMAR",
+      prompt: "Đại từ chỉ thị: Từ nào chỉ đồ vật ở gần người nói (cái này)?",
+      subPrompt: "Hệ thống chỉ thị Ko-So-A-Do",
+      audioText: "これ",
+      targetLevel: "KANA",
+      correctAnswer: "これ (kore)",
+      options: ["これ (kore)", "それ (sore)", "あれ (are)"],
+      correctLane: 0,
+      explanation: "'これ' (kore) = cái này (gần người nói); 'それ' (sore) = cái đó (gần người nghe); 'あれ' (are) = cái kia (xa cả hai).",
+    },
+    {
+      id: "cur_kana_32",
+      category: "KANA",
+      questionType: "LESSON_GRAMMAR",
+      prompt: "Đại từ chỉ thị: Từ nào chỉ đồ vật ở gần người nghe (cái đó)?",
+      subPrompt: "Hệ thống chỉ thị Ko-So-A-Do",
+      audioText: "それ",
+      targetLevel: "KANA",
+      correctAnswer: "それ (sore)",
+      options: ["これ (kore)", "それ (sore)", "あれ (are)"],
+      correctLane: 1,
+      explanation: "'それ' (sore) chỉ vật ở gần người nghe nhưng xa người nói.",
+    },
+    {
+      id: "cur_kana_33",
+      category: "KANA",
+      questionType: "LESSON_GRAMMAR",
+      prompt: "Đại từ chỉ thị: Từ nào chỉ đồ vật ở xa cả người nói và người nghe (cái kia)?",
+      subPrompt: "Hệ thống chỉ thị Ko-So-A-Do",
+      audioText: "あれ",
+      targetLevel: "KANA",
+      correctAnswer: "あれ (are)",
+      options: ["これ (kore)", "それ (sore)", "あれ (are)"],
+      correctLane: 2,
+      explanation: "'あれ' (are) chỉ vật ở xa cả người nói lẫn người nghe: あれ = cái kia.",
+    },
+    {
+      id: "cur_kana_34",
+      category: "KANA",
+      questionType: "LESSON_GRAMMAR",
+      prompt: "Từ nghi vấn: Từ Hiragana nào dùng để hỏi 'Người nào / Ai'?",
+      subPrompt: "Từ để hỏi danh tính người",
+      audioText: "だれ",
+      targetLevel: "KANA",
+      correctAnswer: "だれ (dare)",
+      options: ["だれ (dare)", "どこ (doko)", "なに (nani)"],
+      correctLane: 0,
+      explanation: "'だれ' (dare) = ai / người nào. 'どこ' = ở đâu, 'なに' = cái gì.",
+    },
+    {
+      id: "cur_kana_35",
+      category: "KANA",
+      questionType: "LESSON_GRAMMAR",
+      prompt: "Từ nghi vấn: Từ Hiragana nào dùng để hỏi 'Cái gì'?",
+      subPrompt: "Từ để hỏi đồ vật hoặc sự việc",
+      audioText: "なに",
+      targetLevel: "KANA",
+      correctAnswer: "なに (nani)",
+      options: ["なに (nani)", "だれ (dare)", "いつ (itsu)"],
+      correctLane: 0,
+      explanation: "'なに' (hoặc なん) = cái gì. 'だれ' = ai, 'いつ' = khi nào.",
+    },
+    {
+      id: "cur_kana_36",
+      category: "KANA",
+      questionType: "LESSON_GRAMMAR",
+      prompt: "Từ nghi vấn: Từ Hiragana nào dùng để hỏi 'Ở đâu / Chỗ nào'?",
+      subPrompt: "Từ để hỏi địa điểm nơi chốn",
+      audioText: "どこ",
+      targetLevel: "KANA",
+      correctAnswer: "どこ (doko)",
+      options: ["どこ (doko)", "いくら (ikura)", "だれ (dare)"],
+      correctLane: 0,
+      explanation: "'どこ' (doko) = ở đâu / nơi nào. 'いくら' = bao nhiêu tiền.",
+    },
+    {
+      id: "cur_kana_37",
+      category: "KANA",
+      questionType: "LESSON_GRAMMAR",
+      prompt: "Điền trợ từ điểm bắt đầu: 9じ [ ? ] はじまります (Bắt đầu từ 9 giờ)",
+      subPrompt: "Trợ từ chỉ mốc khởi đầu thời gian hoặc không gian",
+      audioText: "くじからはじまります",
+      targetLevel: "KANA",
+      correctAnswer: "から (kara)",
+      options: ["から (kara)", "まで (made)", "より (yori)"],
+      correctLane: 0,
+      explanation: "Trợ từ 'から' (kara) có nghĩa là 'từ', chỉ điểm khởi đầu của thời gian hoặc không gian.",
+    },
+    {
+      id: "cur_kana_38",
+      category: "KANA",
+      questionType: "LESSON_GRAMMAR",
+      prompt: "Điền trợ từ điểm kết thúc: 5じ [ ? ] はたらきます (Làm việc đến 5 giờ)",
+      subPrompt: "Trợ từ chỉ giới hạn kết thúc thời gian hoặc không gian",
+      audioText: "ごじまではたらきます",
+      targetLevel: "KANA",
+      correctAnswer: "まで (made)",
+      options: ["まで (made)", "から (kara)", "へ (e)"],
+      correctLane: 0,
+      explanation: "Trợ từ 'まで' (made) có nghĩa là 'đến / cho tới', chỉ giới hạn cuối của thời gian hoặc không gian.",
+    },
+    {
+      id: "cur_kana_39",
+      category: "KANA",
+      questionType: "LESSON_GRAMMAR",
+      prompt: "Trợ từ cảm thán xác nhận đồng tình cuối câu: きょう は あつい です [ ? ] (Hôm nay nóng nhỉ)",
+      subPrompt: "Trợ từ tìm kiếm sự đồng cảm 'nhỉ/nhé'",
+      audioText: "きょうはあついですね",
+      targetLevel: "KANA",
+      correctAnswer: "ね (ne)",
+      options: ["ね (ne)", "よ (yo)", "か (ka)"],
+      correctLane: 0,
+      explanation: "Trợ từ 'ね' (ne) đặt ở cuối câu để tìm kiếm sự đồng thuận, đồng cảm từ người nghe (tương đương 'nhỉ/nhé' trong tiếng Việt).",
+    },
+    {
+      id: "cur_kana_40",
+      category: "KANA",
+      questionType: "LESSON_GRAMMAR",
+      prompt: "Trợ từ nhấn mạnh thông tin mới cho người nghe: これ は おいしい です [ ? ] (Cái này ngon đấy nhé)",
+      subPrompt: "Trợ từ cung cấp tin tức mới 'đấy/nhé'",
+      audioText: "これはおいしいですよ",
+      targetLevel: "KANA",
+      correctAnswer: "よ (yo)",
+      options: ["よ (yo)", "ね (ne)", "わ (wa)"],
+      correctLane: 0,
+      explanation: "Trợ từ 'よ' (yo) đặt ở cuối câu để nhấn mạnh một thông tin mà người nói nghĩ là người nghe chưa biết (tương đương 'đấy/đấy nhé').",
+    },
+    {
+      id: "cur_kana_41",
+      category: "KANA",
+      questionType: "SENTENCE_TO_MEANING",
+      prompt: "Câu Hiragana: 'これ は ほん です。' có nghĩa là gì?",
+      subPrompt: "Mẫu câu khẳng định cơ bản",
+      audioText: "これはほんです",
+      targetLevel: "KANA",
+      correctAnswer: "Đây là quyển sách.",
+      options: ["Đây là quyển sách.", "Đây là cuốn vở.", "Đây là cái bút."],
+      correctLane: 0,
+      explanation: "'これ' = cái này, 'ほん' = quyển sách, 'です' = là. 'これ は ほん です。' = Đây là quyển sách.",
+    },
+    {
+      id: "cur_kana_42",
+      category: "KANA",
+      questionType: "MEANING_TO_SENTENCE",
+      prompt: "Câu Hiragana nào có nghĩa: 'Đây là quyển sách.'?",
+      subPrompt: "Chọn câu Hiragana đúng",
+      audioText: "これはほんです",
+      targetLevel: "KANA",
+      correctAnswer: "これ は ほん です。",
+      options: ["これ は ほん です。", "それ は じしょ です。", "あれ は かばん です。"],
+      correctLane: 0,
+      explanation: "Nghĩa 'Đây là quyển sách' tương ứng với câu Hiragana: 'これ は ほん です。'.",
+    },
+    {
+      id: "cur_kana_43",
+      category: "KANA",
+      questionType: "SENTENCE_TO_MEANING",
+      prompt: "Câu Hiragana: 'いま なんじ ですか。' có nghĩa là gì?",
+      subPrompt: "Câu hỏi giờ giấc thông dụng",
+      audioText: "いまなんじですか",
+      targetLevel: "KANA",
+      correctAnswer: "Bây giờ là mấy giờ?",
+      options: ["Hôm nay là thứ mấy?", "Bây giờ là mấy giờ?", "Khi nào bạn đi học?"],
+      correctLane: 1,
+      explanation: "'いま' = bây giờ, 'なんじ' = mấy giờ. 'いま なんじ ですか。' = Bây giờ là mấy giờ?",
+    },
+    {
+      id: "cur_kana_44",
+      category: "KANA",
+      questionType: "MEANING_TO_SENTENCE",
+      prompt: "Câu Hiragana nào có nghĩa: 'Bây giờ là mấy giờ?'?",
+      subPrompt: "Chọn câu hỏi giờ giấc tiếng Nhật",
+      audioText: "いまなんじですか",
+      targetLevel: "KANA",
+      correctAnswer: "いま なんじ ですか。",
+      options: ["いま なんじ ですか。", "きょう は なんようび ですか。", "いくら ですか。"],
+      correctLane: 0,
+      explanation: "Hỏi 'Bây giờ là mấy giờ' bằng Hiragana: 'いま なんじ ですか。'.",
+    },
+    {
+      id: "cur_kana_45",
+      category: "KANA",
+      questionType: "SENTENCE_TO_MEANING",
+      prompt: "Câu Hiragana: 'きょう は いい てんき です。' có nghĩa là gì?",
+      subPrompt: "Mô tả thời tiết trong ngày",
+      audioText: "きょうはいいてんきです",
+      targetLevel: "KANA",
+      correctAnswer: "Hôm nay thời tiết đẹp.",
+      options: ["Hôm nay trời mưa to.", "Hôm nay thời tiết đẹp.", "Hôm nay trời rất lạnh."],
+      correctLane: 1,
+      explanation: "'きょう' = hôm nay, 'いい てんき' = thời tiết đẹp. 'きょう は いい てんき です。' = Hôm nay thời tiết đẹp.",
+    },
+    {
+      id: "cur_kana_46",
+      category: "KANA",
+      questionType: "MEANING_TO_SENTENCE",
+      prompt: "Câu Hiragana nào có nghĩa: 'Hôm nay thời tiết đẹp.'?",
+      subPrompt: "Chọn cách nói mô tả thời tiết",
+      audioText: "きょうはいいてんきです",
+      targetLevel: "KANA",
+      correctAnswer: "きょう は いい てんき です。",
+      options: ["きょう は いい てんき です。", "きのう は あめ でした。", "あした は ゆき です。"],
+      correctLane: 0,
+      explanation: "'きょう は いい てんき です。' diễn đạt ý 'Hôm nay thời tiết đẹp.'.",
+    },
+    {
+      id: "cur_kana_47",
+      category: "KANA",
+      questionType: "SENTENCE_TO_MEANING",
+      prompt: "Câu Hiragana: 'としょかん で べんきょう します。' có nghĩa là gì?",
+      subPrompt: "Hành động tại địa điểm",
+      audioText: "としょかんでべんきょうします",
+      targetLevel: "KANA",
+      correctAnswer: "Tôi học bài ở thư viện.",
+      options: ["Tôi đọc sách ở nhà.", "Tôi học bài ở thư viện.", "Tôi mượn sách ở trường."],
+      correctLane: 1,
+      explanation: "'としょかん' = thư viện, 'で' = tại/ở, 'べんきょう します' = học. 'としょかん で べんきょう します。' = Tôi học bài ở thư viện.",
+    },
+    {
+      id: "cur_kana_48",
+      category: "KANA",
+      questionType: "MEANING_TO_SENTENCE",
+      prompt: "Câu Hiragana nào có nghĩa: 'Tôi học bài ở thư viện.'?",
+      subPrompt: "Chọn câu Hiragana biểu thị học ở thư viện",
+      audioText: "としょかんでべんきょうします",
+      targetLevel: "KANA",
+      correctAnswer: "としょかん で べんきょう します。",
+      options: ["としょかん で べんきょう します。", "きょうしつ で はなします。", "へや で やすみます。"],
+      correctLane: 0,
+      explanation: "Nói 'Tôi học bài ở thư viện' bằng Hiragana: 'としょかん で べんきょう します。'.",
+    },
+    {
+      id: "cur_kana_49",
+      category: "KANA",
+      questionType: "SENTENCE_TO_MEANING",
+      prompt: "Câu Hiragana: 'くるま で がっこう へ いきます。' có nghĩa là gì?",
+      subPrompt: "Phương tiện di chuyển đến trường",
+      audioText: "くるまでがっこうへいきます",
+      targetLevel: "KANA",
+      correctAnswer: "Tôi đi đến trường bằng ô tô.",
+      options: ["Tôi đi bộ đến trường.", "Tôi đi đến trường bằng xe buýt.", "Tôi đi đến trường bằng ô tô."],
+      correctLane: 2,
+      explanation: "'くるま' = ô tô, 'がっこう' = trường học. 'くるま で がっこう へ いきます。' = Tôi đi đến trường bằng ô tô.",
+    },
+    {
+      id: "cur_kana_50",
+      category: "KANA",
+      questionType: "MEANING_TO_SENTENCE",
+      prompt: "Câu Hiragana nào có nghĩa: 'Tôi đi đến trường bằng ô tô.'?",
+      subPrompt: "Chọn câu Hiragana đúng",
+      audioText: "くるまでがっこうへいきます",
+      targetLevel: "KANA",
+      correctAnswer: "くるま で がっこう へ いきます。",
+      options: ["くるま で がっこう へ いきます。", "でんしゃ で かいしゃ へ いきます。", "あるいて えき へ いきます。"],
+      correctLane: 0,
+      explanation: "'くるま で がっこう へ いきます。' = Tôi đi đến trường bằng ô tô.",
+    },
+    {
+      id: "cur_kana_51",
+      category: "KANA",
+      questionType: "SENTENCE_TO_MEANING",
+      prompt: "Câu Hiragana: 'みず を のみます。' có nghĩa là gì?",
+      subPrompt: "Hành động uống nước",
+      audioText: "みずをのみます",
+      targetLevel: "KANA",
+      correctAnswer: "Tôi uống nước.",
+      options: ["Tôi uống nước.", "Tôi uống trà.", "Tôi uống sữa."],
+      correctLane: 0,
+      explanation: "'みず' = nước, 'のみます' = uống. 'みず を のみます。' = Tôi uống nước.",
+    },
+    {
+      id: "cur_kana_52",
+      category: "KANA",
+      questionType: "MEANING_TO_SENTENCE",
+      prompt: "Câu Hiragana nào có nghĩa: 'Tôi uống nước.'?",
+      subPrompt: "Chọn câu Hiragana tương ứng",
+      audioText: "みずをのみます",
+      targetLevel: "KANA",
+      correctAnswer: "みず を のみます。",
+      options: ["みず を のみます。", "おちゃ を のみます。", "じゅーす を かいます。"],
+      correctLane: 0,
+      explanation: "'みず を のみます。' diễn đạt ý 'Tôi uống nước.'.",
+    },
+    {
+      id: "cur_kana_53",
+      category: "KANA",
+      questionType: "SENTENCE_TO_MEANING",
+      prompt: "Câu Hiragana: 'にほんご は おもしろい です。' có nghĩa là gì?",
+      subPrompt: "Cảm nhận về tiếng Nhật",
+      audioText: "にほんごはおもしろいです",
+      targetLevel: "KANA",
+      correctAnswer: "Tiếng Nhật rất thú vị.",
+      options: ["Tiếng Nhật rất khó.", "Tiếng Nhật rất thú vị.", "Tiếng Nhật rất dễ."],
+      correctLane: 1,
+      explanation: "'にほんご' = tiếng Nhật, 'おもしろい' = thú vị. 'にほんご は おもしろい です。' = Tiếng Nhật rất thú vị.",
+    },
+    {
+      id: "cur_kana_54",
+      category: "KANA",
+      questionType: "MEANING_TO_SENTENCE",
+      prompt: "Câu Hiragana nào có nghĩa: 'Tiếng Nhật rất thú vị.'?",
+      subPrompt: "Chọn cách nói tiếng Nhật thú vị",
+      audioText: "にほんごはおもしろいです",
+      targetLevel: "KANA",
+      correctAnswer: "にほんご は おもしろい です。",
+      options: ["にほんご は おもしろい です。", "にほんご は むずかしい です。", "えいご は たのしい です。"],
+      correctLane: 0,
+      explanation: "'にほんご は おもしろい です。' có nghĩa là 'Tiếng Nhật rất thú vị.'.",
+    },
+    {
+      id: "cur_kana_55",
+      category: "KANA",
+      questionType: "SENTENCE_TO_MEANING",
+      prompt: "Câu Hiragana: 'きのう えいが を みました。' có nghĩa là gì?",
+      subPrompt: "Hành động đã diễn ra trong quá khứ",
+      audioText: "きのうえいがをみました",
+      targetLevel: "KANA",
+      correctAnswer: "Hôm qua tôi đã xem phim.",
+      options: ["Hôm qua tôi đã xem phim.", "Ngày mai tôi sẽ xem kịch.", "Hôm nay tôi nghe nhạc."],
+      correctLane: 0,
+      explanation: "'きのう' = hôm qua, 'えいが' = phim, 'みました' = đã xem (quá khứ của みます). 'きのう えいが を みました。' = Hôm qua tôi đã xem phim.",
+    },
+    {
+      id: "cur_kana_56",
+      category: "KANA",
+      questionType: "MEANING_TO_SENTENCE",
+      prompt: "Câu Hiragana nào có nghĩa: 'Hôm qua tôi đã xem phim.'?",
+      subPrompt: "Chọn câu ở thì quá khứ",
+      audioText: "きのうえいがをみました",
+      targetLevel: "KANA",
+      correctAnswer: "きのう えいが を みました。",
+      options: ["きのう えいが を みました。", "きょう おんがく を ききます。", "あした えいが を みます。"],
+      correctLane: 0,
+      explanation: "'きのう えいが を みました。' biểu thị hành động đã xem phim ngày hôm qua.",
+    },
+    {
+      id: "cur_kana_57",
+      category: "KANA",
+      questionType: "SENTENCE_TO_MEANING",
+      prompt: "Câu Hiragana: 'あした ともだち に あいます。' có nghĩa là gì?",
+      subPrompt: "Kế hoạch ngày mai",
+      audioText: "あしたともだちにあいます",
+      targetLevel: "KANA",
+      correctAnswer: "Ngày mai tôi gặp bạn bè.",
+      options: ["Ngày mai tôi đi làm.", "Ngày mai tôi gặp bạn bè.", "Hôm qua tôi gặp thầy giáo."],
+      correctLane: 1,
+      explanation: "'あした' = ngày mai, 'ともだち' = bạn bè, 'あいます' = gặp (đi với trợ từ に). 'あした ともだち に あいます。' = Ngày mai tôi gặp bạn bè.",
+    },
+    {
+      id: "cur_kana_58",
+      category: "KANA",
+      questionType: "MEANING_TO_SENTENCE",
+      prompt: "Câu Hiragana nào có nghĩa: 'Ngày mai tôi gặp bạn bè.'?",
+      subPrompt: "Chọn câu Hiragana đúng",
+      audioText: "あしたともだちにあいます",
+      targetLevel: "KANA",
+      correctAnswer: "あした ともだち に あいます。",
+      options: ["あした ともだち に あいます。", "きのう せんせい に あいました。", "きょう かぞく と はなします。"],
+      correctLane: 0,
+      explanation: "'あした ともだち に あいます。' = Ngày mai tôi gặp bạn bè.",
+    },
+    {
+      id: "cur_kana_59",
+      category: "KANA",
+      questionType: "SENTENCE_TO_MEANING",
+      prompt: "Câu Hiragana: 'あさ 6じ に おきます。' có nghĩa là gì?",
+      subPrompt: "Thói quen giờ giấc buổi sáng",
+      audioText: "あさろくじにおきます",
+      targetLevel: "KANA",
+      correctAnswer: "Tôi thức dậy lúc 6 giờ sáng.",
+      options: ["Tôi đi ngủ lúc 6 giờ tối.", "Tôi thức dậy lúc 6 giờ sáng.", "Tôi ăn sáng lúc 7 giờ."],
+      correctLane: 1,
+      explanation: "'あさ' = buổi sáng, '6じ' = 6 giờ, 'おきます' = thức dậy. 'あさ 6じ に おきます。' = Tôi thức dậy lúc 6 giờ sáng.",
+    },
+    {
+      id: "cur_kana_60",
+      category: "KANA",
+      questionType: "MEANING_TO_SENTENCE",
+      prompt: "Câu Hiragana nào có nghĩa: 'Tôi thức dậy lúc 6 giờ sáng.'?",
+      subPrompt: "Chọn câu thức dậy lúc 6 giờ",
+      audioText: "あさろくじにおきます",
+      targetLevel: "KANA",
+      correctAnswer: "あさ 6じ に おきます。",
+      options: ["あさ 6じ に おきます。", "よる 11じ に ねます。", "あさ 7じ に ごはん を たべます。"],
+      correctLane: 0,
+      explanation: "'あさ 6じ に おきます。' có nghĩa là 'Tôi thức dậy lúc 6 giờ sáng.'.",
     },
   ],
   N5: [
@@ -1226,6 +1759,266 @@ export const CURATED_QUESTIONS: Record<YokaiLevel, YokaiQuestion[]> = {
       correctLane: 1,
       explanation: "'食後に飲んでください' (Shokugo ni nonde kudasai) = Hãy uống thuốc sau bữa ăn.",
     },
+    {
+      id: "cur_lis_11",
+      category: "LISTENING",
+      questionType: "MEANING_TO_WORD",
+      prompt: "Nghe phát âm: Chọn từ vựng tiếng Nhật viết đúng!",
+      subPrompt: "Nhấn 🔊 để nghe phát âm",
+      audioText: "せんせい",
+      targetLevel: "LISTENING",
+      correctAnswer: "先生 (せんせい)",
+      options: ["先生 (せんせい)", "学生 (がくせい)", "医者 (いしゃ)"],
+      correctLane: 0,
+      explanation: "Âm thanh vừa phát là 'せんせい' (Sensei) = Giáo viên / Thầy cô.",
+    },
+    {
+      id: "cur_lis_12",
+      category: "LISTENING",
+      questionType: "MEANING_TO_WORD",
+      prompt: "Nghe phát âm: Chọn từ Hiragana tương ứng!",
+      subPrompt: "Lắng nghe rõ âm tiết",
+      audioText: "ありがとう",
+      targetLevel: "LISTENING",
+      correctAnswer: "ありがとう",
+      options: ["ありがとう", "おはよう", "さようなら"],
+      correctLane: 0,
+      explanation: "Từ phát âm là 'ありがとう' (Arigatou) = Cảm ơn.",
+    },
+    {
+      id: "cur_lis_13",
+      category: "LISTENING",
+      questionType: "MEANING_TO_WORD",
+      prompt: "Nghe phát âm: Chọn mặt chữ Hán tương ứng!",
+      subPrompt: "Tên quốc gia",
+      audioText: "にほん",
+      targetLevel: "LISTENING",
+      correctAnswer: "日本 (にほん)",
+      options: ["日本 (にほん)", "本日 (ほんじつ)", "毎日 (まいにち)"],
+      correctLane: 0,
+      explanation: "'にほん' (Nihon) được viết bằng chữ Hán là '日本' (Nhật Bản).",
+    },
+    {
+      id: "cur_lis_14",
+      category: "LISTENING",
+      questionType: "MEANING_TO_WORD",
+      prompt: "Nghe phát âm: Chọn từ Katakana đúng!",
+      subPrompt: "Từ mượn thức uống",
+      audioText: "コーヒー",
+      targetLevel: "LISTENING",
+      correctAnswer: "コーヒー",
+      options: ["コーヒー", "コーラ", "ケーキ"],
+      correctLane: 0,
+      explanation: "'コーヒー' (Koohii) = Cà phê.",
+    },
+    {
+      id: "cur_lis_15",
+      category: "LISTENING",
+      questionType: "WORD_TO_MEANING",
+      prompt: "Nghe phát âm: Từ vựng này mang ý nghĩa gì?",
+      subPrompt: "Từ chỉ quan hệ con người",
+      audioText: "ともだち",
+      targetLevel: "LISTENING",
+      correctAnswer: "Bạn bè (Tomodachi)",
+      options: ["Gia đình", "Bạn bè (Tomodachi)", "Thầy cô"],
+      correctLane: 1,
+      explanation: "'ともだち' (Tomodachi) = Bạn bè.",
+    },
+    {
+      id: "cur_lis_16",
+      category: "LISTENING",
+      questionType: "WORD_TO_MEANING",
+      prompt: "Nghe phát âm: Từ vựng này có nghĩa là gì?",
+      subPrompt: "Bữa ăn trong ngày",
+      audioText: "あさごはん",
+      targetLevel: "LISTENING",
+      correctAnswer: "Bữa ăn sáng (Asagohan)",
+      options: ["Bữa ăn sáng (Asagohan)", "Bữa ăn trưa", "Bữa ăn tối"],
+      correctLane: 0,
+      explanation: "'あさごはん' (Asagohan) = Bữa ăn sáng.",
+    },
+    {
+      id: "cur_lis_17",
+      category: "LISTENING",
+      questionType: "MEANING_TO_SENTENCE",
+      prompt: "Nghe câu chào lần đầu gặp mặt: Chọn câu chữ Nhật đúng!",
+      subPrompt: "Chào hỏi làm quen",
+      audioText: "はじめましてどうぞよろしく",
+      targetLevel: "LISTENING",
+      correctAnswer: "初めまして、どうぞ よろしく。",
+      options: ["初めまして、どうぞ よろしく。", "お名前は 何ですか。", "失礼ですが、どちら様ですか。"],
+      correctLane: 0,
+      explanation: "'初めまして、どうぞ よろしく' = Rất vui được gặp bạn, xin hãy giúp đỡ tôi.",
+    },
+    {
+      id: "cur_lis_18",
+      category: "LISTENING",
+      questionType: "MEANING_TO_SENTENCE",
+      prompt: "Nghe câu chúc ngủ ngon: Chọn câu tiếng Nhật đúng!",
+      subPrompt: "Chào buổi tối trước khi ngủ",
+      audioText: "おやすみなさい",
+      targetLevel: "LISTENING",
+      correctAnswer: "おやすみなさい",
+      options: ["おやすみなさい", "おはようございます", "こんにちは"],
+      correctLane: 0,
+      explanation: "'おやすみなさい' (Oyasuminasai) = Chúc ngủ ngon.",
+    },
+    {
+      id: "cur_lis_19",
+      category: "LISTENING",
+      questionType: "LESSON_GRAMMAR",
+      prompt: "Nghe mẫu ngữ pháp: Người nói đang dùng cấu trúc nào?",
+      subPrompt: "Động từ chia thể ý chí",
+      audioText: "いっしょにいこう",
+      targetLevel: "LISTENING",
+      correctAnswer: "Thể ý chí (Ý định / Rủ rê thân mật)",
+      options: ["Thể ý chí (Ý định / Rủ rê thân mật)", "Thể bị động", "Thể sai khiến"],
+      correctLane: 0,
+      explanation: "'行こう' (Ikou) là thể ý chí (Volitional form) của 行く, dùng để rủ rê thân mật: Cùng đi nào!",
+    },
+    {
+      id: "cur_lis_20",
+      category: "LISTENING",
+      questionType: "LESSON_GRAMMAR",
+      prompt: "Nghe mẫu ngữ pháp: Câu này dùng để biểu đạt ý gì?",
+      subPrompt: "Chú ý đuôi そうです",
+      audioText: "あめがふりそうです",
+      targetLevel: "LISTENING",
+      correctAnswer: "〜そうです (Phỏng đoán sắp xảy ra: Trời sắp mưa)",
+      options: ["〜そうです (Phỏng đoán sắp xảy ra: Trời sắp mưa)", "〜そうです (Truyền đạt lại tin đồn)", "〜ようです (Giống như)"],
+      correctLane: 0,
+      explanation: "V(bỏ masu) + そうです biểu thị điềm báo, phỏng đoán sự việc sắp sửa xảy ra: 雨が降りそうです = Trời trông có vẻ sắp mưa.",
+    },
+    {
+      id: "cur_lis_21",
+      category: "LISTENING",
+      questionType: "LESSON_GRAMMAR",
+      prompt: "Nghe mẫu ngữ pháp: Câu này thể hiện ý nghĩa gì?",
+      subPrompt: "Cấm đoán hành động",
+      audioText: "たべてはいけません",
+      targetLevel: "LISTENING",
+      correctAnswer: "〜てはいけません (Cấm đoán không được làm)",
+      options: ["〜てはいけません (Cấm đoán không được làm)", "〜てください (Hãy làm)", "〜てもいいです (Được phép làm)"],
+      correctLane: 0,
+      explanation: "'〜てはいけません' là cấu trúc biểu thị sự cấm đoán: Không được phép làm gì.",
+    },
+    {
+      id: "cur_lis_22",
+      category: "LISTENING",
+      questionType: "LESSON_GRAMMAR",
+      prompt: "Nghe mẫu ngữ pháp: Mẫu câu này biểu đạt điều gì?",
+      subPrompt: "Nói về trải nghiệm",
+      audioText: "にほんへいったことがあります",
+      targetLevel: "LISTENING",
+      correctAnswer: "〜たことがあります (Đã từng trải qua / Kinh nghiệm)",
+      options: ["〜たことがあります (Đã từng trải qua / Kinh nghiệm)", "〜たいです (Muốn làm)", "〜たほうがいいです (Nên làm)"],
+      correctLane: 0,
+      explanation: "'V-た ことがあります' diễn tả trải nghiệm trong quá khứ: Tôi đã từng đi Nhật Bản.",
+    },
+    {
+      id: "cur_lis_23",
+      category: "LISTENING",
+      questionType: "LESSON_GRAMMAR",
+      prompt: "Nghe câu trợ từ: Trợ từ trong câu biểu thị điều gì?",
+      subPrompt: "がっこうへいきます",
+      audioText: "がっこうへいきます",
+      targetLevel: "LISTENING",
+      correctAnswer: "へ (Chỉ phương hướng di chuyển)",
+      options: ["へ (Chỉ phương hướng di chuyển)", "で (Chỉ phương tiện)", "を (Chỉ tân ngữ)"],
+      correctLane: 0,
+      explanation: "Trợ từ 'へ' (đọc là e) trong '学校へ行きます' chỉ phương hướng hướng tới trường học.",
+    },
+    {
+      id: "cur_lis_24",
+      category: "LISTENING",
+      questionType: "LESSON_GRAMMAR",
+      prompt: "Nghe câu điều kiện: Cấu trúc nào vừa được sử dụng?",
+      subPrompt: "あめがふったら",
+      audioText: "あめがふったら",
+      targetLevel: "LISTENING",
+      correctAnswer: "〜たら (Nếu trời mưa / Sau khi)",
+      options: ["〜たら (Nếu trời mưa / Sau khi)", "〜なら (Nếu là)", "〜ば (Nếu)"],
+      correctLane: 0,
+      explanation: "'〜たら' là cấu trúc điều kiện giả định phổ biến: 雨が降ったら = Nếu trời mưa...",
+    },
+    {
+      id: "cur_lis_25",
+      category: "LISTENING",
+      questionType: "MEANING_TO_WORD",
+      prompt: "Nghe số đếm: Chọn số tương ứng!",
+      subPrompt: "Sanzen roppyaku",
+      audioText: "さんぜんろっぴゃく",
+      targetLevel: "LISTENING",
+      correctAnswer: "3600 (Sanzen roppyaku)",
+      options: ["3600 (Sanzen roppyaku)", "3060", "6300"],
+      correctLane: 0,
+      explanation: "'さんぜん' (3000) + 'ろっぴゃく' (600) = 3600.",
+    },
+    {
+      id: "cur_lis_26",
+      category: "LISTENING",
+      questionType: "WORD_TO_MEANING",
+      prompt: "Nghe tính từ: Từ này diễn tả tính chất gì?",
+      subPrompt: "Tính từ đuôi い",
+      audioText: "あたたかい",
+      targetLevel: "LISTENING",
+      correctAnswer: "Ấm áp (Thời tiết / Cảm giác)",
+      options: ["Ấm áp (Thời tiết / Cảm giác)", "Nóng bức", "Lạnh lẽo"],
+      correctLane: 0,
+      explanation: "'あたたかい' (Atatakai) = Ấm áp.",
+    },
+    {
+      id: "cur_lis_27",
+      category: "LISTENING",
+      questionType: "WORD_TO_MEANING",
+      prompt: "Nghe động từ: Động từ này có nghĩa là gì?",
+      subPrompt: "Hành động của giáo viên",
+      audioText: "おしえます",
+      targetLevel: "LISTENING",
+      correctAnswer: "Dạy dỗ / Chỉ bảo (Oshiemasu)",
+      options: ["Học tập", "Dạy dỗ / Chỉ bảo (Oshiemasu)", "Nhớ lại"],
+      correctLane: 1,
+      explanation: "'おしえます' (Oshiemasu) = Dạy học / Chỉ dẫn.",
+    },
+    {
+      id: "cur_lis_28",
+      category: "LISTENING",
+      questionType: "MEANING_TO_SENTENCE",
+      prompt: "Nghe câu nói trong lớp học: Chọn câu tiếng Nhật đúng!",
+      subPrompt: "Học sinh muốn hỏi",
+      audioText: "しつもんがあります",
+      targetLevel: "LISTENING",
+      correctAnswer: "質問が あります。(Tôi có câu hỏi.)",
+      options: ["質問が あります。(Tôi có câu hỏi.)", "試験が あります。(Có bài thi.)", "宿題を 忘れました。(Quên bài tập.)"],
+      correctLane: 0,
+      explanation: "'質問があります' (Shitsumon ga arimasu) = Em/Tôi có câu hỏi.",
+    },
+    {
+      id: "cur_lis_29",
+      category: "LISTENING",
+      questionType: "SENTENCE_TO_MEANING",
+      prompt: "Nghe lời cảm thán: Người nói đang cảm thán điều gì?",
+      subPrompt: "Khen ngợi",
+      audioText: "すごいですね",
+      targetLevel: "LISTENING",
+      correctAnswer: "Tuyệt vời quá nhỉ! (Ngợi khen, khâm phục)",
+      options: ["Nguy hiểm quá!", "Tuyệt vời quá nhỉ! (Ngợi khen, khâm phục)", "Buồn ngủ quá!"],
+      correctLane: 1,
+      explanation: "'すごいですね' (Sugoi desu ne) = Tuyệt vời quá nhỉ!",
+    },
+    {
+      id: "cur_lis_30",
+      category: "LISTENING",
+      questionType: "SENTENCE_TO_MEANING",
+      prompt: "Nghe câu chào khi ra ngoài: 'いってきます' nghĩa là gì?",
+      subPrompt: "Lời chào trước khi rời nhà",
+      audioText: "いってきます",
+      targetLevel: "LISTENING",
+      correctAnswer: "Tôi đi đây / Con đi học đây! (Người đi nói)",
+      options: ["Tôi đi đây / Con đi học đây! (Người đi nói)", "Bạn đi nhé (Người ở nhà nói)", "Chào mừng bạn về nhà"],
+      correctLane: 0,
+      explanation: "'いってきます' (Ittekimasu) = Tôi đi rồi sẽ về nhé (người rời khỏi nhà nói).",
+    },
   ],
 };
 
@@ -1309,11 +2102,114 @@ export async function fetchYokaiQuestions(
           });
         }
       }
+
+      // If user selected grammar or sentence modes on KANA realm, borrow beginner N5 grammar & sentences from DB
+      if (mode === "LESSON_GRAMMAR" || mode.startsWith("SENTENCE") || mode === "ALL") {
+        const n5GrammarList = await prisma.grammar.findMany({
+          where: { level: "N5" },
+          take: 30,
+          select: {
+            id: true,
+            title: true,
+            meaning: true,
+            structure: true,
+            commonMistakes: true,
+            examples: { take: 2, select: { japanese: true, meaning: true } },
+          },
+        });
+
+        if (n5GrammarList.length >= 4) {
+          const shuffledGrammar = shuffleArray(n5GrammarList);
+          for (let i = 0; i < Math.min(20, shuffledGrammar.length); i++) {
+            const target = shuffledGrammar[i];
+            const distractors = shuffleArray(shuffledGrammar.filter((g) => g.id !== target.id))
+              .slice(0, 4)
+              .map((g) => g.meaning);
+            const { options, correctLane } = buildThreeOptions(
+              target.meaning,
+              distractors,
+              "Diễn tả hành động",
+              "Chỉ nơi chốn"
+            );
+
+            dbQuestions.push({
+              id: `db_kana_g_${target.id}`,
+              category: "GRAMMAR",
+              questionType: "LESSON_GRAMMAR",
+              prompt: `Mẫu ngữ pháp căn bản '${target.title}' có nghĩa là gì?`,
+              subPrompt: `Cấu trúc: ${target.structure}`,
+              audioText: target.title.replace(/[〜～()（）]/g, ""),
+              targetLevel: "KANA",
+              correctAnswer: target.meaning,
+              options,
+              correctLane,
+              explanation: `Mẫu '${target.title}' (${target.structure}) mang nghĩa: ${target.meaning}.`,
+            });
+
+            if (target.examples && target.examples[0]) {
+              const gEx = target.examples[0];
+              const distractorMeanings = shuffleArray(
+                shuffledGrammar
+                  .filter((g) => g.id !== target.id && g.examples[0]?.meaning)
+                  .map((g) => g.examples[0]!.meaning)
+              ).slice(0, 4);
+
+              const { options: gmOptions, correctLane: gmLane } = buildThreeOptions(
+                gEx.meaning,
+                distractorMeanings,
+                "Xin hãy chờ tôi một chút",
+                "Tôi học bài ở nhà"
+              );
+
+              dbQuestions.push({
+                id: `db_kana_g_sent_${target.id}`,
+                category: "SENTENCE",
+                questionType: "SENTENCE_TO_MEANING",
+                prompt: `Câu tiếng Nhật '${gEx.japanese}' có nghĩa là gì?`,
+                subPrompt: `Mẫu câu: ${target.title}`,
+                audioText: gEx.japanese,
+                targetLevel: "KANA",
+                correctAnswer: gEx.meaning,
+                options: gmOptions,
+                correctLane: gmLane,
+                explanation: `Câu '${gEx.japanese}' (${target.title}) nghĩa là: ${gEx.meaning}.`,
+              });
+
+              const distractorJpSentences = shuffleArray(
+                shuffledGrammar
+                  .filter((g) => g.id !== target.id && g.examples[0]?.japanese)
+                  .map((g) => g.examples[0]!.japanese)
+              ).slice(0, 4);
+
+              const { options: gmsOptions, correctLane: gmsLane } = buildThreeOptions(
+                gEx.japanese,
+                distractorJpSentences,
+                "毎日 日本語を 勉強します",
+                "今日は いい 天気です"
+              );
+
+              dbQuestions.push({
+                id: `db_kana_g_sent_rev_${target.id}`,
+                category: "SENTENCE",
+                questionType: "MEANING_TO_SENTENCE",
+                prompt: `Câu tiếng Nhật nào diễn đạt: '${gEx.meaning}'?`,
+                subPrompt: `Cấu trúc: ${target.title}`,
+                audioText: gEx.japanese,
+                targetLevel: "KANA",
+                correctAnswer: gEx.japanese,
+                options: gmsOptions,
+                correctLane: gmsLane,
+                explanation: `'${gEx.meaning}' được diễn đạt bằng: '${gEx.japanese}'.`,
+              });
+            }
+          }
+        }
+      }
     } else if (level === "N5" || level === "N4" || level === "N3") {
       const [vocabList, kanjiList, grammarList] = await Promise.all([
         prisma.vocabulary.findMany({
           where: { jlptLevel: level },
-          take: 60,
+          take: 100,
           select: {
             id: true,
             word: true,
@@ -1325,12 +2221,12 @@ export async function fetchYokaiQuestions(
         }),
         prisma.kanji.findMany({
           where: { jlptLevel: level },
-          take: 30,
+          take: 50,
           include: { readings: true },
         }),
         prisma.grammar.findMany({
           where: { level },
-          take: 25,
+          take: 60,
           select: {
             id: true,
             title: true,
@@ -1345,7 +2241,7 @@ export async function fetchYokaiQuestions(
       // 1. Generate VOCAB questions
       if (vocabList.length >= 4) {
         const shuffledVocab = shuffleArray(vocabList);
-        for (let i = 0; i < Math.min(30, shuffledVocab.length); i++) {
+        for (let i = 0; i < Math.min(40, shuffledVocab.length); i++) {
           const target = shuffledVocab[i];
           const distractors = shuffleArray(shuffledVocab.filter((v) => v.id !== target.id))
             .slice(0, 4)
@@ -1463,7 +2359,7 @@ export async function fetchYokaiQuestions(
       // 2. Generate KANJI questions
       if (kanjiList.length >= 4) {
         const shuffledKanji = shuffleArray(kanjiList);
-        for (let i = 0; i < Math.min(25, shuffledKanji.length); i++) {
+        for (let i = 0; i < Math.min(30, shuffledKanji.length); i++) {
           const target = shuffledKanji[i];
           const distractors = shuffleArray(shuffledKanji.filter((k) => k.id !== target.id))
             .slice(0, 4)
@@ -1525,10 +2421,10 @@ export async function fetchYokaiQuestions(
         }
       }
 
-      // 3. Generate GRAMMAR questions
+      // 3. Generate GRAMMAR questions (Bidirectional & examples tagged with category GRAMMAR)
       if (grammarList.length >= 4) {
         const shuffledGrammar = shuffleArray(grammarList);
-        for (let i = 0; i < Math.min(25, shuffledGrammar.length); i++) {
+        for (let i = 0; i < Math.min(40, shuffledGrammar.length); i++) {
           const target = shuffledGrammar[i];
           const distractors = shuffleArray(shuffledGrammar.filter((g) => g.id !== target.id))
             .slice(0, 4)
@@ -1540,6 +2436,7 @@ export async function fetchYokaiQuestions(
             "Nêu nguyên nhân"
           );
 
+          // 3a. Mẫu ngữ pháp -> Nghĩa
           dbQuestions.push({
             id: `db_grammar_${target.id}`,
             category: "GRAMMAR",
@@ -1556,70 +2453,110 @@ export async function fetchYokaiQuestions(
             }`,
           });
 
-          // Grammar sentence examples
-          if (target.examples && target.examples[0]) {
-            const gEx = target.examples[0];
-            const distractorMeanings = shuffleArray(
-              shuffledGrammar
-                .filter((g) => g.id !== target.id && g.examples[0]?.meaning)
-                .map((g) => g.examples[0]!.meaning)
-            ).slice(0, 4);
+          // 3b. Nghĩa -> Mẫu ngữ pháp (Reverse)
+          const distractorTitles = shuffleArray(shuffledGrammar.filter((g) => g.id !== target.id))
+            .slice(0, 4)
+            .map((g) => g.title);
+          const { options: titleOptions, correctLane: titleLane } = buildThreeOptions(
+            target.title,
+            distractorTitles,
+            "〜てください",
+            "〜てもいいです"
+          );
 
-            const { options: gmOptions, correctLane: gmLane } = buildThreeOptions(
-              gEx.meaning,
-              distractorMeanings,
-              "Xin hãy chờ tôi một chút",
-              "Vì trời mưa nên tôi ở nhà"
-            );
+          dbQuestions.push({
+            id: `db_grammar_rev_${target.id}`,
+            category: "GRAMMAR",
+            questionType: "LESSON_GRAMMAR",
+            prompt: `Ý nghĩa '${target.meaning}' tương ứng với mẫu ngữ pháp nào?`,
+            subPrompt: `Cấu trúc: ${target.structure}`,
+            audioText: target.title.replace(/[〜～()（）]/g, ""),
+            targetLevel: level,
+            correctAnswer: target.title,
+            options: titleOptions,
+            correctLane: titleLane,
+            explanation: `Để diễn đạt ý '${target.meaning}', dùng mẫu '${target.title}' (${target.structure}).`,
+          });
 
-            dbQuestions.push({
-              id: `db_g_sentence_${target.id}`,
-              category: "SENTENCE",
-              questionType: "SENTENCE_TO_MEANING",
-              prompt: `Câu ngữ pháp '${gEx.japanese}' có nghĩa là gì?`,
-              subPrompt: `Mẫu câu: ${target.title}`,
-              audioText: gEx.japanese,
-              targetLevel: level,
-              correctAnswer: gEx.meaning,
-              options: gmOptions,
-              correctLane: gmLane,
-              explanation: `Câu '${gEx.japanese}' (${target.title}) nghĩa là: ${gEx.meaning}.`,
-            });
+          // 3c. Grammar sentence examples (Tagged as category GRAMMAR so LESSON_GRAMMAR and SENTENCE_* both match!)
+          if (target.examples && target.examples.length > 0) {
+            for (let exIdx = 0; exIdx < Math.min(2, target.examples.length); exIdx++) {
+              const gEx = target.examples[exIdx];
+              const distractorMeanings = shuffleArray(
+                shuffledGrammar
+                  .filter((g) => g.id !== target.id && g.examples[exIdx]?.meaning)
+                  .map((g) => g.examples[exIdx]!.meaning)
+              ).slice(0, 4);
 
-            // Nghĩa -> Câu ví dụ ngữ pháp (MEANING_TO_SENTENCE)
-            const distractorJpSentences = shuffleArray(
-              shuffledGrammar
-                .filter((g) => g.id !== target.id && g.examples[0]?.japanese)
-                .map((g) => g.examples[0]!.japanese)
-            ).slice(0, 4);
-            const { options: gmsOptions, correctLane: gmsLane } = buildThreeOptions(
-              gEx.japanese,
-              distractorJpSentences,
-              "先生、質問があります",
-              "日本語の勉強を続けます"
-            );
-            dbQuestions.push({
-              id: `db_g_sentence_ms_${target.id}`,
-              category: "SENTENCE",
-              questionType: "MEANING_TO_SENTENCE",
-              prompt: `Câu tiếng Nhật nào diễn đạt: '${gEx.meaning}'?`,
-              subPrompt: `Sử dụng cấu trúc: ${target.title}`,
-              audioText: gEx.japanese,
-              targetLevel: level,
-              correctAnswer: gEx.japanese,
-              options: gmsOptions,
-              correctLane: gmsLane,
-              explanation: `Diễn đạt ý '${gEx.meaning}' (${target.title}) bằng tiếng Nhật: '${gEx.japanese}'.`,
-            });
+              const { options: gmOptions, correctLane: gmLane } = buildThreeOptions(
+                gEx.meaning,
+                distractorMeanings,
+                "Xin hãy chờ tôi một chút",
+                "Vì trời mưa nên tôi ở nhà"
+              );
+
+              dbQuestions.push({
+                id: `db_g_sentence_${target.id}_${exIdx}`,
+                category: "SENTENCE",
+                questionType: "SENTENCE_TO_MEANING",
+                prompt: `Câu ngữ pháp '${gEx.japanese}' có nghĩa là gì?`,
+                subPrompt: `Mẫu câu: ${target.title}`,
+                audioText: gEx.japanese,
+                targetLevel: level,
+                correctAnswer: gEx.meaning,
+                options: gmOptions,
+                correctLane: gmLane,
+                explanation: `Câu '${gEx.japanese}' (${target.title}) nghĩa là: ${gEx.meaning}.`,
+              });
+
+              // Nghĩa -> Câu ví dụ ngữ pháp (MEANING_TO_SENTENCE)
+              const distractorJpSentences = shuffleArray(
+                shuffledGrammar
+                  .filter((g) => g.id !== target.id && g.examples[exIdx]?.japanese)
+                  .map((g) => g.examples[exIdx]!.japanese)
+              ).slice(0, 4);
+              const { options: gmsOptions, correctLane: gmsLane } = buildThreeOptions(
+                gEx.japanese,
+                distractorJpSentences,
+                "先生、質問があります",
+                "日本語の勉強を続けます"
+              );
+              dbQuestions.push({
+                id: `db_g_sentence_ms_${target.id}_${exIdx}`,
+                category: "SENTENCE",
+                questionType: "MEANING_TO_SENTENCE",
+                prompt: `Câu tiếng Nhật nào diễn đạt: '${gEx.meaning}'?`,
+                subPrompt: `Sử dụng cấu trúc: ${target.title}`,
+                audioText: gEx.japanese,
+                targetLevel: level,
+                correctAnswer: gEx.japanese,
+                options: gmsOptions,
+                correctLane: gmsLane,
+                explanation: `Diễn đạt ý '${gEx.meaning}' (${target.title}) bằng tiếng Nhật: '${gEx.japanese}'.`,
+              });
+            }
           }
         }
       }
     } else if (level === "LISTENING") {
-      const vocabList = await prisma.vocabulary.findMany({
-        where: { jlptLevel: { in: ["N5", "N4"] } },
-        take: 50,
-        select: { id: true, word: true, kana: true, meaning: true, romaji: true },
-      });
+      const [vocabList, grammarList] = await Promise.all([
+        prisma.vocabulary.findMany({
+          where: { jlptLevel: { in: ["N5", "N4"] } },
+          take: 60,
+          select: { id: true, word: true, kana: true, meaning: true, romaji: true },
+        }),
+        prisma.grammar.findMany({
+          where: { level: { in: ["N5", "N4"] } },
+          take: 30,
+          select: {
+            id: true,
+            title: true,
+            meaning: true,
+            structure: true,
+            examples: { take: 2, select: { japanese: true, meaning: true } },
+          },
+        }),
+      ]);
 
       if (vocabList.length >= 6) {
         const shuffled = shuffleArray(vocabList);
@@ -1637,10 +2574,10 @@ export async function fetchYokaiQuestions(
           );
 
           dbQuestions.push({
-            id: `db_vocab_${target.id}`,
+            id: `db_lis_wm_${target.id}`,
             category: "LISTENING",
             questionType: "WORD_TO_MEANING",
-            prompt: "Nghe phát âm: Từ bạn vừa nghe có nghĩa là gì?",
+            prompt: `Nghe phát âm (${target.romaji}): Từ bạn vừa nghe có nghĩa là gì?`,
             subPrompt: "Nhấn 🔊 để nghe lại phát âm chuẩn",
             audioText: target.kana || target.word,
             targetLevel: "LISTENING",
@@ -1649,6 +2586,81 @@ export async function fetchYokaiQuestions(
             correctLane,
             explanation: `Âm thanh vừa phát là '${target.word}' (${target.kana} - ${target.romaji}), nghĩa là: ${target.meaning}.`,
           });
+
+          // Nghe -> Chọn chữ viết (MEANING_TO_WORD)
+          const distractorWords = shuffleArray(shuffled.filter((v) => v.id !== target.id))
+            .slice(0, 4)
+            .map((v) => `${v.word} (${v.kana})`);
+          const { options: wOptions, correctLane: wLane } = buildThreeOptions(
+            `${target.word} (${target.kana})`,
+            distractorWords,
+            "ともだち (友達)",
+            "がくせい (学生)"
+          );
+          dbQuestions.push({
+            id: `db_lis_mw_${target.id}`,
+            category: "LISTENING",
+            questionType: "MEANING_TO_WORD",
+            prompt: `Nghe phát âm: Từ nào mang ý nghĩa '${target.meaning}'?`,
+            subPrompt: "Nhấn 🔊 để nghe lại",
+            audioText: target.kana || target.word,
+            targetLevel: "LISTENING",
+            correctAnswer: `${target.word} (${target.kana})`,
+            options: wOptions,
+            correctLane: wLane,
+            explanation: `Phát âm '${target.kana}' tương ứng với chữ: '${target.word}' (${target.meaning}).`,
+          });
+        }
+      }
+
+      // Generate listening questions from grammar examples
+      if (grammarList.length >= 4) {
+        const shuffledG = shuffleArray(grammarList);
+        for (let i = 0; i < Math.min(20, shuffledG.length); i++) {
+          const target = shuffledG[i];
+          if (target.examples && target.examples[0]) {
+            const ex = target.examples[0];
+            const distractorMeanings = shuffleArray(
+              shuffledG
+                .filter((g) => g.id !== target.id && g.examples[0]?.meaning)
+                .map((g) => g.examples[0]!.meaning)
+            ).slice(0, 4);
+
+            const { options: gmOptions, correctLane: gmLane } = buildThreeOptions(
+              ex.meaning,
+              distractorMeanings,
+              "Xin hãy chờ tôi một chút",
+              "Hôm nay trời rất đẹp"
+            );
+
+            dbQuestions.push({
+              id: `db_lis_g_sm_${target.id}`,
+              category: "LISTENING",
+              questionType: "SENTENCE_TO_MEANING",
+              prompt: `Nghe câu thoại (${target.title}): Câu vừa nghe có nghĩa là gì?`,
+              subPrompt: `Mẫu ngữ pháp: ${target.title}`,
+              audioText: ex.japanese,
+              targetLevel: "LISTENING",
+              correctAnswer: ex.meaning,
+              options: gmOptions,
+              correctLane: gmLane,
+              explanation: `Câu vừa nghe: '${ex.japanese}' mang nghĩa '${ex.meaning}'.`,
+            });
+
+            dbQuestions.push({
+              id: `db_lis_grammar_${target.id}`,
+              category: "LISTENING",
+              questionType: "LESSON_GRAMMAR",
+              prompt: `Nghe cấu trúc '${target.title}': Mẫu câu này diễn đạt ý gì?`,
+              subPrompt: `Nhấn 🔊 để nghe cấu trúc`,
+              audioText: ex.japanese,
+              targetLevel: "LISTENING",
+              correctAnswer: target.meaning,
+              options: gmOptions,
+              correctLane: gmLane,
+              explanation: `Câu '${ex.japanese}' ứng dụng mẫu '${target.title}': ${target.meaning}.`,
+            });
+          }
         }
       }
     }
@@ -1662,9 +2674,34 @@ export async function fetchYokaiQuestions(
 
     let pool = shuffleArray([...filteredDb, ...filteredCurated]);
 
-    // Strict Mode Enforcement:
-    // If pool is empty because of an unusual filter combination, fallback safely.
-    // If pool has matching questions, NEVER pollute it with incompatible modes!
+    // Anti-Repetition & Smart Borrowing:
+    // If pool has fewer items than requested count for this specific mode:
+    // Borrow matching questions from adjacent levels (SAME MODE!) to guarantee variety without mode contamination!
+    if (pool.length < count) {
+      const fallbackLevels: YokaiLevel[] =
+        level === "KANA"
+          ? ["N5", "N4"]
+          : level === "LISTENING"
+          ? ["N5", "N4", "N3"]
+          : level === "N5"
+          ? ["KANA", "N4"]
+          : level === "N4"
+          ? ["N5", "N3"]
+          : ["N4", "N5"];
+
+      for (const fbLevel of fallbackLevels) {
+        const fbCurated = (CURATED_QUESTIONS[fbLevel] || []).filter((q) => matchesMode(q, mode));
+        for (const fq of shuffleArray(fbCurated)) {
+          if (!pool.some((p) => p.prompt === fq.prompt)) {
+            pool.push(fq);
+            if (pool.length >= count * 2) break;
+          }
+        }
+        if (pool.length >= count * 2) break;
+      }
+    }
+
+    // Strict Mode Enforcement fallback: If pool is STILL empty because of an unusual filter combination
     if (pool.length === 0) {
       pool = shuffleArray([...dbQuestions, ...curated]);
     }
@@ -1680,7 +2717,7 @@ export async function fetchYokaiQuestions(
       if (deduplicated.length >= count) break;
     }
 
-    // If deduplicated matching pool still has fewer items than requested count,
+    // If deduplicated matching pool STILL has fewer items than requested count,
     // repeat items from the matching pool to reach count WITHOUT mixing in conflicting question modes.
     if (deduplicated.length > 0 && deduplicated.length < count) {
       const originalMatches = [...deduplicated];

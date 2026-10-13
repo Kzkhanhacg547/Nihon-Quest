@@ -96,6 +96,9 @@ export function YokaiGameCanvas({
 }: YokaiGameCanvasProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const activeGateRef = useRef<ActiveGate | null>(null);
+  const onFinishGameRef = useRef(onFinishGame);
+  onFinishGameRef.current = onFinishGame;
+  const hasReportedFinishRef = useRef(false);
 
   // Yatagarasu (八咫烏) Thần Điểu Ba Chân Ánh Dương — Cơ chế bay lượn trên không & cổng trên mây
   const isFlyingBeast = beast.id === "yatagarasu";
@@ -513,6 +516,7 @@ export function YokaiGameCanvas({
     state.currentQuestionIndex = 0;
     state.distance = 0;
     state.isOver = false;
+    hasReportedFinishRef.current = false;
     state.questions = questions;
     state.answeredQuestions = [];
     const initialBaseSpeed =
@@ -1337,9 +1341,14 @@ export function YokaiGameCanvas({
     let animFrameId: number;
 
     const gameLoop = (time: number) => {
+      if (state.isOver) {
+        renderer.render(scene, camera);
+        return;
+      }
+
       animFrameId = requestAnimationFrame(gameLoop);
 
-      if (state.isOver || state.isPaused) {
+      if (state.isPaused) {
         renderer.render(scene, camera);
         return;
       }
@@ -1614,21 +1623,25 @@ export function YokaiGameCanvas({
               if (state.hearts <= 0) {
                 state.isOver = true;
                 setIsGameOver(true);
-                yokaiSound.playDefeat();
-                onFinishGame({
-                  zoneId: zone.id,
-                  level: zone.level,
-                  beastId: beast.id,
-                  score: state.score,
-                  distance: Math.floor(state.distance),
-                  maxCombo: state.maxCombo,
-                  correctCount: state.answeredQuestions.filter((q) => q.isCorrect).length,
-                  wrongCount: state.answeredQuestions.filter((q) => !q.isCorrect).length,
-                  heartsRemaining: 0,
-                  isVictory: false,
-                  isPractice,
-                  answeredQuestions: state.answeredQuestions,
-                });
+                cancelAnimationFrame(animFrameId);
+                if (!hasReportedFinishRef.current) {
+                  hasReportedFinishRef.current = true;
+                  yokaiSound.playDefeat();
+                  onFinishGameRef.current({
+                    zoneId: zone.id,
+                    level: zone.level,
+                    beastId: beast.id,
+                    score: state.score,
+                    distance: Math.floor(state.distance),
+                    maxCombo: state.maxCombo,
+                    correctCount: state.answeredQuestions.filter((q) => q.isCorrect).length,
+                    wrongCount: state.answeredQuestions.filter((q) => !q.isCorrect).length,
+                    heartsRemaining: 0,
+                    isVictory: false,
+                    isPractice,
+                    answeredQuestions: state.answeredQuestions,
+                  });
+                }
                 return;
               }
             }
@@ -1721,21 +1734,25 @@ export function YokaiGameCanvas({
             if (state.hearts <= 0) {
               state.isOver = true;
               setIsGameOver(true);
-              yokaiSound.playDefeat();
-              onFinishGame({
-                zoneId: zone.id,
-                level: zone.level,
-                beastId: beast.id,
-                score: state.score,
-                distance: Math.floor(state.distance),
-                maxCombo: state.maxCombo,
-                correctCount: state.answeredQuestions.filter((q) => q.isCorrect).length,
-                wrongCount: state.answeredQuestions.filter((q) => !q.isCorrect).length,
-                heartsRemaining: 0,
-                isVictory: false,
-                isPractice,
-                answeredQuestions: state.answeredQuestions,
-              });
+              cancelAnimationFrame(animFrameId);
+              if (!hasReportedFinishRef.current) {
+                hasReportedFinishRef.current = true;
+                yokaiSound.playDefeat();
+                onFinishGameRef.current({
+                  zoneId: zone.id,
+                  level: zone.level,
+                  beastId: beast.id,
+                  score: state.score,
+                  distance: Math.floor(state.distance),
+                  maxCombo: state.maxCombo,
+                  correctCount: state.answeredQuestions.filter((q) => q.isCorrect).length,
+                  wrongCount: state.answeredQuestions.filter((q) => !q.isCorrect).length,
+                  heartsRemaining: 0,
+                  isVictory: false,
+                  isPractice,
+                  answeredQuestions: state.answeredQuestions,
+                });
+              }
               return;
             }
           }
@@ -1756,21 +1773,25 @@ export function YokaiGameCanvas({
             });
             state.isOver = true;
             setIsVictory(true);
-            yokaiSound.playVictory();
-            onFinishGame({
-              zoneId: zone.id,
-              level: zone.level,
-              beastId: beast.id,
-              score: state.score + 600,
-              distance: Math.floor(state.distance),
-              maxCombo: state.maxCombo,
-              correctCount: state.answeredQuestions.filter((q) => q.isCorrect).length,
-              wrongCount: state.answeredQuestions.filter((q) => !q.isCorrect).length,
-              heartsRemaining: state.hearts,
-              isVictory: true,
-              isPractice,
-              answeredQuestions: state.answeredQuestions,
-            });
+            cancelAnimationFrame(animFrameId);
+            if (!hasReportedFinishRef.current) {
+              hasReportedFinishRef.current = true;
+              yokaiSound.playVictory();
+              onFinishGameRef.current({
+                zoneId: zone.id,
+                level: zone.level,
+                beastId: beast.id,
+                score: state.score + 600,
+                distance: Math.floor(state.distance),
+                maxCombo: state.maxCombo,
+                correctCount: state.answeredQuestions.filter((q) => q.isCorrect).length,
+                wrongCount: state.answeredQuestions.filter((q) => !q.isCorrect).length,
+                heartsRemaining: state.hearts,
+                isVictory: true,
+                isPractice,
+                answeredQuestions: state.answeredQuestions,
+              });
+            }
             return;
           } else {
             state.currentQuestionIndex = nextQIdx;
@@ -1899,7 +1920,7 @@ export function YokaiGameCanvas({
       }
       renderer.dispose();
     };
-  }, [zone, beast, questions, isPractice, onFinishGame, safeSetTimeout, triggerFlash, showQuickActionPopup]);
+  }, [zone, beast, questions, isPractice, safeSetTimeout, triggerFlash, showQuickActionPopup]);
 
   return (
     <div

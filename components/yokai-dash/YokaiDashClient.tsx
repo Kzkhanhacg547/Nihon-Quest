@@ -389,52 +389,60 @@ export function YokaiDashClient() {
     [updateUrlState]
   );
 
+  const highScoreRef = useRef(highScore);
+  highScoreRef.current = highScore;
+  const bestComboRef = useRef(bestCombo);
+  bestComboRef.current = bestCombo;
+
   // Finish Game handler
-  const handleFinishGame = async (result: YokaiGameResult) => {
-    setActiveResult(result);
-    updateUrlState({ action: "RESULT" });
+  const handleFinishGame = useCallback(
+    async (result: YokaiGameResult) => {
+      setActiveResult(result);
+      updateUrlState({ action: "RESULT" });
 
-    try {
-      const res = await fetch("/api/yokai-dash/complete", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(result),
-      });
-
-      if (res.ok) {
-        const data = await res.json();
-        setEarnedXP(data.earnedXP);
-        setNewTotalXP(data.newTotalXP);
-        setNewLevel(data.newLevel);
-        setLeveledUp(data.leveledUp);
-        setStamina(data.stamina);
-        if (Array.isArray(data.unlockedBeastIds)) setUnlockedBeastIds(data.unlockedBeastIds);
-        if (Array.isArray(data.dailyQuests)) setDailyQuests(data.dailyQuests);
-        if (result.isVictory) {
-          setClearedZones((prev) => (prev.includes(result.zoneId) ? prev : [...prev, result.zoneId]));
-        }
-
-        if (result.score > highScore || (data.highScore && data.highScore > highScore)) {
-          setHighScore(Math.max(result.score, data.highScore || 0));
-        }
-        if (result.maxCombo > bestCombo || (data.bestCombo && data.bestCombo > bestCombo)) {
-          setBestCombo(Math.max(result.maxCombo, data.bestCombo || 0));
-        }
-
-        // Refresh global XP & Streak header
-        notifyProgressUpdated();
-
-        showToast({
-          title: result.isVictory ? "Chiến thắng rực rỡ!" : "Hoàn thành lượt chạy",
-          description: `Bạn nhận được +${data.earnedXP} XP vào tài khoản Nihon Quest!`,
-          type: "xp",
-          xp: data.earnedXP,
+      try {
+        const res = await fetch("/api/yokai-dash/complete", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(result),
         });
+
+        if (res.ok) {
+          const data = await res.json();
+          setEarnedXP(data.earnedXP);
+          setNewTotalXP(data.newTotalXP);
+          setNewLevel(data.newLevel);
+          setLeveledUp(data.leveledUp);
+          setStamina(data.stamina);
+          if (Array.isArray(data.unlockedBeastIds)) setUnlockedBeastIds(data.unlockedBeastIds);
+          if (Array.isArray(data.dailyQuests)) setDailyQuests(data.dailyQuests);
+          if (result.isVictory) {
+            setClearedZones((prev) => (prev.includes(result.zoneId) ? prev : [...prev, result.zoneId]));
+          }
+
+          if (result.score > highScoreRef.current || (data.highScore && data.highScore > highScoreRef.current)) {
+            setHighScore(Math.max(result.score, data.highScore || 0));
+          }
+          if (result.maxCombo > bestComboRef.current || (data.bestCombo && data.bestCombo > bestComboRef.current)) {
+            setBestCombo(Math.max(result.maxCombo, data.bestCombo || 0));
+          }
+
+          // Refresh global XP & Streak header
+          notifyProgressUpdated();
+
+          showToast({
+            title: result.isVictory ? "Chiến thắng rực rỡ!" : "Hoàn thành lượt chạy",
+            description: `Bạn nhận được +${data.earnedXP} XP vào tài khoản Nihon Quest!`,
+            type: "xp",
+            xp: data.earnedXP,
+          });
+        }
+      } catch (err) {
+        console.error("Failed to submit Yokai Dash results:", err);
       }
-    } catch (err) {
-      console.error("Failed to submit Yokai Dash results:", err);
-    }
-  };
+    },
+    [showToast, updateUrlState]
+  );
 
   // Play Again handler
   const handlePlayAgain = () => {
@@ -523,7 +531,7 @@ export function YokaiDashClient() {
       )}
 
       {/* 3D GAMEPLAY CANVAS (Toàn màn hình nhập vai, không bị co kéo hay che khuất giao diện) */}
-      {gameState === "PLAYING" && (
+      {gameState === "PLAYING" && !activeResult && (
         <div className="fixed inset-0 z-30 bg-[#070b17] flex flex-col overflow-hidden">
           <YokaiGameCanvas
             key={`yokai-session-${gameSessionId}`}
