@@ -13,6 +13,24 @@ html:has(.nq-auth),body:has(.nq-auth){overflow:hidden;height:100%}
 .nq-auth.nq-auth .nq-auth-bg{position:absolute;inset:0;z-index:0;pointer-events:none;background-size:cover;background-repeat:no-repeat;background-position:50% 0}
 .nq-auth.nq-auth .nq-auth-bg::after{content:"";position:absolute;inset:0;background:none}
 
+/* ---------- Logo Nihon Quest trên trang đăng nhập (tương phản cao, nổi bật trên nền trắng) ---------- */
+.nq-auth.nq-auth .nq-logo-lockup{display:inline-flex;align-items:center;gap:12px;text-decoration:none}
+.nq-auth.nq-auth .nq-brand-mark{display:grid;place-items:center;width:52px;height:52px;border-radius:14px;overflow:hidden;background:#fff;box-shadow:0 8px 20px -8px rgba(196,32,46,.45),0 0 0 1px rgba(0,0,0,.08)}
+.nq-auth.nq-auth .nq-brand-mark img{width:100%;height:100%;object-fit:contain;display:block}
+.nq-auth.nq-auth .nq-brand-type{display:flex;flex-direction:column;gap:3px;text-align:left}
+.nq-auth.nq-auth .nq-wordmark,
+html.dark .nq-auth.nq-auth .nq-wordmark,
+body.dark .nq-auth.nq-auth .nq-wordmark{font-size:28px;line-height:1;letter-spacing:-.04em;color:#1b2540 !important}
+.nq-auth.nq-auth .nq-wordmark strong,
+html.dark .nq-auth.nq-auth .nq-wordmark strong,
+body.dark .nq-auth.nq-auth .nq-wordmark strong{color:#1b2540 !important;font-weight:800}
+.nq-auth.nq-auth .nq-wordmark b,
+html.dark .nq-auth.nq-auth .nq-wordmark b,
+body.dark .nq-auth.nq-auth .nq-wordmark b{color:#c4202e !important;font-weight:700}
+.nq-auth.nq-auth .nq-brand-type small,
+html.dark .nq-auth.nq-auth .nq-brand-type small,
+body.dark .nq-auth.nq-auth .nq-brand-type small{font-size:9.5px;letter-spacing:.22em;color:#64748b !important;font-weight:600}
+
 /* ---------- Layout 2 cột ---------- */
 .nq-auth.nq-auth .nq-auth-layout{
   position:relative;z-index:1;height:100%;box-sizing:border-box;display:grid;align-items:start;max-width:none;

@@ -15,6 +15,7 @@ import {
   evaluateObstacleEncounter,
   generateTrackSegment,
   getObstacleMeta,
+  getObstacleAction,
 } from "@/lib/yokai-dash/generator";
 import {
   createBeast3DModel,
@@ -35,6 +36,8 @@ interface YokaiGameCanvasProps {
   speedDifficulty?: "EASY" | "MEDIUM" | "CUSTOM";
   customSpeed?: number;
   questionMode?: string;
+  showGateHint?: boolean;
+  onToggleGateHint?: (show: boolean) => void;
   isPausedExternal?: boolean;
   onPauseChange?: (paused: boolean) => void;
   onFinishGame: (result: YokaiGameResult) => void;
@@ -65,6 +68,7 @@ interface ActiveGate {
   z: number;
   cleared: boolean;
   signMeshes: THREE.Mesh[];
+  arches?: { mesh: THREE.Mesh; laneIdx: number; correctLane: number }[];
 }
 
 const LANE_X = [-2.6, 0, 2.6];
@@ -83,12 +87,46 @@ export function YokaiGameCanvas({
   speedDifficulty = "MEDIUM",
   customSpeed = 14.0,
   questionMode = "ALL",
+  showGateHint: showGateHintProp = true,
+  onToggleGateHint,
   isPausedExternal,
   onPauseChange,
   onFinishGame,
   onExitGame,
 }: YokaiGameCanvasProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const activeGateRef = useRef<ActiveGate | null>(null);
+
+  // Yatagarasu (八咫烏) Thần Điểu Ba Chân Ánh Dương — Cơ chế bay lượn trên không & cổng trên mây
+  const isFlyingBeast = beast.id === "yatagarasu";
+
+  // Gợi ý vòng vàng (đáp án đúng): Có thể bật / tắt realtime
+  const [showGateHint, setShowGateHint] = useState<boolean>(showGateHintProp);
+  const showGateHintRef = useRef<boolean>(showGateHintProp);
+  showGateHintRef.current = showGateHint;
+
+  useEffect(() => {
+    setShowGateHint(showGateHintProp);
+    showGateHintRef.current = showGateHintProp;
+  }, [showGateHintProp]);
+
+  const toggleGateHint = useCallback(() => {
+    setShowGateHint((prev) => {
+      const next = !prev;
+      showGateHintRef.current = next;
+      // Cập nhật tức thời màu vòng Torus của cổng đang chạy
+      if (activeGateRef.current?.arches) {
+        activeGateRef.current.arches.forEach((a) => {
+          const mat = a.mesh.material as THREE.MeshBasicMaterial;
+          if (mat) {
+            mat.color.setHex(next && a.laneIdx === a.correctLane ? 0xffea00 : 0x00e5ff);
+          }
+        });
+      }
+      onToggleGateHint?.(next);
+      return next;
+    });
+  }, [onToggleGateHint]);
 
   // Gameplay React State (Only updated on discrete events, NEVER in 60fps loop)
   const [hearts, setHearts] = useState<number>(3);
@@ -205,8 +243,35 @@ export function YokaiGameCanvas({
 
   // Touch swipe handling
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
+  // Timestamp of the latest touch event on interactive controls to suppress synthetic onClick
+  const lastTouchTimeRef = useRef<number>(0);
+  // Hard cooldown guards: physically prevents double-lane skip or double-actions in a single tap
+  const lastLaneSwitchTimeRef = useRef<number>(0);
+  const lastJumpTimeRef = useRef<number>(0);
+  const lastSlideTimeRef = useRef<number>(0);
   // Track all timeouts for clean teardown
   const timeoutsRef = useRef<number[]>([]);
+
+  const handleButtonTouch = useCallback(
+    (action: () => void) => (e: React.TouchEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      lastTouchTimeRef.current = performance.now();
+      action();
+    },
+    []
+  );
+
+  const handleButtonClick = useCallback(
+    (action: () => void) => (e: React.MouseEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      // On mobile browsers, synthetic click fires 150-400ms after touchstart. Suppress it!
+      if (performance.now() - lastTouchTimeRef.current < 600) return;
+      action();
+    },
+    []
+  );
 
   const safeSetTimeout = useCallback((fn: () => void, delayMs: number) => {
     const id = window.setTimeout(fn, delayMs);
@@ -228,10 +293,14 @@ export function YokaiGameCanvas({
     } catch {}
   }, []);
 
-  // Controls
+  // Controls with strict cooldown guards (prevents skipping 2 lanes in 1 tap)
   const selectLane = useCallback((laneIdx: 0 | 1 | 2) => {
+    const now = performance.now();
+    // Khóa tối thiểu 280ms giữa 2 lần chuyển làn: bảo đảm bấm 1 lần chỉ nhảy đúng 1 làn
+    if (now - lastLaneSwitchTimeRef.current < 280) return;
     const s = gameStateRef.current;
     if (s.isOver || s.isPaused || s.currentLane === laneIdx) return;
+    lastLaneSwitchTimeRef.current = now;
     s.lastLane = s.currentLane;
     s.currentLane = laneIdx;
     s.timeSinceLaneSwitch = 0.01;
@@ -257,8 +326,11 @@ export function YokaiGameCanvas({
   }, [selectLane]);
 
   const jump = useCallback(() => {
+    const now = performance.now();
+    if (now - lastJumpTimeRef.current < 280) return;
     const s = gameStateRef.current;
     if (s.isOver || s.isPaused || s.isJumping) return;
+    lastJumpTimeRef.current = now;
     // Allow jump to cancel slide for responsive sequence handling (Slide -> Jump)
     if (s.isSliding) {
       s.isSliding = false;
@@ -270,8 +342,11 @@ export function YokaiGameCanvas({
   }, []);
 
   const slide = useCallback(() => {
+    const now = performance.now();
+    if (now - lastSlideTimeRef.current < 280) return;
     const s = gameStateRef.current;
     if (s.isOver || s.isPaused || s.isSliding) return;
+    lastSlideTimeRef.current = now;
     // Allow fast-drop from jump into slide for responsive sequence handling (Jump -> Slide)
     if (s.isJumping) {
       s.isJumping = false;
@@ -363,6 +438,11 @@ export function YokaiGameCanvas({
 
   // Touch controls listeners
   const handleTouchStart = (e: React.TouchEvent) => {
+    // If the touch originated from an interactive UI button, ignore container swipe tracking
+    if ((e.target as HTMLElement)?.closest?.("button, .yk-control-btn")) {
+      touchStartRef.current = null;
+      return;
+    }
     if (e.touches.length > 0) {
       touchStartRef.current = {
         x: e.touches[0].clientX,
@@ -471,10 +551,35 @@ export function YokaiGameCanvas({
     });
     const obstacleSkin = createObstacleSkin(zone.id);
 
-    // Camera (Third-person chasing perspective)
-    const camera = new THREE.PerspectiveCamera(54, width / height, 0.1, 350);
-    camera.position.set(0, 4.15, 7.8);
-    camera.lookAt(0, 1.35, -14);
+    // Yatagarasu (八咫烏) Thần Điểu Ba Chân Ánh Dương — Bay cao ngút ngàn trên chín tầng mây (Y = 8.5m)
+    const FLIGHT_BASE_Y = isFlyingBeast ? 8.5 : 0;
+
+    // Camera Base Helper: góc nhìn runner tự nhiên, nhìn xa thấy rõ vật cản, Torii ở trên cao không chắn đường
+    const getCameraBase = (aspect: number) => {
+      if (aspect < 1.0) {
+        // Mobile portrait: Khi bay cao ở Y=8.5m, nâng camera lên Y=11.4m nhìn thoáng bao quát toàn bộ tầng không
+        return {
+          fov: 58,
+          y: isFlyingBeast ? 11.4 : 3.65,
+          z: isFlyingBeast ? 8.8 : 7.2,
+          lookAtY: isFlyingBeast ? 8.0 : 2.15,
+          lookAtZ: -42,
+        };
+      }
+      return {
+        fov: 54,
+        y: isFlyingBeast ? 11.0 : 3.5,
+        z: isFlyingBeast ? 8.4 : 6.8,
+        lookAtY: isFlyingBeast ? 7.9 : 2.05,
+        lookAtZ: -42,
+      };
+    };
+
+    let currentAspect = width / height;
+    let cameraBase = getCameraBase(currentAspect);
+    const camera = new THREE.PerspectiveCamera(cameraBase.fov, currentAspect, 0.1, 350);
+    camera.position.set(0, cameraBase.y, cameraBase.z);
+    camera.lookAt(0, cameraBase.lookAtY, cameraBase.lookAtZ);
 
     // Lighting theo bảng màu của map
     const ambientLight = new THREE.HemisphereLight(theme.hemiSky, theme.hemiGround, theme.hemiIntensity);
@@ -486,7 +591,7 @@ export function YokaiGameCanvas({
 
     // Đèn lồng đi theo nhân vật
     const lanternGlow = new THREE.PointLight(theme.lanternGlowColor, 18, 14, 1.8);
-    lanternGlow.position.set(0, 3.2, 2.5);
+    lanternGlow.position.set(0, isFlyingBeast ? FLIGHT_BASE_Y + 1.2 : 3.2, 2.5);
     scene.add(lanternGlow);
 
     const shadowMapSize = isMobileViewport ? 512 : 1024;
@@ -504,9 +609,9 @@ export function YokaiGameCanvas({
     dirLight.shadow.bias = -0.001;
     scene.add(dirLight);
 
-    // Player Group (Anime Spirit Beast)
+    // Player Group (Anime Spirit Beast - đặt ở FLIGHT_BASE_Y nếu bay)
     const playerGroup = new THREE.Group();
-    playerGroup.position.set(0, 0, 0);
+    playerGroup.position.set(0, FLIGHT_BASE_Y, 0);
     scene.add(playerGroup);
 
     const beastBundle: BeastMeshBundle = createBeast3DModel(beast);
@@ -514,7 +619,7 @@ export function YokaiGameCanvas({
 
     // Chaser Yōkai Pursuer behind the player
     const chaserBundle = createChaserYokai3DModel();
-    chaserBundle.group.position.set(0, 0, 5.2);
+    chaserBundle.group.position.set(0, isFlyingBeast ? FLIGHT_BASE_Y : 0, 5.2);
     scene.add(chaserBundle.group);
 
     // Sacred Glowing Lane Divider Lines (nền đường/lan can/torii nền do zone-scenery dựng)
@@ -532,6 +637,43 @@ export function YokaiGameCanvas({
       lineMesh.position.set(lx, 0.05, -120);
       scene.add(lineMesh);
     });
+
+    // Luồng gió định hướng làn bay trên tầng không cho Yatagarasu
+    if (isFlyingBeast) {
+      // 3 luồng gió ánh dương nhẹ nhàng dẫn hướng 3 làn bay
+      [-2.8, 0, 2.8].forEach((lx) => {
+        const streamGeo = new THREE.PlaneGeometry(0.5, 400);
+        streamGeo.rotateX(-Math.PI / 2);
+        laneLineGeos.push(streamGeo);
+        const streamMesh = new THREE.Mesh(
+          streamGeo,
+          new THREE.MeshBasicMaterial({
+            color: 0xffd54f,
+            transparent: true,
+            opacity: 0.22,
+          })
+        );
+        streamMesh.position.set(lx, FLIGHT_BASE_Y - 0.35, -120);
+        scene.add(streamMesh);
+      });
+
+      // 2 dải phân cách làn bay rực rỡ sắc vàng
+      [-1.4, 1.4].forEach((lx) => {
+        const airLineGeo = new THREE.PlaneGeometry(0.08, 400);
+        airLineGeo.rotateX(-Math.PI / 2);
+        laneLineGeos.push(airLineGeo);
+        const airLineMesh = new THREE.Mesh(
+          airLineGeo,
+          new THREE.MeshBasicMaterial({
+            color: 0xffea00,
+            transparent: true,
+            opacity: 0.6,
+          })
+        );
+        airLineMesh.position.set(lx, FLIGHT_BASE_Y - 0.32, -120);
+        scene.add(airLineMesh);
+      });
+    }
 
     // Torii gate kit dùng cho Cổng Câu Hỏi
     const sharedToriiPillarGeo = new THREE.CylinderGeometry(0.25, 0.3, 6.5, 8);
@@ -699,13 +841,146 @@ export function YokaiGameCanvas({
       roughness: 0.15,
     });
 
+    // 5. Celestial Aerial Geometries & Materials (Yatagarasu in the Sky)
+    // Low: Storm Thundercloud + Sun Lightning Core (JUMP - Bay cao)
+    const sharedAirCloudPuffGeo = new THREE.SphereGeometry(0.72, 8, 8);
+    sharedAirCloudPuffGeo.scale(1.5, 0.75, 1.2);
+    const sharedAirCloudPuffCenterGeo = new THREE.SphereGeometry(0.92, 8, 8);
+    sharedAirCloudPuffCenterGeo.scale(1.4, 0.85, 1.3);
+    const sharedAirStormCloudMat = new THREE.MeshStandardMaterial({
+      color: 0x1a237e,
+      emissive: 0x303f9f,
+      emissiveIntensity: 0.65,
+      roughness: 0.8,
+    });
+    const sharedAirSunOrbGeo = new THREE.OctahedronGeometry(0.42, 1);
+    const sharedAirSunOrbMat = new THREE.MeshStandardMaterial({
+      color: 0xffd700,
+      emissive: 0xffab00,
+      emissiveIntensity: 1.6,
+      roughness: 0.15,
+    });
+    const sharedAirShideGeo = new THREE.BoxGeometry(0.2, 0.65, 0.05);
+    const sharedAirShideMat = new THREE.MeshStandardMaterial({
+      color: 0xffffff,
+      emissive: 0xfff59d,
+      emissiveIntensity: 0.8,
+    });
+
+    // High: Celestial Shimenawa Arch & Dangling Shide Charms (SLIDE - Bổ nhào)
+    const sharedAirRopeGeo = new THREE.CylinderGeometry(0.15, 0.15, 2.8, 8);
+    sharedAirRopeGeo.rotateZ(Math.PI / 2);
+    const sharedAirRopeMat = new THREE.MeshStandardMaterial({
+      color: 0xffe082,
+      emissive: 0xffb300,
+      emissiveIntensity: 0.85,
+      roughness: 0.5,
+    });
+    const sharedAirShideLongGeo = new THREE.BoxGeometry(0.24, 0.95, 0.04);
+    const sharedAirSunCrestGeo = new THREE.CylinderGeometry(0.38, 0.38, 0.08, 12);
+    sharedAirSunCrestGeo.rotateX(Math.PI / 2);
+    const sharedAirSunCrestMat = new THREE.MeshStandardMaterial({
+      color: 0xd50000,
+      emissive: 0xff1744,
+      emissiveIntensity: 1.4,
+    });
+
+    // Full: Celestial Lightning Crystal Monolith & Sealing Rings (SWITCH_LANE - Đổi làn)
+    const sharedAirObeliskGeo = new THREE.CylinderGeometry(0.55, 0.78, 5.2, 6);
+    const sharedAirObeliskMat = new THREE.MeshStandardMaterial({
+      color: 0x1b1b1b,
+      emissive: 0xd50000,
+      emissiveIntensity: 1.25,
+      roughness: 0.25,
+    });
+    const sharedAirRingGeo = new THREE.TorusGeometry(1.15, 0.07, 8, 24);
+    const sharedAirRingMat = new THREE.MeshStandardMaterial({
+      color: 0xffd700,
+      emissive: 0xffab00,
+      emissiveIntensity: 1.4,
+    });
+    const sharedAirSealGeo = new THREE.BoxGeometry(0.42, 0.85, 0.08);
+    const sharedAirSealMat = new THREE.MeshStandardMaterial({
+      color: 0xffeb3b,
+      emissive: 0xffc107,
+      emissiveIntensity: 1.2,
+    });
+
     const activeObstacles: ActiveObstacle[] = [];
     const activeCollectibles: ActiveCollectible[] = [];
 
     const spawnObstacleMesh = (type: ObstacleType, lane: 0 | 1 | 2, z: number): ActiveObstacle => {
       const group = new THREE.Group();
-      group.position.set(LANE_X[lane], 0, z);
+      group.position.set(LANE_X[lane], isFlyingBeast ? FLIGHT_BASE_Y : 0, z);
 
+      if (isFlyingBeast) {
+        const action = getObstacleAction(type);
+        if (action === "JUMP") {
+          // Lôi Vân Bão Tố — Mây sấm ánh dương rực sáng ở tầng thấp (cần Bay cao để vượt qua)
+          const cloudPuff1 = new THREE.Mesh(sharedAirCloudPuffGeo, sharedAirStormCloudMat);
+          cloudPuff1.position.set(-0.55, -0.75, 0);
+          group.add(cloudPuff1);
+
+          const cloudPuff2 = new THREE.Mesh(sharedAirCloudPuffGeo, sharedAirStormCloudMat);
+          cloudPuff2.position.set(0.55, -0.75, 0.1);
+          group.add(cloudPuff2);
+
+          const cloudPuffCenter = new THREE.Mesh(sharedAirCloudPuffCenterGeo, sharedAirStormCloudMat);
+          cloudPuffCenter.position.set(0, -0.62, -0.05);
+          group.add(cloudPuffCenter);
+
+          // Lôi Cầu Ánh Dương trung tâm phát sáng chói lọi
+          const sunOrb = new THREE.Mesh(sharedAirSunOrbGeo, sharedAirSunOrbMat);
+          sunOrb.position.set(0, -0.42, 0);
+          group.add(sunOrb);
+
+          // Bùa chú Shide phát quang 2 bên
+          [-0.75, 0.75].forEach((sx) => {
+            const shide = new THREE.Mesh(sharedAirShideGeo, sharedAirShideMat);
+            shide.position.set(sx, -0.65, 0.15);
+            group.add(shide);
+          });
+        } else if (action === "SLIDE") {
+          // Xà Phong Ấn Thiên Giới — Dây thừng Shimenawa vàng kim và bùa chú treo lơ lửng trên cao (cần Bổ nhào để luồn qua)
+          const rope = new THREE.Mesh(sharedAirRopeGeo, sharedAirRopeMat);
+          rope.position.set(0, 1.25, 0);
+          group.add(rope);
+
+          const sunCrest = new THREE.Mesh(sharedAirSunCrestGeo, sharedAirSunCrestMat);
+          sunCrest.position.set(0, 1.25, -0.1);
+          group.add(sunCrest);
+
+          [-0.75, 0, 0.75].forEach((sx) => {
+            const shide = new THREE.Mesh(sharedAirShideLongGeo, sharedAirShideMat);
+            shide.position.set(sx, 0.62, 0);
+            group.add(shide);
+          });
+        } else {
+          // SWITCH_LANE: Trụ Phong Ấn Lôi Giới — Cột pha lê lôi đình chặn toàn bộ làn bay (cần Đổi làn)
+          const obelisk = new THREE.Mesh(sharedAirObeliskGeo, sharedAirObeliskMat);
+          obelisk.position.set(0, 0, 0);
+          group.add(obelisk);
+
+          const ringTop = new THREE.Mesh(sharedAirRingGeo, sharedAirRingMat);
+          ringTop.position.set(0, 0.9, 0);
+          ringTop.rotation.x = Math.PI / 4;
+          group.add(ringTop);
+
+          const ringBottom = new THREE.Mesh(sharedAirRingGeo, sharedAirRingMat);
+          ringBottom.position.set(0, -0.9, 0);
+          ringBottom.rotation.x = -Math.PI / 4;
+          group.add(ringBottom);
+
+          const seal = new THREE.Mesh(sharedAirSealGeo, sharedAirSealMat);
+          seal.position.set(0, 0, -0.75);
+          group.add(seal);
+        }
+
+        scene.add(group);
+        return { mesh: group, type, lane, z, cleared: false };
+      }
+
+      // Terrestrial Spirit Beasts (chạy trên mặt đất)
       if (type === "LANTERN_LOW") {
         const mesh = new THREE.Mesh(sharedLanternGeo, sharedLanternMat);
         mesh.position.set(0, 0.68, 0);
@@ -823,7 +1098,8 @@ export function YokaiGameCanvas({
       points: number
     ): ActiveCollectible => {
       const group = new THREE.Group();
-      group.position.set(LANE_X[lane], y, z);
+      const finalY = isFlyingBeast ? y + FLIGHT_BASE_Y : y;
+      group.position.set(LANE_X[lane], finalY, z);
 
       if (type === "MAGATAMA_JEWEL") {
         const jewel = new THREE.Mesh(sharedMagatamaGeo, sharedMagatamaMat);
@@ -834,7 +1110,7 @@ export function YokaiGameCanvas({
       }
 
       scene.add(group);
-      return { mesh: group, type, lane, y, z, points, collected: false };
+      return { mesh: group, type, lane, y: finalY, z, points, collected: false };
     };
 
     const populateTrackSegment = (startZ: number, gateZ: number, currentSpeed: number) => {
@@ -873,26 +1149,97 @@ export function YokaiGameCanvas({
     // Helper: Create 3D Question Gate (512x256 high-contrast crisp Japanese lacquer signs)
     const createQuestionGate = (qIndex: number, z: number): ActiveGate => {
       const gateGroup = new THREE.Group();
-      gateGroup.position.set(0, 0, z);
+      const gateY = isFlyingBeast ? FLIGHT_BASE_Y : 0;
+      gateGroup.position.set(0, gateY, z);
 
       const q = state.questions[qIndex];
       const signMeshes: THREE.Mesh[] = [];
 
-      // Grand Torii Frame
-      const torii = createSharedToriiGate(0, 1.15);
-      gateGroup.add(torii);
+      // Grand Torii Frame (Celestial Sky Torii vs Terrestrial Torii)
+      if (isFlyingBeast) {
+        // CỔNG TRỜI THIÊN GIỚI (Celestial Sky Torii Gate)
+        // 1. Cột Thiên Đình vươn từ tầng mây sâu bên dưới lên tận trời cao
+        const skyPillarGeo = new THREE.CylinderGeometry(0.32, 0.38, 12.0, 8);
+        const skyPillarMat = new THREE.MeshStandardMaterial({
+          color: 0xc4202e,
+          roughness: 0.35,
+          emissive: 0x5c0911,
+          emissiveIntensity: 0.4,
+        });
+        [-6.5, 6.5].forEach((px) => {
+          const pillar = new THREE.Mesh(skyPillarGeo, skyPillarMat);
+          pillar.position.set(px, 1.0, 0); // spans Y = -5.0m to +7.0m in gate space
+          gateGroup.add(pillar);
+
+          // Bệ mây thần linh bồng bềnh nâng đỡ chân cột
+          const baseCloudGeo = new THREE.SphereGeometry(1.4, 8, 8);
+          baseCloudGeo.scale(1.5, 0.6, 1.5);
+          const baseCloud = new THREE.Mesh(
+            baseCloudGeo,
+            new THREE.MeshStandardMaterial({
+              color: 0xffffff,
+              roughness: 0.9,
+              transparent: true,
+              opacity: 0.85,
+            })
+          );
+          baseCloud.position.set(px, -4.5, 0);
+          gateGroup.add(baseCloud);
+        });
+
+        // 2. Xà Cổng Trời đặt trên cao tít (Y = +4.3m & +5.2m), hoàn toàn không che khuất bảng chữ hay lối bay
+        const skyTopBeamGeo = new THREE.BoxGeometry(15.2, 0.65, 0.85);
+        const skyTopBeam = new THREE.Mesh(skyTopBeamGeo, skyPillarMat);
+        skyTopBeam.position.set(0, 5.2, 0);
+        gateGroup.add(skyTopBeam);
+
+        const skyRoofCapGeo = new THREE.BoxGeometry(16.0, 0.22, 1.05);
+        const skyRoofCap = new THREE.Mesh(
+          skyRoofCapGeo,
+          new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.3 })
+        );
+        skyRoofCap.position.set(0, 5.6, 0);
+        gateGroup.add(skyRoofCap);
+
+        const skySubBeamGeo = new THREE.BoxGeometry(13.6, 0.42, 0.5);
+        const skySubBeam = new THREE.Mesh(skySubBeamGeo, skyPillarMat);
+        skySubBeam.position.set(0, 4.3, 0);
+        gateGroup.add(skySubBeam);
+
+        // Đèn lồng mặt trời treo 2 bên cổng
+        [-6.5, 6.5].forEach((lx) => {
+          const lantern = new THREE.Mesh(
+            new THREE.SphereGeometry(0.55, 10, 10),
+            new THREE.MeshStandardMaterial({
+              color: 0xffd700,
+              emissive: 0xffab00,
+              emissiveIntensity: 1.4,
+            })
+          );
+          lantern.position.set(lx, 3.2, 0);
+          gateGroup.add(lantern);
+        });
+      } else {
+        const torii = createSharedToriiGate(0, 1.15);
+        gateGroup.add(torii);
+      }
 
       // Create 3 glowing arches & answer tablets above each lane
+      const arches: { mesh: THREE.Mesh; laneIdx: number; correctLane: number }[] = [];
       LANE_X.forEach((laneX, laneIdx) => {
-        const frameGeo = new THREE.TorusGeometry(1.35, 0.08, 6, 16, Math.PI);
+        const isHint = showGateHintRef.current && laneIdx === q.correctLane;
+        const frameGeo = isFlyingBeast
+          ? new THREE.TorusGeometry(1.65, 0.1, 8, 32, Math.PI * 2)
+          : new THREE.TorusGeometry(1.35, 0.08, 6, 16, Math.PI);
         const frameMat = new THREE.MeshBasicMaterial({
-          color: laneIdx === q.correctLane ? 0xffea00 : 0x00e5ff,
+          color: isHint ? 0xffea00 : 0x00e5ff,
           transparent: true,
-          opacity: 0.85,
+          opacity: 0.9,
         });
         const frame = new THREE.Mesh(frameGeo, frameMat);
         frame.position.set(laneX, 0, 0);
         gateGroup.add(frame);
+        arches.push({ mesh: frame, laneIdx, correctLane: q.correctLane });
 
         // Canvas Texture (512 x 256) for crisp text at 1/4 the memory of 1024x512
         const canvas = document.createElement("canvas");
@@ -908,7 +1255,7 @@ export function YokaiGameCanvas({
           ctx.roundRect(8, 8, 496, 240, 24);
           ctx.fill();
 
-          ctx.strokeStyle = laneIdx === q.correctLane ? "#ffd700" : "#ff5252";
+          ctx.strokeStyle = isHint ? "#ffd700" : showGateHintRef.current ? "#ff5252" : "#38bdf8";
           ctx.lineWidth = 8;
           ctx.stroke();
 
@@ -959,26 +1306,28 @@ export function YokaiGameCanvas({
         }
 
         const texture = new THREE.CanvasTexture(canvas);
-        const signGeo = new THREE.PlaneGeometry(2.35, 1.18);
+        const signGeo = new THREE.PlaneGeometry(2.4, 1.2);
         const signMat = new THREE.MeshBasicMaterial({
           map: texture,
           transparent: true,
           side: THREE.DoubleSide,
         });
         const signMesh = new THREE.Mesh(signGeo, signMat);
-        signMesh.position.set(laneX, 3.6, 0);
-        signMesh.rotation.x = -0.06;
+        const signY = isFlyingBeast ? 2.45 : 3.6;
+        signMesh.position.set(laneX, signY, 0);
+        signMesh.rotation.x = isFlyingBeast ? -0.1 : -0.06;
         gateGroup.add(signMesh);
         signMeshes.push(signMesh);
       });
 
       scene.add(gateGroup);
-      return { group: gateGroup, questionIndex: qIndex, z, cleared: false, signMeshes };
+      return { group: gateGroup, questionIndex: qIndex, z, cleared: false, signMeshes, arches };
     };
 
     // Initial Gate & Structured Cluster Obstacles
     const initialGateZ = beast.bonusType === "EXTRA_TIME" ? -112 : -100;
     let activeGate: ActiveGate | null = createQuestionGate(0, initialGateZ);
+    activeGateRef.current = activeGate;
     populateTrackSegment(-34, initialGateZ, initialBaseSpeed);
 
     // ==========================================
@@ -1043,50 +1392,82 @@ export function YokaiGameCanvas({
         state.shakeTimer = Math.max(0, state.shakeTimer - dt * 3.5);
       }
 
-      // Subtle dynamic camera follow + impact micro-shake (disabled if prefers-reduced-motion)
+      // Dynamic camera follow + clear sightline forward
       if (!reducedMotionRef.current) {
         const shakeOffset = state.shakeTimer > 0 ? Math.sin(time * 0.065) * 0.16 * state.shakeTimer : 0;
-        camera.position.x += (state.currentX * 0.22 + shakeOffset - camera.position.x) * Math.min(dt * 8, 1.0);
-        camera.position.y = 4.15 + (state.shakeTimer > 0 ? Math.cos(time * 0.08) * 0.08 * state.shakeTimer : 0);
+        camera.position.x += (state.currentX * 0.35 + shakeOffset - camera.position.x) * Math.min(dt * 8, 1.0);
+        camera.position.y = cameraBase.y + (state.shakeTimer > 0 ? Math.cos(time * 0.08) * 0.08 * state.shakeTimer : 0);
+        camera.position.z = cameraBase.z;
+        camera.lookAt(camera.position.x * 0.45, cameraBase.lookAtY, cameraBase.lookAtZ);
       } else {
         camera.position.x = 0;
-        camera.position.y = 4.15;
+        camera.position.y = cameraBase.y;
+        camera.position.z = cameraBase.z;
+        camera.lookAt(0, cameraBase.lookAtY, cameraBase.lookAtZ);
       }
 
-      // Jumping Physics & Landing Dust Detection
-      if (state.isJumping) {
-        state.jumpTimer += dt;
-        const jumpProgress = state.jumpTimer / JUMP_DURATION;
-        if (jumpProgress >= 1.0) {
-          state.isJumping = false;
-          state.playerY = 0;
-          state.landingSquash = 1.0;
-          yokaiSound.playLandDust();
-          if (!reducedMotionRef.current) {
-            emitDustBurst(state.currentX, 10);
+      // Jumping & Sliding Physics (Airborne Flight vs Terrestrial Gallop)
+      if (isFlyingBeast) {
+        if (state.isJumping) {
+          state.jumpTimer += dt;
+          const jumpProgress = state.jumpTimer / JUMP_DURATION;
+          if (jumpProgress >= 1.0) {
+            state.isJumping = false;
+            state.playerY = FLIGHT_BASE_Y;
+            state.landingSquash = 0.5;
+            yokaiSound.playLandDust();
+          } else {
+            // Bay vút lên chín tầng mây (lên đến 8.5 + 2.8 = 11.3m) né Lôi Vân
+            state.playerY = FLIGHT_BASE_Y + Math.sin(jumpProgress * Math.PI) * 2.8;
+          }
+        } else if (state.isSliding) {
+          state.slideTimer += dt;
+          const slideProgress = state.slideTimer / SLIDE_DURATION;
+          if (slideProgress >= 1.0) {
+            state.isSliding = false;
+            state.playerY = FLIGHT_BASE_Y;
+          } else {
+            // Bổ nhào luồn xuống dưới xà mây & dây Shimenawa (hạ xuống 8.5 - 2.5 = 6.0m)
+            state.playerY = FLIGHT_BASE_Y - Math.sin(slideProgress * Math.PI) * 2.5;
           }
         } else {
-          state.playerY = Math.sin(jumpProgress * Math.PI) * JUMP_HEIGHT;
+          // Bay lượn bồng bềnh êm ái trên không
+          state.playerY = FLIGHT_BASE_Y + Math.sin(time * 0.0038) * 0.15;
         }
       } else {
-        state.playerY = 0;
+        if (state.isJumping) {
+          state.jumpTimer += dt;
+          const jumpProgress = state.jumpTimer / JUMP_DURATION;
+          if (jumpProgress >= 1.0) {
+            state.isJumping = false;
+            state.playerY = 0;
+            state.landingSquash = 1.0;
+            yokaiSound.playLandDust();
+            if (!reducedMotionRef.current) {
+              emitDustBurst(state.currentX, 10);
+            }
+          } else {
+            state.playerY = Math.sin(jumpProgress * Math.PI) * JUMP_HEIGHT;
+          }
+        } else {
+          state.playerY = 0;
+        }
+
+        if (state.isSliding) {
+          state.slideTimer += dt;
+          const slideProgress = state.slideTimer / SLIDE_DURATION;
+          if (Math.random() < 0.35 && !reducedMotionRef.current) {
+            emitDustBurst(state.currentX, 1);
+          }
+          if (slideProgress >= 1.0) {
+            state.isSliding = false;
+          }
+        }
       }
 
       // Decay landing squash
       if (state.landingSquash > 0) {
         state.landingSquash = Math.max(0, state.landingSquash - dt * 4.5);
-      }
-
-      // Sliding Physics & Slide Dust Trail
-      if (state.isSliding) {
-        state.slideTimer += dt;
-        const slideProgress = state.slideTimer / SLIDE_DURATION;
-        if (Math.random() < 0.35 && !reducedMotionRef.current) {
-          emitDustBurst(state.currentX, 1);
-        }
-        if (slideProgress >= 1.0) {
-          state.isSliding = false;
-        }
       }
 
       playerGroup.position.y = state.playerY;
@@ -1141,13 +1522,13 @@ export function YokaiGameCanvas({
         // Magnet pull effect when close
         if (!col.collected && hasMagnet && col.z > -11 && col.z < 1.5) {
           col.mesh.position.x += (state.currentX - col.mesh.position.x) * Math.min(dt * 9, 1.0);
-          col.mesh.position.y += (state.playerY + 0.8 - col.mesh.position.y) * Math.min(dt * 9, 1.0);
+          col.mesh.position.y += (state.playerY + 0.4 - col.mesh.position.y) * Math.min(dt * 9, 1.0);
         }
 
         if (!col.collected && Math.abs(col.z) < 1.25) {
           const dx = Math.abs(col.mesh.position.x - state.currentX);
-          const dy = Math.abs(col.mesh.position.y - (state.playerY + 0.8));
-          if (dx < (hasMagnet ? 1.85 : 1.05) && dy < (hasMagnet ? 1.9 : 1.25)) {
+          const dy = Math.abs(col.mesh.position.y - (state.playerY + 0.4));
+          if (dx < (hasMagnet ? 1.85 : 1.05) && dy < (hasMagnet ? 1.9 : 1.35)) {
             col.collected = true;
             scene.remove(col.mesh);
 
@@ -1187,12 +1568,14 @@ export function YokaiGameCanvas({
           const evalRes = evaluateObstacleEncounter(obs.type, obs.lane, {
             lane: state.currentLane,
             playerY: state.playerY,
+            flightBaseY: FLIGHT_BASE_Y,
             isJumping: state.isJumping,
             isSliding: state.isSliding,
             jumpProgress: jumpProg,
             slideProgress: slideProg,
             timeSinceLaneSwitch:
               state.lastLane === obs.lane ? state.timeSinceLaneSwitch : undefined,
+            isFlying: isFlyingBeast,
           });
 
           if (evalRes.collided && state.invulnerableTimer <= 0) {
@@ -1401,6 +1784,7 @@ export function YokaiGameCanvas({
               }
               const nextGateZ = beast.bonusType === "EXTRA_TIME" ? -115 : -104;
               activeGate = createQuestionGate(nextQIdx, nextGateZ);
+              activeGateRef.current = activeGate;
               populateTrackSegment(-30, nextGateZ, state.currentSpeed);
             }, 300);
           }
@@ -1410,6 +1794,7 @@ export function YokaiGameCanvas({
         if (activeGate && activeGate.z > 18) {
           disposeSingleGate(activeGate);
           activeGate = null;
+          activeGateRef.current = null;
         }
       }
 
@@ -1423,7 +1808,10 @@ export function YokaiGameCanvas({
       if (!container) return;
       const w = container.clientWidth;
       const h = container.clientHeight;
-      camera.aspect = w / h;
+      currentAspect = w / h;
+      cameraBase = getCameraBase(currentAspect);
+      camera.aspect = currentAspect;
+      camera.fov = cameraBase.fov;
       camera.updateProjectionMatrix();
       renderer.setSize(w, h);
     };
@@ -1504,6 +1892,7 @@ export function YokaiGameCanvas({
 
       // Dispose entire scene graph (including beast model parts, chaser, lights, etc.)
       disposeThreeHierarchy(scene);
+      activeGateRef.current = null;
 
       if (container && renderer.domElement && container.contains(renderer.domElement)) {
         container.removeChild(renderer.domElement);
@@ -1517,7 +1906,7 @@ export function YokaiGameCanvas({
       ref={containerRef}
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
-      className={`relative w-full h-full min-h-[580px] sm:min-h-[660px] select-none overflow-hidden touch-none bg-[#0d0722] isolate ${
+      className={`relative w-full h-full min-h-0 select-none overflow-hidden touch-none bg-[#0d0722] isolate ${
         reducedMotion ? "yk-reduced-fx" : ""
       }`}
     >
@@ -1535,24 +1924,42 @@ export function YokaiGameCanvas({
       )}
 
       {/* TOP IN-GAME HUD — Docked to top edge, compact height so 3D horizon & track are never blocked */}
-      <div className="yk-ui absolute top-1.5 sm:top-2.5 inset-x-2 sm:inset-x-5 z-20 flex flex-col gap-1.5 pointer-events-none">
+      <div
+        className="yk-ui absolute inset-x-2 sm:inset-x-5 z-20 flex flex-col gap-1 sm:gap-1.5 pointer-events-none"
+        style={{ top: "max(0.35rem, env(safe-area-inset-top))" }}
+      >
         {/* ROW 1: Compact Status Bar */}
         <div className="flex items-center justify-between gap-1.5">
           {/* Sinh mệnh + trạng thái */}
-          <HudChip className="px-2.5 py-1 sm:px-3 sm:py-1.5">
+          <HudChip className="px-2 py-1 sm:px-3 sm:py-1.5">
             <div className="flex items-center gap-0.5" aria-label={`Còn ${hearts} tim`}>
               {[1, 2, 3].map((h) => (
-                <HeartIcon key={h} alive={h <= hearts} size={22} />
+                <HeartIcon key={h} alive={h <= hearts} size={18} />
               ))}
             </div>
             {hasFirstHitShield && (
-              <span className="ml-1 text-[10px] bg-teal-400/20 text-teal-200 px-1.5 py-0.5 rounded-full font-bold border border-teal-300/50">
+              <span className="ml-1 text-[9px] sm:text-[10px] bg-teal-400/20 text-teal-200 px-1.5 py-0.5 rounded-full font-bold border border-teal-300/50">
                 🛡️ <span className="hidden sm:inline">Khiên</span>
               </span>
             )}
             {isPractice && (
-              <span className="ml-1 text-[10px] bg-teal-400/20 text-teal-200 px-1.5 py-0.5 rounded-full font-bold border border-teal-300/40">
+              <span className="ml-1 text-[9px] sm:text-[10px] bg-teal-400/20 text-teal-200 px-1.5 py-0.5 rounded-full font-bold border border-teal-300/40">
                 Tập
+              </span>
+            )}
+            {!showGateHint ? (
+              <span
+                className="ml-1 text-[9px] sm:text-[10px] bg-rose-500/20 text-rose-200 px-1.5 py-0.5 rounded-full font-bold border border-rose-300/40"
+                title="Chế độ Tự suy luận: Cả 3 cổng giống nhau, không có gợi ý vòng vàng"
+              >
+                🎯 Tự giải
+              </span>
+            ) : (
+              <span
+                className="hidden sm:inline-flex ml-1 text-[9px] sm:text-[10px] bg-yellow-400/15 text-yellow-200 px-1.5 py-0.5 rounded-full font-semibold border border-yellow-300/30"
+                title="Vòng vàng gợi ý đáp án đúng"
+              >
+                🌟 Gợi ý
               </span>
             )}
             <span className="hidden sm:inline-flex items-center gap-1 text-[10px] font-bold text-amber-300/90 ml-1 px-2 py-0.5 rounded-md bg-black/40 border border-amber-300/25">
@@ -1565,24 +1972,35 @@ export function YokaiGameCanvas({
             {combo >= 2 && (
               <div
                 key={combo}
-                className="yk-pop rounded-full px-2.5 py-0.5 text-[11px] sm:text-xs font-extrabold text-white border border-amber-200/70 bg-[linear-gradient(180deg,#fb923c,#e11d48)] shadow-[0_0_16px_-2px_rgba(251,146,60,.85)]"
+                className="yk-pop rounded-full px-2 py-0.5 sm:px-2.5 text-[10px] sm:text-xs font-extrabold text-white border border-amber-200/70 bg-[linear-gradient(180deg,#fb923c,#e11d48)] shadow-[0_0_16px_-2px_rgba(251,146,60,.85)]"
               >
                 🔥 x{combo}
               </div>
             )}
-            <HudChip className="px-2.5 py-1 sm:px-3.5 sm:py-1.5">
-              <span className="yk-display text-base sm:text-xl font-extrabold text-white tabular-nums leading-none">
+            <HudChip className="px-2 py-1 sm:px-3 sm:py-1.5">
+              <span className="yk-display text-sm sm:text-lg font-extrabold text-white tabular-nums leading-none">
                 {score.toLocaleString()}
               </span>
-              <span className="text-[10px] font-bold text-amber-300">PTS</span>
+              <span className="text-[9px] sm:text-[10px] font-bold text-amber-300">PTS</span>
             </HudChip>
+
+            <HudIconButton
+              onClick={toggleGateHint}
+              active={showGateHint}
+              tone={showGateHint ? "amber" : "default"}
+              title={showGateHint ? "Vòng vàng gợi ý: Đang BẬT (Bấm để Tắt)" : "Vòng vàng gợi ý: Đang TẮT (Tự suy luận)"}
+              className="hidden sm:flex h-9 px-2.5"
+            >
+              <span aria-hidden>{showGateHint ? "🌟" : "🎯"}</span>
+              <span className="hidden md:inline text-[11px]">{showGateHint ? "Gợi ý" : "Tự giải"}</span>
+            </HudIconButton>
 
             <HudIconButton
               onClick={toggleReducedMotion}
               active={reducedMotion}
               tone={reducedMotion ? "jade" : "default"}
               title={reducedMotion ? "Đang bật Giảm hiệu ứng (Tối ưu FPS)" : "Giảm hiệu ứng chuyển động"}
-              className="h-9 px-2.5"
+              className="hidden sm:flex h-9 px-2.5"
             >
               <span aria-hidden>{reducedMotion ? "🌙" : "✨"}</span>
               <span className="hidden md:inline text-[11px]">FX</span>
@@ -1593,43 +2011,45 @@ export function YokaiGameCanvas({
                 setIsMuted(next);
               }}
               title={isMuted ? "Bật âm thanh hiệu ứng" : "Tắt âm thanh hiệu ứng"}
-              className="h-9 px-2.5"
+              className="hidden sm:flex h-9 px-2.5"
             >
               <span aria-hidden>{isMuted ? "🔇" : "🔊"}</span>
             </HudIconButton>
-            <HudIconButton onClick={togglePause} title="Tạm dừng (P / Esc)" className="h-9 px-2.5">
+            <HudIconButton onClick={togglePause} title="Tạm dừng (P / Esc)" className="h-8 sm:h-9 px-2 sm:px-2.5">
               <span aria-hidden>⏸</span>
               <span className="hidden sm:inline text-[11px]">Dừng</span>
             </HudIconButton>
-            <HudIconButton onClick={onExitGame} title="Thoát về Sảnh" tone="danger" className="h-9 px-2.5">
+            <HudIconButton onClick={onExitGame} title="Thoát về Sảnh" tone="danger" className="h-8 sm:h-9 px-2 sm:px-2.5">
               <span aria-hidden>✕</span>
             </HudIconButton>
           </div>
         </div>
 
-        {/* ROW 2: DOCKED QUESTION RIBBON — Slim, translucent, never covers the 3D horizon or character */}
+        {/* ROW 2: DOCKED QUESTION RIBBON — Full question & answers, wraps cleanly, never truncates text */}
         {activePrompt && (
-          <div className="max-w-2xl mx-auto w-full rounded-2xl border border-amber-300/50 bg-[linear-gradient(160deg,rgba(13,7,34,.84),rgba(36,12,38,.8))] backdrop-blur-xl shadow-[0_14px_38px_-18px_rgba(0,0,0,.9)] px-2.5 py-1.5 sm:px-3.5 sm:py-2">
-            <div className="flex items-center justify-between gap-2">
-              <div className="flex items-center gap-2 min-w-0 flex-1">
-                <span className="shrink-0 text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-amber-400/20 text-amber-200 border border-amber-300/45">
-                  {currentQuestionIndex + 1}/{questions.length} • {zone.level}
-                </span>
-                <div className="yk-display text-sm sm:text-lg font-extrabold text-white leading-snug truncate">
+          <div className="max-w-2xl mx-auto w-full rounded-2xl border border-amber-300/50 bg-[linear-gradient(160deg,rgba(13,7,34,.92),rgba(36,12,38,.88))] backdrop-blur-xl shadow-[0_14px_38px_-18px_rgba(0,0,0,.9)] px-2.5 py-1.5 sm:px-4 sm:py-2">
+            <div className="flex items-start sm:items-center justify-between gap-1.5 sm:gap-2">
+              <div className="flex flex-col gap-0.5 min-w-0 flex-1">
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <span className="shrink-0 text-[9px] sm:text-[10px] font-extrabold px-1.5 sm:px-2 py-0.5 rounded-full bg-amber-400/20 text-amber-200 border border-amber-300/45">
+                    {currentQuestionIndex + 1}/{questions.length} • {zone.level}
+                  </span>
+                  {activePrompt.subPrompt && (
+                    <span className="text-[10px] sm:text-xs text-amber-100/80 font-medium">
+                      ({activePrompt.subPrompt})
+                    </span>
+                  )}
+                </div>
+                <div className="yk-display text-xs sm:text-base font-extrabold text-white leading-relaxed break-words">
                   {activePrompt.prompt}
                 </div>
-                {activePrompt.subPrompt && (
-                  <span className="text-[11px] text-slate-300 truncate hidden md:inline">
-                    ({activePrompt.subPrompt})
-                  </span>
-                )}
               </div>
 
               {activePrompt.audioText && (
                 <button
                   type="button"
                   onClick={speakCurrentQuestion}
-                  className="pointer-events-auto shrink-0 h-7 px-2.5 rounded-lg text-[11px] font-bold text-white border border-rose-300/60 bg-[linear-gradient(180deg,#fb4a6b,#be123c)] shadow-sm active:scale-95 transition"
+                  className="pointer-events-auto shrink-0 h-6 sm:h-7 px-2 sm:px-2.5 rounded-lg text-[10px] sm:text-[11px] font-bold text-white border border-rose-300/60 bg-[linear-gradient(180deg,#fb4a6b,#be123c)] shadow-sm active:scale-95 transition"
                   title="Nghe phát âm chuẩn"
                 >
                   🔊 <span className="hidden sm:inline">Nghe</span>
@@ -1638,7 +2058,7 @@ export function YokaiGameCanvas({
             </div>
 
             {/* 3 Inline Answer Pills (Clickable to switch directly to Lane A / B / C) */}
-            <div className="mt-1.5 grid grid-cols-3 gap-1.5 pointer-events-auto">
+            <div className="mt-1 sm:mt-1.5 grid grid-cols-3 gap-1 sm:gap-1.5 pointer-events-auto">
               {(["A", "B", "C"] as const).map((letter, idx) => {
                 const laneIdx = idx as 0 | 1 | 2;
                 const optText = activePrompt.options[idx] || `Đáp án ${idx + 1}`;
@@ -1647,25 +2067,22 @@ export function YokaiGameCanvas({
                   <button
                     key={letter}
                     type="button"
-                    onClick={() => selectLane(laneIdx)}
-                    onTouchStart={(e) => {
-                      e.stopPropagation();
-                      selectLane(laneIdx);
-                    }}
-                    className={`flex items-center justify-center gap-1.5 rounded-xl px-2 py-1 text-left border transition-all duration-150 ${
+                    onClick={handleButtonClick(() => selectLane(laneIdx))}
+                    onTouchStart={handleButtonTouch(() => selectLane(laneIdx))}
+                    className={`yk-control-btn flex items-center justify-center gap-1 sm:gap-1.5 rounded-xl px-1.5 py-1 sm:px-2 sm:py-1.5 text-left border min-h-[2.4rem] sm:min-h-[2.6rem] transition-all duration-150 touch-manipulation ${
                       isCurrentLane
-                        ? "border-amber-300 bg-[linear-gradient(90deg,rgba(245,158,11,.36),rgba(225,29,72,.28))] shadow-[0_0_16px_-4px_rgba(251,191,36,.85)]"
-                        : "border-white/10 bg-white/[0.04] opacity-80 hover:opacity-100 hover:border-white/25"
+                        ? "border-amber-300 bg-[linear-gradient(90deg,rgba(245,158,11,.45),rgba(225,29,72,.35))] shadow-[0_0_16px_-4px_rgba(251,191,36,.85)] ring-1 ring-amber-300/60"
+                        : "border-white/10 bg-white/[0.05] opacity-85 hover:opacity-100 hover:border-white/25 active:scale-95"
                     }`}
                   >
                     <span
-                      className={`shrink-0 text-[10px] font-extrabold px-1.5 py-0.2 rounded ${
-                        isCurrentLane ? "bg-amber-300 text-slate-950" : "bg-white/15 text-slate-300"
+                      className={`shrink-0 text-[9px] sm:text-[10px] font-black px-1 sm:px-1.5 py-0.5 rounded ${
+                        isCurrentLane ? "bg-amber-300 text-slate-950 font-black shadow-sm" : "bg-white/15 text-slate-300"
                       }`}
                     >
                       {letter}
                     </span>
-                    <span className="text-[11px] sm:text-xs font-extrabold text-white truncate">
+                    <span className="text-[10px] sm:text-xs font-bold text-white text-center flex-1 break-words leading-tight">
                       {optText}
                     </span>
                   </button>
@@ -1674,7 +2091,7 @@ export function YokaiGameCanvas({
             </div>
 
             {/* Slim Progress Bar */}
-            <div className="mt-1.5 h-0.5 rounded-full bg-white/10 overflow-hidden" aria-hidden>
+            <div className="mt-1 sm:mt-1.5 h-0.5 rounded-full bg-white/10 overflow-hidden" aria-hidden>
               <div
                 className="h-full rounded-full bg-gradient-to-r from-amber-300 via-rose-400 to-teal-300 transition-[width] duration-300"
                 style={{ width: `${((currentQuestionIndex + 1) / Math.max(1, questions.length)) * 100}%` }}
@@ -1775,6 +2192,29 @@ export function YokaiGameCanvas({
               </button>
             </div>
 
+            {/* Cài đặt bật / tắt Vòng vàng gợi ý đáp án đúng */}
+            <button
+              type="button"
+              onClick={toggleGateHint}
+              className={`w-full py-2.5 px-3.5 rounded-xl border font-bold text-xs flex items-center justify-between transition-all ${
+                showGateHint
+                  ? "bg-amber-500/20 border-amber-300/60 text-amber-200"
+                  : "bg-white/10 hover:bg-white/15 border-white/20 text-slate-300"
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <span>{showGateHint ? "🌟" : "🎯"}</span>
+                <span>Vòng vàng gợi ý đáp án:</span>
+              </div>
+              <span
+                className={`px-2 py-0.5 rounded-md text-[11px] font-black ${
+                  showGateHint ? "bg-amber-400 text-slate-950" : "bg-white/15 text-slate-200"
+                }`}
+              >
+                {showGateHint ? "BẬT" : "TẮT"}
+              </span>
+            </button>
+
             <div className="pt-1 flex flex-col gap-2">
               <button
                 type="button"
@@ -1795,61 +2235,56 @@ export function YokaiGameCanvas({
         </div>
       )}
 
-      {/* ĐIỀU KHIỂN CẢM ỨNG (di động & máy tính bảng - hỗ trợ cả dọc và ngang) */}
+      {/* ĐIỀU KHIỂN CẢM ỨNG (di động & máy tính bảng - nút to 64-80px, nhạy, êm tay, không bấm nhầm) */}
       <div
-        className="absolute inset-x-3 md:hidden z-20 flex items-end justify-between pointer-events-none select-none landscape:inset-x-4"
-        style={{ bottom: "max(1rem, calc(0.5rem + env(safe-area-inset-bottom)))" }}
+        className="absolute inset-x-3 sm:inset-x-6 md:hidden z-20 flex items-end justify-between pointer-events-none select-none landscape:inset-x-4"
+        style={{ bottom: "max(0.75rem, calc(0.35rem + env(safe-area-inset-bottom)))" }}
       >
-        <div className="flex items-center gap-2.5 pointer-events-auto">
+        {/* Cụm trái: Sang Làn Trái / Phải */}
+        <div className="flex items-center gap-2.5 sm:gap-3 pointer-events-auto">
           {[
-            { label: "Di chuyển sang trái", icon: "◀", fn: moveLeft },
-            { label: "Di chuyển sang phải", icon: "▶", fn: moveRight },
+            { label: "Di chuyển sang trái", icon: "◀", text: "Trái", fn: moveLeft },
+            { label: "Di chuyển sang phải", icon: "▶", text: "Phải", fn: moveRight },
           ].map((b) => (
             <button
-              key={b.label}
+              key={b.text}
               type="button"
-              onTouchStart={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                b.fn();
-              }}
-              onClick={b.fn}
+              onTouchStart={handleButtonTouch(b.fn)}
+              onClick={handleButtonClick(b.fn)}
               aria-label={b.label}
-              className="w-16 h-16 landscape:w-14 landscape:h-14 rounded-2xl text-white text-2xl font-extrabold border-2 border-amber-200/55 bg-[radial-gradient(circle_at_35%_30%,rgba(255,255,255,.2),rgba(13,7,34,.88)_65%)] backdrop-blur-xl shadow-[0_14px_30px_-10px_rgba(0,0,0,.9),inset_0_1px_0_rgba(255,255,255,.22)] flex items-center justify-center active:scale-90 active:border-amber-300 transition-transform touch-manipulation"
+              className="yk-control-btn w-16 h-16 sm:w-20 sm:h-20 landscape:w-14 landscape:h-14 rounded-2xl text-white font-extrabold border-2 border-amber-300/60 bg-[radial-gradient(circle_at_35%_30%,rgba(255,255,255,.24),rgba(13,7,34,.88)_70%)] backdrop-blur-md shadow-[0_10px_25px_-5px_rgba(0,0,0,.85)] flex flex-col items-center justify-center active:scale-90 active:border-amber-300 transition-transform touch-manipulation"
             >
-              {b.icon}
+              <span className="text-2xl sm:text-3xl leading-none font-black text-amber-200">{b.icon}</span>
+              <span className="text-[10px] sm:text-xs font-bold text-amber-100/90 mt-0.5">{b.text}</span>
             </button>
           ))}
         </div>
 
-        <div className="flex items-end gap-2.5 pointer-events-auto">
+        {/* Cụm phải: Trượt (Teal) / Nhảy (Rose) */}
+        <div className="flex items-end gap-2.5 sm:gap-3 pointer-events-auto">
           <button
             type="button"
-            onTouchStart={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              slide();
-            }}
-            onClick={slide}
-            aria-label="Trượt xuống"
-            className="w-16 h-16 landscape:w-14 landscape:h-14 rounded-2xl text-white font-extrabold border-2 border-teal-300/60 bg-[radial-gradient(circle_at_35%_30%,rgba(45,212,191,.28),rgba(13,7,34,.88)_65%)] backdrop-blur-xl shadow-[0_14px_30px_-10px_rgba(0,0,0,.9)] flex flex-col items-center justify-center active:scale-90 transition-transform touch-manipulation"
+            onTouchStart={handleButtonTouch(slide)}
+            onClick={handleButtonClick(slide)}
+            aria-label={isFlyingBeast ? "Bổ nhào xuống dưới chướng ngại vật" : "Trượt xuống dưới chướng ngại vật"}
+            className="yk-control-btn w-16 h-16 sm:w-20 sm:h-20 landscape:w-14 landscape:h-14 rounded-2xl text-white font-extrabold border-2 border-teal-300/60 bg-[radial-gradient(circle_at_35%_30%,rgba(45,212,191,.35),rgba(13,7,34,.88)_70%)] backdrop-blur-md shadow-[0_10px_25px_-5px_rgba(20,184,166,.45)] flex flex-col items-center justify-center active:scale-90 active:border-teal-200 transition-transform touch-manipulation"
           >
-            <span className="text-base leading-none text-teal-200">▼</span>
-            <span className="text-[10px] mt-0.5">Trượt</span>
+            <span className="text-xl sm:text-2xl leading-none text-teal-200">▼</span>
+            <span className="text-[10px] sm:text-xs mt-0.5 text-teal-100 font-black">
+              {isFlyingBeast ? "Bổ nhào" : "Trượt"}
+            </span>
           </button>
           <button
             type="button"
-            onTouchStart={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              jump();
-            }}
-            onClick={jump}
-            aria-label="Nhảy lên"
-            className="w-[4.5rem] h-[4.5rem] landscape:w-16 landscape:h-16 rounded-2xl text-white font-extrabold border-2 border-amber-200/85 bg-[radial-gradient(circle_at_35%_28%,#fda4af,#e11d48_55%,#9f1239)] shadow-[0_16px_34px_-8px_rgba(225,29,72,.85),inset_0_1px_0_rgba(255,255,255,.5)] flex flex-col items-center justify-center active:scale-90 transition-transform touch-manipulation"
+            onTouchStart={handleButtonTouch(jump)}
+            onClick={handleButtonClick(jump)}
+            aria-label={isFlyingBeast ? "Bay vút lên qua chướng ngại vật" : "Nhảy lên qua chướng ngại vật"}
+            className="yk-control-btn w-[4.25rem] h-[4.25rem] sm:w-[5.25rem] sm:h-[5.25rem] landscape:w-15 landscape:h-15 rounded-2xl text-white font-extrabold border-2 border-rose-300/80 bg-[radial-gradient(circle_at_35%_28%,#fb7185,#e11d48_55%,#9f1239)] shadow-[0_12px_28px_-6px_rgba(225,29,72,.85)] flex flex-col items-center justify-center active:scale-90 active:border-rose-200 transition-transform touch-manipulation"
           >
-            <span className="text-lg leading-none">▲</span>
-            <span className="text-[11px] mt-0.5">Nhảy</span>
+            <span className="text-2xl sm:text-3xl leading-none text-white font-black">▲</span>
+            <span className="text-[11px] sm:text-sm mt-0.5 font-black text-rose-100 uppercase tracking-wide">
+              {isFlyingBeast ? "Bay cao" : "Nhảy"}
+            </span>
           </button>
         </div>
       </div>
@@ -1858,8 +2293,8 @@ export function YokaiGameCanvas({
       <div className="yk-ui absolute bottom-2.5 left-1/2 -translate-x-1/2 z-10 pointer-events-none hidden md:flex items-center gap-3.5 rounded-full border border-amber-200/20 bg-[#0d0722]/75 backdrop-blur-xl px-4 py-1.5 text-[11px] text-slate-200 shadow-[0_10px_35px_-15px_rgba(0,0,0,.9)]">
         {[
           ["A D / ◀ ▶ / 1-3", "Chọn làn"],
-          ["W / Space", "Nhảy"],
-          ["S / ▼", "Trượt"],
+          ["W / Space", isFlyingBeast ? "Bay cao" : "Nhảy"],
+          ["S / ▼", isFlyingBeast ? "Bổ nhào" : "Trượt"],
           ["P / Esc", "Tạm dừng"],
         ].map(([k, label]) => (
           <span key={k} className="flex items-center gap-1.5">

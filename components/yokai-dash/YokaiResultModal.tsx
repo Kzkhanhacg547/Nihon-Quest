@@ -44,13 +44,13 @@ export function YokaiResultModal({
   const stars = total === 0 ? 0 : ratio >= 0.85 ? 3 : ratio >= 0.6 ? 2 : ratio > 0 ? 1 : 0;
 
   return (
-    <div className="fixed inset-x-0 bottom-0 top-[calc(4.25rem+env(safe-area-inset-top))] sm:top-[calc(4.75rem+env(safe-area-inset-top))] z-[70] yk-ui flex items-center justify-center p-3 sm:p-4 bg-[#050310]/85 backdrop-blur-xl animate-in fade-in duration-300">
-      <div className="yk-frame relative w-full max-w-xl max-h-full flex flex-col bg-[linear-gradient(145deg,#12102a,#0a0818_58%,#2a0f24)] border border-amber-300/40 rounded-[1.75rem] shadow-[0_30px_100px_-25px_rgba(0,0,0,0.9)] ring-1 ring-white/10 text-white overflow-hidden">
+    <div className="fixed inset-0 z-[70] yk-ui flex items-center justify-center p-3 sm:p-4 bg-[#050310]/85 backdrop-blur-xl animate-in fade-in duration-300">
+      <div className="yk-frame relative w-full max-w-xl max-h-[92dvh] flex flex-col bg-[linear-gradient(145deg,#12102a,#0a0818_58%,#2a0f24)] border border-amber-300/40 rounded-[1.75rem] shadow-[0_30px_100px_-25px_rgba(0,0,0,0.9)] ring-1 ring-white/10 text-white overflow-hidden">
         <span className="yk-corner-bl" />
         <span className="yk-corner-br" />
         {/* Header Banner */}
         <div
-          className={`p-6 sm:p-7 text-center border-b ${
+          className={`p-4 sm:p-6 text-center border-b ${
             result.isVictory
               ? "bg-gradient-to-b from-amber-600/30 to-slate-900 border-amber-500/30"
               : "bg-gradient-to-b from-rose-900/30 to-slate-900 border-rose-500/30"

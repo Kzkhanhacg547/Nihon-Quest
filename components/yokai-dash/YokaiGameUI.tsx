@@ -123,7 +123,7 @@ export function HudIconButton({
   onClick: () => void;
   title: string;
   children: React.ReactNode;
-  tone?: "default" | "danger" | "jade";
+  tone?: "default" | "danger" | "jade" | "amber";
   active?: boolean;
   className?: string;
 }) {
@@ -137,6 +137,8 @@ export function HudIconButton({
       className={`pointer-events-auto yk-ui h-9 sm:h-10 min-w-9 sm:min-w-10 px-2 sm:px-2.5 rounded-xl border text-white/95 text-xs sm:text-sm font-bold flex items-center justify-center gap-1 backdrop-blur-md shadow-md active:scale-95 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300 ${
         tone === "danger"
           ? "border-rose-400/40 bg-[linear-gradient(160deg,rgba(80,12,32,.88),rgba(40,8,22,.88))] hover:bg-rose-700"
+          : tone === "amber"
+          ? "border-amber-300/70 bg-[linear-gradient(160deg,rgba(217,119,6,.75),rgba(146,64,14,.85))] text-amber-100 shadow-[0_0_12px_rgba(245,158,11,.4)]"
           : tone === "jade" || active
           ? "border-teal-300/60 bg-[linear-gradient(160deg,rgba(13,148,136,.75),rgba(19,78,74,.85))] text-teal-100"
           : "border-amber-200/30 bg-[linear-gradient(160deg,rgba(19,10,38,.86),rgba(38,16,52,.8))] hover:bg-purple-900/80"

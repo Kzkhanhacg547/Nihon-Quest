@@ -46,6 +46,8 @@ interface YokaiHubProps {
   onSelectBeast: (beast: SpiritBeast) => void;
   onTogglePractice: (isPractice: boolean) => void;
   onStartGame: () => void;
+  showGateHint?: boolean;
+  onToggleGateHint?: (show: boolean) => void;
   isLoadingQuestions: boolean;
 }
 
@@ -400,10 +402,13 @@ export function YokaiHub({
   onSelectBeast,
   onTogglePractice,
   onStartGame,
+  showGateHint = true,
+  onToggleGateHint,
   isLoadingQuestions,
 }: YokaiHubProps) {
   const [activeTab, setActiveTab] = useState<"zones" | "beasts" | "quests">("zones");
   const [showTutorial, setShowTutorial] = useState<boolean>(false);
+  const [showLiveExample, setShowLiveExample] = useState<boolean>(false);
 
   const thumbs = useBeastThumbnails(SPIRIT_BEASTS);
 
@@ -453,7 +458,7 @@ export function YokaiHub({
   const selectedElementMeta = ELEMENT_META[selectedBeast.element] || ELEMENT_META.FIRE;
 
   return (
-    <div className="yk-ui w-full max-w-6xl mx-auto space-y-5 pb-12">
+    <div className="yk-ui w-full max-w-6xl mx-auto space-y-5 pb-24 sm:pb-12">
       {/* ================= HERO: KITSUNE 3D + COMPACT STATS & CTA ================= */}
       <OrnateFrame className="rounded-[1.6rem]">
         <section className="relative isolate overflow-hidden rounded-[1.6rem] border border-amber-400/30 text-white shadow-[0_26px_80px_-30px_rgba(190,24,93,0.65)] bg-[radial-gradient(ellipse_at_85%_85%,rgba(225,29,72,0.28),transparent_52%),radial-gradient(ellipse_at_15%_15%,rgba(20,184,166,0.16),transparent_45%),linear-gradient(135deg,#0d0722_0%,#1c0e32_52%,#341028_100%)] p-4 sm:p-6 lg:p-7">
@@ -604,6 +609,26 @@ export function YokaiHub({
                 </div>
               </div>
 
+              {/* Phím xuất trận nhanh trên di động (không cần cuộn xuống đáy) */}
+              <div className="flex sm:hidden items-center justify-between gap-2 p-2.5 rounded-2xl bg-black/45 border border-amber-300/35 backdrop-blur-md">
+                <div className="min-w-0">
+                  <div className="text-[10px] text-amber-300 font-extrabold uppercase truncate">
+                    ⛩️ {selectedZone.nameVi} ({selectedZone.level})
+                  </div>
+                  <div className="text-[11px] text-slate-200 truncate font-semibold">
+                    {selectedBeast.avatarIcon} {selectedBeast.name} • {isPractice ? "Luyện tập" : `${stamina}/${maxStamina} Thể lực`}
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={onStartGame}
+                  disabled={!canPlay || isLoadingQuestions}
+                  className="yk-launch yk-display shrink-0 px-4 py-2 rounded-xl text-xs font-black text-white border border-amber-300/80 bg-[linear-gradient(180deg,#fb4a6b,#e11d48_45%,#9f1239)] shadow-md active:scale-95 transition disabled:opacity-50"
+                >
+                  {isLoadingQuestions ? "Đang tải…" : canPlay ? "⛩️ Vào Ngay" : "Hết lượt"}
+                </button>
+              </div>
+
               {/* ================= THIẾT LẬP CHIẾN THUẬT: LOẠI CÂU HỎI & TỐC ĐỘ DI CHUYỂN ================= */}
               <div className="relative overflow-hidden rounded-2xl border border-amber-300/30 bg-[linear-gradient(145deg,rgba(20,10,40,0.88),rgba(38,12,42,0.82))] p-3.5 sm:p-4 shadow-[0_12px_32px_-12px_rgba(0,0,0,0.85)] backdrop-blur-xl">
                 <SeigaihaDecor className="opacity-15 pointer-events-none" />
@@ -709,20 +734,27 @@ export function YokaiHub({
                     const preview = getModePreviewInfo(questionMode, selectedZone.level);
                     return (
                       <div className="p-2.5 sm:p-3 rounded-xl bg-black/45 border border-amber-400/35 backdrop-blur-md space-y-2">
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-[11px]">
-                          <div className="flex items-center gap-1.5 shrink-0">
-                            <span className="text-xs">💡</span>
-                            <span className="font-extrabold text-amber-300">
+                        <div className="flex items-center justify-between gap-1 text-[11px]">
+                          <div className="flex items-center gap-1.5 min-w-0">
+                            <span className="text-xs shrink-0">💡</span>
+                            <span className="font-extrabold text-amber-300 shrink-0">
                               Ví dụ cách chơi:
                             </span>
+                            <span className="text-[10px] text-slate-300 truncate">
+                              {preview.desc}
+                            </span>
                           </div>
-                          <span className="text-[10px] text-slate-300 truncate">
-                            {preview.desc}
-                          </span>
+                          <button
+                            type="button"
+                            onClick={() => setShowLiveExample((v) => !v)}
+                            className="sm:hidden shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-lg bg-amber-400/20 text-amber-300 border border-amber-300/30"
+                          >
+                            {showLiveExample ? "Thu gọn ▲" : "Xem mẫu cổng ▼"}
+                          </button>
                         </div>
 
                         {/* Khung mô phỏng HUD khi chạy */}
-                        <div className="rounded-lg bg-slate-950/80 border border-white/10 p-2 sm:p-2.5 space-y-2">
+                        <div className={`${showLiveExample ? "block" : "hidden sm:block"} rounded-lg bg-slate-950/80 border border-white/10 p-2 sm:p-2.5 space-y-2 animate-in fade-in duration-150`}>
                           {/* Bảng câu hỏi mô phỏng */}
                           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 bg-slate-900/90 border border-amber-500/30 rounded-lg px-2.5 py-1.5">
                             <div className="flex items-center gap-2 min-w-0">
@@ -888,6 +920,81 @@ export function YokaiHub({
                       </div>
                     </div>
                   )}
+
+                  {/* 3. VÒNG VÀNG GỢI Ý ĐÁP ÁN ĐÚNG (Bật / Tắt theo nhu cầu thử thách) */}
+                  <div className="relative z-10 mt-3 pt-2.5 border-t border-white/10 space-y-2">
+                    <div className="flex items-center justify-between text-[11px] font-bold">
+                      <span className="text-amber-300 flex items-center gap-1">
+                        <span>🔮 Gợi ý Cổng đáp án đúng:</span>
+                        <span className="text-slate-300 font-normal">
+                          {showGateHint ? "Vòng phát sáng vàng dẫn đường" : "Cả 3 cổng giống hệt nhau"}
+                        </span>
+                      </span>
+                      <span className="text-[10px] text-amber-200/80 font-normal">
+                        {showGateHint ? "🌟 Dễ làm quen" : "🎯 Thử thách JLPT"}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label="Gợi ý vòng vàng đáp án đúng">
+                      <button
+                        type="button"
+                        role="radio"
+                        aria-checked={showGateHint}
+                        onClick={() => {
+                          onToggleGateHint?.(true);
+                          yokaiSound.playClick();
+                        }}
+                        className={`px-3 py-2 rounded-xl border text-xs font-bold transition flex items-center justify-between gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300 ${
+                          showGateHint
+                            ? "bg-amber-500/25 border-amber-300 text-amber-100 shadow-[0_0_12px_rgba(245,185,66,0.45)] ring-1 ring-amber-300/50"
+                            : "bg-white/5 border-white/10 text-slate-300 hover:bg-white/10 hover:text-white"
+                        }`}
+                      >
+                        <div className="flex items-center gap-1.5">
+                          <span>🌟</span>
+                          <span className="font-extrabold">BẬT (Có vòng vàng)</span>
+                        </div>
+                        <span
+                          className={`text-[10px] px-1.5 py-0.5 rounded-full border ${
+                            showGateHint
+                              ? "bg-black/35 text-amber-200 border-amber-300/50"
+                              : "bg-black/20 text-slate-400 border-white/10"
+                          }`}
+                        >
+                          Mặc định
+                        </span>
+                      </button>
+
+                      <button
+                        type="button"
+                        role="radio"
+                        aria-checked={!showGateHint}
+                        onClick={() => {
+                          onToggleGateHint?.(false);
+                          yokaiSound.playClick();
+                        }}
+                        className={`px-3 py-2 rounded-xl border text-xs font-bold transition flex items-center justify-between gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-300 ${
+                          !showGateHint
+                            ? "bg-rose-500/25 border-rose-300 text-rose-100 shadow-[0_0_12px_rgba(244,63,94,0.45)] ring-1 ring-rose-300/50"
+                            : "bg-white/5 border-white/10 text-slate-300 hover:bg-white/10 hover:text-white"
+                        }`}
+                      >
+                        <div className="flex items-center gap-1.5">
+                          <span>🎯</span>
+                          <span className="font-extrabold">TẮT (Tự suy luận)</span>
+                        </div>
+                        <span
+                          className={`text-[10px] px-1.5 py-0.5 rounded-full border ${
+                            !showGateHint
+                              ? "bg-black/35 text-rose-200 border-rose-300/50"
+                              : "bg-black/20 text-slate-400 border-white/10"
+                          }`}
+                        >
+                          Thử thách
+                        </span>
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -1249,6 +1356,34 @@ export function YokaiHub({
           onStartGame();
         }}
       />
+
+      {/* ================= THANH XUẤT TRẬN CỐ ĐỊNH DƯỚI ĐÁY TRÊN DI ĐỘNG ================= */}
+      <div className="sm:hidden fixed bottom-0 inset-x-0 z-30 p-2.5 bg-[#0d0722]/95 border-t border-amber-300/30 backdrop-blur-xl flex items-center justify-between gap-2 shadow-[0_-10px_25px_rgba(0,0,0,0.8)] pb-[max(0.65rem,env(safe-area-inset-bottom))]">
+        <div className="min-w-0 flex items-center gap-2">
+          <span
+            className="w-8 h-8 rounded-lg shrink-0 flex items-center justify-center text-[10px] font-black text-white border border-amber-300/40 shadow-inner"
+            style={{ backgroundColor: selectedZone.gateColor }}
+          >
+            {selectedZone.level}
+          </span>
+          <div className="min-w-0">
+            <div className="text-[11px] text-amber-300 font-extrabold truncate">
+              {selectedZone.nameVi}
+            </div>
+            <div className="text-[10px] text-slate-300 truncate">
+              {selectedBeast.avatarIcon} {selectedBeast.name} • {isPractice ? "Tập luyện" : `${stamina}/${maxStamina} Thể lực`}
+            </div>
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={onStartGame}
+          disabled={!canPlay || isLoadingQuestions}
+          className="yk-launch yk-display shrink-0 px-4 py-2 rounded-xl text-xs font-black text-white border border-amber-300/80 bg-[linear-gradient(180deg,#fb4a6b,#e11d48_45%,#9f1239)] shadow-md active:scale-95 transition disabled:opacity-50"
+        >
+          {isLoadingQuestions ? "Đang chuẩn bị…" : canPlay ? "⛩️ XUẤT TRẬN" : "HẾT THỂ LỰC"}
+        </button>
+      </div>
     </div>
   );
 }

@@ -259,7 +259,7 @@ export function YokaiBeastShowcase({ beast, isUnlocked }: YokaiBeastShowcaseProp
   const accent = beast.color;
   return (
     <div
-      className="relative w-full h-[300px] sm:h-[360px] md:h-[400px] select-none overflow-hidden rounded-[1.5rem] border-2 shadow-[0_0_44px_-8px_var(--yk-accent),inset_0_0_60px_rgba(0,0,0,0.55)]"
+      className="relative w-full h-[220px] sm:h-[300px] md:h-[360px] select-none overflow-hidden rounded-[1.5rem] border-2 shadow-[0_0_44px_-8px_var(--yk-accent),inset_0_0_60px_rgba(0,0,0,0.55)]"
       style={
         {
           "--yk-accent": `${accent}88`,
@@ -304,8 +304,8 @@ export function YokaiBeastShowcase({ beast, isUnlocked }: YokaiBeastShowcaseProp
       )}
 
       {/* Gợi ý xoay 360° */}
-      <div className="absolute bottom-3 inset-x-0 mx-auto w-max pointer-events-none px-4 py-1.5 rounded-full bg-black/65 backdrop-blur-xl border border-white/15 text-[11px] text-slate-100 flex items-center gap-2 shadow-lg">
-        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden>
+      <div className="absolute bottom-2.5 sm:bottom-3 inset-x-0 mx-auto w-max pointer-events-none px-3 py-1 sm:px-4 sm:py-1.5 rounded-full bg-black/65 backdrop-blur-xl border border-white/15 text-[10px] sm:text-[11px] text-slate-100 flex items-center gap-1.5 sm:gap-2 shadow-lg">
+        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden>
           <rect x="6" y="2.5" width="12" height="19" rx="6" />
           <path d="M12 7v4" />
         </svg>

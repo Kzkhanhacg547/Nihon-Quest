@@ -36,6 +36,7 @@ export function YokaiDashClient() {
   const [questionMode, setQuestionMode] = useState<YokaiQuestionMode>("ALL");
   const [speedDifficulty, setSpeedDifficulty] = useState<YokaiSpeedDifficulty>("MEDIUM");
   const [customSpeed, setCustomSpeed] = useState<number>(14.0);
+  const [showGateHint, setShowGateHint] = useState<boolean>(true);
 
   // Module Entrance Loading (màn loading chuyển cảnh khi mới vào module)
   const [isModuleEntranceLoading, setIsModuleEntranceLoading] = useState<boolean>(true);
@@ -172,6 +173,11 @@ export function YokaiDashClient() {
       if (!Number.isNaN(savedSpeed) && savedSpeed >= 8 && savedSpeed <= 24) {
         setCustomSpeed(savedSpeed);
       }
+
+      const savedHint = localStorage.getItem("yokai_show_gate_hint");
+      if (savedHint !== null) {
+        setShowGateHint(savedHint !== "false");
+      }
     } catch {
       // ignore
     }
@@ -202,6 +208,13 @@ export function YokaiDashClient() {
     setCustomSpeed(speed);
     try {
       localStorage.setItem("yokai_custom_speed", String(speed));
+    } catch {}
+  }, []);
+
+  const handleToggleGateHint = useCallback((hint: boolean) => {
+    setShowGateHint(hint);
+    try {
+      localStorage.setItem("yokai_show_gate_hint", String(hint));
     } catch {}
   }, []);
 
@@ -450,7 +463,7 @@ export function YokaiDashClient() {
   // Hide mobile bottom tabbar during active gameplay so virtual controls are unobstructed
   useEffect(() => {
     if (typeof document === "undefined") return;
-    if (gameState === "PLAYING" || gameState === "LOADING" || activeResult) {
+    if (gameState === "PLAYING" || gameState === "LOADING" || isModuleEntranceLoading || activeResult) {
       document.body.classList.add("yokai-playing");
     } else {
       document.body.classList.remove("yokai-playing");
@@ -458,7 +471,7 @@ export function YokaiDashClient() {
     return () => {
       document.body.classList.remove("yokai-playing");
     };
-  }, [gameState, activeResult]);
+  }, [gameState, isModuleEntranceLoading, activeResult]);
 
   return (
     <div className="w-full">
@@ -487,6 +500,8 @@ export function YokaiDashClient() {
           onSelectZone={setSelectedZone}
           onSelectBeast={setSelectedBeast}
           onTogglePractice={setIsPractice}
+          showGateHint={showGateHint}
+          onToggleGateHint={handleToggleGateHint}
           onStartGame={() => handleStartGame()}
           isLoadingQuestions={isLoadingQuestions}
         />
@@ -507,9 +522,9 @@ export function YokaiDashClient() {
         <YokaiLoadingScreen beast={selectedBeast} ready={loadReady} />
       )}
 
-      {/* 3D GAMEPLAY CANVAS (Positioned cleanly below website navbar so HUD is never covered) */}
+      {/* 3D GAMEPLAY CANVAS (Toàn màn hình nhập vai, không bị co kéo hay che khuất giao diện) */}
       {gameState === "PLAYING" && (
-        <div className="fixed inset-x-0 bottom-0 top-[calc(4.25rem+env(safe-area-inset-top))] sm:top-[calc(4.75rem+env(safe-area-inset-top))] z-30 bg-[#070b17] flex flex-col overflow-hidden">
+        <div className="fixed inset-0 z-30 bg-[#070b17] flex flex-col overflow-hidden">
           <YokaiGameCanvas
             key={`yokai-session-${gameSessionId}`}
             zone={selectedZone}
@@ -519,6 +534,8 @@ export function YokaiDashClient() {
             speedDifficulty={speedDifficulty}
             customSpeed={customSpeed}
             questionMode={questionMode}
+            showGateHint={showGateHint}
+            onToggleGateHint={handleToggleGateHint}
             isPausedExternal={isPausedExternal}
             onPauseChange={handlePauseChange}
             onFinishGame={handleFinishGame}

@@ -122,6 +122,8 @@ export interface PlayerHitboxState {
   jumpProgress?: number;   // 0..1
   slideProgress?: number;  // 0..1
   timeSinceLaneSwitch?: number; // seconds
+  isFlying?: boolean;      // True when using flying spirit beast like Yatagarasu
+  flightBaseY?: number;    // Baseline cruising altitude for airborne beasts (e.g. 8.5)
 }
 
 export interface EncounterEvaluation {
@@ -134,8 +136,8 @@ export interface EncounterEvaluation {
 /**
  * Pure hitbox & evasion evaluation function.
  * Ensures no single action can bypass all obstacle types:
- * - JUMP obstacles hit standing & sliding players; only cleared when airborne (playerY >= 1.15).
- * - SLIDE obstacles hit standing & jumping players; only cleared when sliding (isSliding && !isJumping).
+ * - JUMP obstacles hit standing & sliding players; only cleared when airborne.
+ * - SLIDE obstacles hit standing & jumping players; only cleared when sliding / diving low.
  * - SWITCH_LANE obstacles block the entire vertical column in their lane; jumping or sliding in that lane still collides!
  */
 export function evaluateObstacleEncounter(
@@ -164,10 +166,14 @@ export function evaluateObstacleEncounter(
 
   // Player is in the SAME lane as the obstacle:
   if (requiredAction === "JUMP") {
-    // Must be airborne above threshold; sliding or standing fails
-    const clearedJump = player.isJumping && !player.isSliding && player.playerY >= 1.15;
+    const baseY = player.flightBaseY ?? 5.0;
+    const clearedJump = player.isFlying
+      ? player.isJumping && !player.isSliding && (player.playerY >= baseY + 0.8 || player.playerY >= 5.8)
+      : player.isJumping && !player.isSliding && player.playerY >= 1.15;
     if (clearedJump) {
-      const isSweetSpot = player.playerY >= 1.55;
+      const isSweetSpot = player.isFlying
+        ? player.playerY >= baseY + 1.5 || player.playerY >= 6.5
+        : player.playerY >= 1.55;
       return {
         collided: false,
         avoided: true,
@@ -184,8 +190,10 @@ export function evaluateObstacleEncounter(
   }
 
   if (requiredAction === "SLIDE") {
-    // Must be actively sliding on the ground; jumping into overhead obstacle collides!
-    const clearedSlide = player.isSliding && !player.isJumping && player.playerY < 0.4;
+    const baseY = player.flightBaseY ?? 5.0;
+    const clearedSlide = player.isFlying
+      ? player.isSliding && !player.isJumping && (player.playerY <= baseY - 1.0 || player.playerY <= 3.8)
+      : player.isSliding && !player.isJumping && player.playerY < 0.4;
     if (clearedSlide) {
       const sp = player.slideProgress ?? 0.5;
       const isSweetSpot = sp >= 0.08 && sp <= 0.85;

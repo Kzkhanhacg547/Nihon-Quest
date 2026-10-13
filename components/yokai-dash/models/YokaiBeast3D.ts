@@ -4106,7 +4106,11 @@ export function animateBeastMotion(
   if (state.isIdle) {
     // Gentle floating idle breathing for Hub Showcase
     const breath = Math.sin(t * 2.5) * 0.03;
-    bundle.group.position.y = breath;
+    if (bundle.id === "yatagarasu") {
+      bundle.group.position.y = 0.2 + Math.sin(t * 2.5) * 0.05;
+    } else {
+      bundle.group.position.y = breath;
+    }
     bundle.group.rotation.x = 0;
     bundle.group.rotation.z = 0;
     bundle.group.scale.set(1, 1, 1);
@@ -4121,12 +4125,12 @@ export function animateBeastMotion(
     }
     if (parts.wings) {
       parts.wings.forEach((wing, idx) => {
-        wing.rotation.z = Math.sin(t * 2 + idx * Math.PI) * 0.15;
+        wing.rotation.z = Math.sin(t * 2 + idx * Math.PI) * 0.18;
       });
     }
     if (parts.limbs) {
       parts.limbs.forEach((limb) => {
-        limb.rotation.x = 0;
+        limb.rotation.x = bundle.id === "yatagarasu" ? -0.35 : 0;
       });
     }
     if (parts.accents) {
@@ -4149,19 +4153,103 @@ export function animateBeastMotion(
         tail.rotation.y = Math.sin(t * 14 + idx * 0.6) * 0.55;
       });
     }
+    if (parts.wings) {
+      parts.wings.forEach((wing, idx) => {
+        wing.rotation.z = Math.sin(t * 14 + idx * Math.PI) * 0.6;
+      });
+    }
     return;
   }
 
   // Active Gameplay Animation:
+  const isYatagarasu = bundle.id === "yatagarasu";
   const runFreq = state.speed * 0.85;
   const cheerBoost = state.cheer ? Math.sin(state.cheer * Math.PI) * 0.22 : 0;
+  const turnTilt = (state.targetX - state.currentX) * -0.24;
+  const stumbleShake = state.stumble && state.stumble > 0.01 ? Math.sin(t * 38) * 0.35 * state.stumble : 0;
+
+  if (isYatagarasu) {
+    // ==========================================
+    // YATAGARASU (Thần Điểu Ba Chân Ánh Dương) — Hoạt ảnh bay lượn trên không
+    // ==========================================
+    const flightBob = Math.sin(t * 7.5) * 0.08 + cheerBoost;
+    bundle.group.position.y = flightBob;
+
+    // Nghiêng cánh lượn khi đổi làn
+    const airTilt = (state.targetX - state.currentX) * -0.38;
+    bundle.group.rotation.z = airTilt + stumbleShake;
+    bundle.group.rotation.y = airTilt * 0.42;
+
+    // Đôi cánh vỗ theo từng trạng thái bay (lượn, bay vút, bổ nhào luồn dưới)
+    if (parts.wings) {
+      if (state.isSliding) {
+        // Bổ nhào luồn dưới: khép chặt cánh sát thân khí động học
+        parts.wings.forEach((wing, idx) => {
+          wing.rotation.z = idx === 0 ? 0.35 : -0.35;
+          wing.rotation.y = idx === 0 ? -0.85 : 0.85;
+          wing.rotation.x = 0.28;
+        });
+      } else if (state.isJumping) {
+        // Bay vút lên cao: sải cánh vỗ mạnh mẽ xé gió
+        const climbFlap = Math.sin(t * 15) * 0.72;
+        parts.wings.forEach((wing, idx) => {
+          wing.rotation.z = idx === 0 ? climbFlap : -climbFlap;
+          wing.rotation.y = idx === 0 ? 0.08 : -0.08;
+          wing.rotation.x = -0.15;
+        });
+      } else {
+        // Bay tuần tra uy phong trên tầng mây
+        const cruiseFlap = Math.sin(t * 8.5) * 0.52;
+        parts.wings.forEach((wing, idx) => {
+          wing.rotation.z = idx === 0 ? cruiseFlap : -cruiseFlap;
+          wing.rotation.y = idx === 0 ? 0.12 : -0.12;
+          wing.rotation.x = Math.sin(t * 8.5) * 0.1;
+        });
+      }
+    }
+
+    // Ba chân thần điểu thu gọn ra sau theo tư thế bay
+    if (parts.limbs) {
+      parts.limbs.forEach((limb) => {
+        limb.rotation.x = -0.52;
+      });
+    }
+
+    // Góc nghiêng thân chim
+    if (state.stumble && state.stumble > 0.05) {
+      bundle.group.rotation.x = 0.35 * state.stumble;
+    } else if (state.isSliding) {
+      bundle.group.rotation.x = 0.48;
+      bundle.group.scale.set(0.92, 0.75, 1.25);
+    } else if (state.isJumping) {
+      bundle.group.rotation.x = -0.28;
+      bundle.group.scale.set(1.05, 1.15, 1.05);
+    } else {
+      bundle.group.rotation.x = 0.1 + Math.sin(t * 4.2) * 0.04;
+      bundle.group.scale.set(1, 1, 1);
+    }
+
+    if (parts.tails) {
+      parts.tails.forEach((tail, idx) => {
+        tail.rotation.y = Math.sin(t * 10 + idx * 0.5) * 0.28 + airTilt * 0.5;
+        tail.rotation.x = Math.sin(t * 7 + idx * 0.3) * 0.12;
+      });
+    }
+
+    if (parts.auraLight && state.cheer !== undefined) {
+      parts.auraLight.intensity = 2.6 + state.cheer * 3.5;
+    }
+    return;
+  }
+
+  // ==========================================
+  // LINH THÚ CHẠY BỘ DƯỚI ĐẤT (Kitsune, Neko Samurai, Tanuki, Okami)
+  // ==========================================
   const strideBob =
     (!state.isJumping && !state.isSliding ? Math.abs(Math.sin(t * runFreq)) * 0.09 : 0) + cheerBoost;
   bundle.group.position.y = strideBob;
 
   // Lateral Banking into turns + Collision Stumble Shake
-  const turnTilt = (state.targetX - state.currentX) * -0.24;
-  const stumbleShake = state.stumble && state.stumble > 0.01 ? Math.sin(t * 38) * 0.35 * state.stumble : 0;
   bundle.group.rotation.z = turnTilt + stumbleShake;
   bundle.group.rotation.y =
     turnTilt * 0.42 +
@@ -4324,10 +4412,11 @@ export function animateChaserYokai(
   const t = time * 0.001;
   // Chaser follows playerX with slight eerie lag
   chaser.group.position.x += (playerX - chaser.group.position.x) * 0.08;
-  chaser.group.position.y = Math.sin(t * 4.2) * 0.14;
+  chaser.group.position.y = -0.45 + Math.sin(t * 4.2) * 0.12;
 
-  // Target Z behind player: closer when hearts are low (tension), pushed back when combo is high
-  const targetZ = hearts === 1 ? 3.2 : hearts === 2 ? 4.1 : combo >= 4 ? 6.0 : 5.0;
+  // Target Z behind player: runs on the track behind player without blocking camera lens
+  const targetZ =
+    (hearts === 1 ? 3.4 : hearts === 2 ? 4.2 : 5.0) + Math.min(1.5, combo * 0.25);
   chaser.group.position.z += (targetZ - chaser.group.position.z) * 0.06;
 
   chaser.wisps.forEach((w, idx) => {

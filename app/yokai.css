@@ -141,7 +141,14 @@
   animation: none !important;
 }
 
-body.yokai-playing nav[aria-label="Điều hướng nhanh"] {
+body.yokai-playing {
+  overflow: hidden !important;
+  touch-action: none;
+}
+body.yokai-playing header,
+body.yokai-playing nav,
+body.yokai-playing .nq-tabbar,
+body.yokai-playing [data-intro] {
   display: none !important;
 }
 

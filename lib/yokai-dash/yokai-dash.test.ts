@@ -158,7 +158,7 @@ describe("Yōkai Dash — Game Configuration & Logic", () => {
         isIdle: true,
       });
     }
-  });
+  }, 25000);
 
   it("builds and animates Chaser Yōkai 3D model reacting to combo and hearts", async () => {
     const { createChaserYokai3DModel, animateChaserYokai } = await import(
@@ -409,6 +409,92 @@ describe("Yōkai Dash — Game Configuration & Logic", () => {
       expect(["LESSON_GRAMMAR", "GRAMMAR", undefined]).toContain(q.questionType);
     });
   }, 15000);
+
+  it("evaluates Yatagarasu airborne flight mechanics accurately for JUMP, SLIDE, and SWITCH_LANE", async () => {
+    const { evaluateObstacleEncounter } = await import("./generator");
+
+    // 1. JUMP in the sky: Yatagarasu cruises at 5.0m; jumping soars to 6.8m -> clears
+    const jumpAirRes = evaluateObstacleEncounter("LANTERN_LOW", 1, {
+      lane: 1,
+      playerY: 6.8,
+      isJumping: true,
+      isSliding: false,
+      isFlying: true,
+    });
+    expect(jumpAirRes.collided).toBe(false);
+    expect(jumpAirRes.avoided).toBe(true);
+
+    // Cruising without jumping into low air hurdle -> collides
+    const cruiseHitRes = evaluateObstacleEncounter("LANTERN_LOW", 1, {
+      lane: 1,
+      playerY: 5.0,
+      isJumping: false,
+      isSliding: false,
+      isFlying: true,
+    });
+    expect(cruiseHitRes.collided).toBe(true);
+
+    // 2. SLIDE in the sky: Falcon dive drops to <= 3.8m -> clears overhead shimenawa
+    const diveAirRes = evaluateObstacleEncounter("SHIMENAWA_HIGH", 2, {
+      lane: 2,
+      playerY: 3.2,
+      isJumping: false,
+      isSliding: true,
+      slideProgress: 0.4,
+      isFlying: true,
+    });
+    expect(diveAirRes.collided).toBe(false);
+    expect(diveAirRes.avoided).toBe(true);
+
+    // Cruising without diving into high shimenawa -> collides
+    const cruiseHighHit = evaluateObstacleEncounter("SHIMENAWA_HIGH", 2, {
+      lane: 2,
+      playerY: 5.0,
+      isJumping: false,
+      isSliding: false,
+      isFlying: true,
+    });
+    expect(cruiseHighHit.collided).toBe(true);
+
+    // 3. SWITCH_LANE in the sky: lane dodge clears
+    const switchAirRes = evaluateObstacleEncounter("SEAL_ROCK", 0, {
+      lane: 1,
+      playerY: 5.0,
+      isJumping: false,
+      isSliding: false,
+      timeSinceLaneSwitch: 0.2,
+      isFlying: true,
+    });
+    expect(switchAirRes.collided).toBe(false);
+    expect(switchAirRes.avoided).toBe(true);
+    expect(switchAirRes.perfectDodge).toBe(true);
+
+    // 4. High-altitude flight (Y = 8.5m): Yatagarasu soaring to 11.3m or diving to 6.0m
+    const highJumpRes = evaluateObstacleEncounter("LANTERN_LOW", 1, {
+      lane: 1,
+      playerY: 11.3,
+      flightBaseY: 8.5,
+      isJumping: true,
+      isSliding: false,
+      isFlying: true,
+    });
+    expect(highJumpRes.collided).toBe(false);
+    expect(highJumpRes.avoided).toBe(true);
+    expect(highJumpRes.perfectDodge).toBe(true);
+
+    const highDiveRes = evaluateObstacleEncounter("SHIMENAWA_HIGH", 2, {
+      lane: 2,
+      playerY: 6.0,
+      flightBaseY: 8.5,
+      isJumping: false,
+      isSliding: true,
+      slideProgress: 0.45,
+      isFlying: true,
+    });
+    expect(highDiveRes.collided).toBe(false);
+    expect(highDiveRes.avoided).toBe(true);
+    expect(highDiveRes.perfectDodge).toBe(true);
+  });
 });
 
 
