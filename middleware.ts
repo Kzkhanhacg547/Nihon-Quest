@@ -9,8 +9,11 @@ function getSecret(): string {
 export async function middleware(req: NextRequest) {
   const secret = getSecret();
 
-  // Kiểm tra cookie: Hỗ trợ cả HTTPS (__Secure-) và HTTP/Proxy chuẩn của Netlify
-  const isSecure = Boolean(req.cookies.get("__Secure-next-auth.session-token"));
+  // Kiểm tra cookie: Hỗ trợ cả HTTPS (__Secure-) và HTTP/Proxy chuẩn của Netlify / Vercel
+  const isSecure = Boolean(
+    req.cookies.get("__Secure-next-auth.session-token") ||
+      req.cookies.getAll().some((c) => c.name.startsWith("__Secure-next-auth.session-token")),
+  );
   const primaryCookieName = isSecure ? "__Secure-next-auth.session-token" : "next-auth.session-token";
 
   let token = await getToken({
@@ -34,13 +37,23 @@ export async function middleware(req: NextRequest) {
     });
   }
 
+  // Dọn dẹp cookie phân mảnh cũ (ví dụ .session-token.0, .1) nếu còn sót lại từ sự cố trước đó
+  const cleanupStaleChunks = (response: NextResponse) => {
+    for (const cookie of req.cookies.getAll()) {
+      if (/\.(session-token)\.\d+$/.test(cookie.name)) {
+        response.cookies.delete(cookie.name);
+      }
+    }
+    return response;
+  };
+
   if (!token) {
     const signInUrl = new URL("/login", req.url);
     signInUrl.searchParams.set("callbackUrl", req.nextUrl.pathname);
-    return NextResponse.redirect(signInUrl);
+    return cleanupStaleChunks(NextResponse.redirect(signInUrl));
   }
 
-  return NextResponse.next();
+  return cleanupStaleChunks(NextResponse.next());
 }
 
 export const config = {

@@ -25,7 +25,7 @@ export async function POST(req: Request) {
   await prisma.user.update({
     where: { id: user.id },
     data: {
-      image: avatar,
+      image: null, // Không lưu chuỗi base64 vào User.image để tránh phình to JWT / Cookie của NextAuth
       profile: {
         upsert: {
           create: { displayName, avatar },
