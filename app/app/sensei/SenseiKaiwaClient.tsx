@@ -61,7 +61,7 @@ function MicIcon({ className = "h-5 w-5" }: { className?: string }) {
   );
 }
 
-/** Pill bật/tắt hiển thị (Furigana, Romaji, Dịch nghĩa, Tự đọc) — to, có icon tròn như bản mẫu. */
+/** Pill bật/tắt hiển thị (Furigana, Romaji, Dịch nghĩa, Tự đọc) — gọn gàng trên mobile, dễ chạm. */
 function Pill({
   on,
   onClick,
@@ -81,14 +81,14 @@ function Pill({
       onClick={onClick}
       aria-pressed={on}
       title={title}
-      className={`inline-flex h-11 shrink-0 items-center gap-2 rounded-full border pl-1.5 pr-4 text-[13px] font-extrabold transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-500 ${
+      className={`inline-flex h-8.5 sm:h-10 shrink-0 items-center gap-1.5 sm:gap-2 rounded-full border pl-1 pr-3 sm:pl-1.5 sm:pr-3.5 text-xs sm:text-[13px] font-extrabold transition active:scale-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-500 ${
         on
-          ? "border-transparent bg-gradient-to-r from-[#ff3d6e] to-[#f0245a] text-white shadow-md shadow-rose-500/30"
+          ? "border-transparent bg-gradient-to-r from-[#ff3d6e] to-[#f0245a] text-white shadow-sm sm:shadow-md shadow-rose-500/30"
           : "border-rose-100 bg-white/90 text-slate-700 hover:border-rose-200 dark:border-slate-700 dark:bg-sumi-800 dark:text-slate-200"
       }`}
     >
       <span
-        className={`grid h-8 w-8 place-items-center rounded-full text-[13px] ${
+        className={`grid h-6.5 w-6.5 sm:h-7 sm:w-7 place-items-center rounded-full text-xs ${
           on ? "bg-white/25 text-white" : "bg-rose-50 text-rose-500 dark:bg-rose-950/40"
         }`}
       >
@@ -508,6 +508,8 @@ export function SenseiKaiwaClient({ recentLessons = [] }: SenseiKaiwaClientProps
   const [voicePanelOpen, setVoicePanelOpen] = useState(false);
   const [grammarOpen, setGrammarOpen] = useState(false);
   const closeGrammarModal = useCallback(() => setGrammarOpen(false), []);
+  const [isTopicModalOpen, setIsTopicModalOpen] = useState(false);
+  const closeTopicModal = useCallback(() => setIsTopicModalOpen(false), []);
   const menuRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -621,7 +623,7 @@ export function SenseiKaiwaClient({ recentLessons = [] }: SenseiKaiwaClientProps
             {/* ═════════ CỘT TRÁI — SENSEI ═════════ */}
             <section aria-label={character.nameRomaji} className={`overflow-hidden ${cardShell}`}>
               {/* Avatar chuyển động dựng từ ảnh (ảnh đã có sẵn nền lớp học) */}
-              <div className="relative h-[220px] sm:h-[290px] overflow-hidden bg-rose-50 dark:bg-sumi-800">
+              <div className="relative h-[180px] sm:h-[260px] md:h-[290px] overflow-hidden bg-rose-50 dark:bg-sumi-800">
                 <SenseiAvatar
                   state={avatarState}
                   emotion={emotion}
@@ -716,6 +718,18 @@ export function SenseiKaiwaClient({ recentLessons = [] }: SenseiKaiwaClientProps
                     </span>
                   </button>
                 </div>
+
+                {/* Nút cuộn nhanh tới khung chat trên mobile */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    document.getElementById("sensei-chat-box")?.scrollIntoView({ behavior: "smooth" });
+                  }}
+                  className="mt-2.5 flex w-full items-center justify-center gap-2 rounded-2xl border border-rose-200 bg-rose-50/80 py-2.5 text-xs font-bold text-rose-600 transition hover:bg-rose-100 active:scale-98 dark:border-rose-900/60 dark:bg-rose-950/40 dark:text-rose-300 lg:hidden"
+                >
+                  <Icon name="chat" className="h-4 w-4" />
+                  <span>Vào phòng đàm thoại ngay ↓</span>
+                </button>
 
                 {/* Chọn Sensei */}
                 <p className="mt-4 text-[11px] font-extrabold tracking-wide text-slate-500 dark:text-slate-400">Chọn Sensei:</p>
@@ -817,246 +831,369 @@ export function SenseiKaiwaClient({ recentLessons = [] }: SenseiKaiwaClientProps
             </section>
 
             {/* ═════════ CỘT GIỮA — HỘI THOẠI ═════════ */}
-            <section
-              aria-label={`Hội thoại với ${character.nameRomaji}`}
-              className={`flex h-[400px] sm:h-[680px] flex-col overflow-hidden p-3 sm:p-4 lg:h-[min(820px,calc(100dvh-7rem))] lg:min-h-[640px] ${cardShell}`}
-            >
-              {/* Header */}
-              <div className="flex items-center justify-between gap-3 border-b border-slate-100 pb-3 dark:border-slate-800">
-                <div className="flex min-w-0 items-center gap-3">
-                  <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-rose-50 text-2xl dark:bg-rose-950/40">
-                    {selectedScenario.icon || <BriefcaseIcon className="h-6 w-6 text-rose-500" />}
-                  </span>
-                  <div className="min-w-0">
-                    <h2 className="truncate text-base font-extrabold text-slate-900 dark:text-white">
-                      {selectedScenario.title}
-                    </h2>
-                    <p className="truncate text-xs text-slate-500 dark:text-slate-400">
-                      Luyện nói - Hỏi đáp - Phản hồi tức thì
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex shrink-0 items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={toggleSaved}
-                    aria-pressed={isSaved}
-                    className={`inline-flex h-9 items-center gap-1.5 rounded-full border px-3 text-xs font-bold transition ${focusRing} ${
-                      isSaved
-                        ? "border-rose-200 bg-rose-50 text-rose-600 dark:border-rose-900/60 dark:bg-rose-950/40 dark:text-rose-300"
-                        : "border-slate-200 bg-white text-slate-600 hover:border-rose-200 dark:border-slate-700 dark:bg-sumi-800 dark:text-slate-300"
-                    }`}
-                  >
-                    <StarIcon className="h-3.5 w-3.5" filled={isSaved} />
-                    {isSaved ? "Đã lưu" : "Lưu"}
-                  </button>
-
-                  <div className="relative" ref={menuRef}>
+            <div className="flex min-w-0 flex-col gap-3">
+              <section
+                id="sensei-chat-box"
+                aria-label={`Hội thoại với ${character.nameRomaji}`}
+                className={`flex h-[560px] sm:h-[680px] flex-col overflow-hidden p-3 sm:p-4 lg:h-[min(840px,calc(100dvh-7rem))] lg:min-h-[640px] ${cardShell}`}
+              >
+                {/* Header */}
+                <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-2.5 sm:pb-3 dark:border-slate-800">
+                  <div className="flex min-w-0 items-center gap-2.5 sm:gap-3">
                     <button
                       type="button"
-                      onClick={() => setMenuOpen((v) => !v)}
-                      aria-haspopup="menu"
-                      aria-expanded={menuOpen}
-                      aria-label="Thêm tuỳ chọn"
-                      className={`grid h-9 w-9 place-items-center rounded-full text-slate-500 transition hover:bg-slate-100 dark:hover:bg-sumi-800 ${focusRing}`}
+                      onClick={() => setIsTopicModalOpen(true)}
+                      title="Bấm để đổi chủ đề đàm thoại"
+                      className="grid h-10 w-10 sm:h-12 sm:w-12 shrink-0 place-items-center rounded-2xl bg-rose-50 text-xl sm:text-2xl transition hover:scale-105 hover:bg-rose-100 active:scale-95 dark:bg-rose-950/40"
                     >
-                      <KebabIcon className="h-5 w-5" />
+                      {selectedScenario.icon || <BriefcaseIcon className="h-5 w-5 text-rose-500" />}
                     </button>
-                    {menuOpen && (
-                      <div
-                        role="menu"
-                        className="absolute right-0 top-full z-20 mt-1 w-52 overflow-hidden rounded-2xl border border-slate-100 bg-white py-1 shadow-xl dark:border-slate-700 dark:bg-sumi-800"
-                      >
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-1.5 sm:gap-2">
+                        <h2 className="truncate text-sm sm:text-base font-extrabold text-slate-900 dark:text-white">
+                          {selectedScenario.title}
+                        </h2>
                         <button
                           type="button"
-                          role="menuitem"
-                          onClick={() => {
-                            setMenuOpen(false);
-                            handleSelectScenario(selectedScenario);
-                          }}
-                          className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-xs font-bold text-slate-700 hover:bg-rose-50 dark:text-slate-200 dark:hover:bg-sumi-900"
+                          onClick={() => setIsTopicModalOpen(true)}
+                          className="inline-flex shrink-0 items-center gap-1 rounded-full bg-rose-50 px-2 py-0.5 text-[10px] sm:text-xs font-bold text-rose-600 transition hover:bg-rose-100 active:scale-95 dark:bg-rose-950/50 dark:text-rose-300"
+                          title="Đổi chủ đề đàm thoại"
                         >
-                          <Icon name="refresh" className="h-4 w-4 text-slate-500" />
-                          Bắt đầu lại
-                        </button>
-                        <button
-                          type="button"
-                          role="menuitem"
-                          onClick={() => {
-                            setMenuOpen(false);
-                            setTempKeyInput(apiKey);
-                            setIsKeyModalOpen(true);
-                            playClick();
-                          }}
-                          className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-xs font-bold text-slate-700 hover:bg-rose-50 dark:text-slate-200 dark:hover:bg-sumi-900"
-                        >
-                          <Icon name="settings" className="h-4 w-4 text-slate-500" />
-                          <span className="flex-1">{apiKey ? "AI Key: Đã kết nối" : "Cài đặt AI Key"}</span>
-                          {apiKey && <span aria-hidden="true" className="h-2 w-2 rounded-full bg-emerald-500" />}
+                          <span>Đổi chủ đề</span>
+                          <ChevronRight className="h-3 w-3 rotate-90" />
                         </button>
                       </div>
-                    )}
+                      <div className="flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400">
+                        <span className="truncate">với {character.nameRomaji}</span>
+                        <span aria-hidden="true" className={`inline-block h-1.5 w-1.5 shrink-0 rounded-full ${statusDot}`} />
+                        <span className="truncate text-[10px] sm:text-[11px]" role="status" aria-live="polite">{statusLabel}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
+                    <button
+                      type="button"
+                      onClick={toggleSaved}
+                      aria-pressed={isSaved}
+                      className={`inline-flex h-8 sm:h-9 items-center gap-1 sm:gap-1.5 rounded-full border px-2.5 sm:px-3 text-[11px] sm:text-xs font-bold transition active:scale-95 ${focusRing} ${
+                        isSaved
+                          ? "border-rose-200 bg-rose-50 text-rose-600 dark:border-rose-900/60 dark:bg-rose-950/40 dark:text-rose-300"
+                          : "border-slate-200 bg-white text-slate-600 hover:border-rose-200 dark:border-slate-700 dark:bg-sumi-800 dark:text-slate-300"
+                      }`}
+                    >
+                      <StarIcon className="h-3.5 w-3.5" filled={isSaved} />
+                      <span className="hidden xs:inline">{isSaved ? "Đã lưu" : "Lưu"}</span>
+                    </button>
+
+                    <div className="relative" ref={menuRef}>
+                      <button
+                        type="button"
+                        onClick={() => setMenuOpen((v) => !v)}
+                        aria-haspopup="menu"
+                        aria-expanded={menuOpen}
+                        aria-label="Thêm tuỳ chọn"
+                        className={`grid h-8 w-8 sm:h-9 sm:w-9 place-items-center rounded-full text-slate-500 transition hover:bg-slate-100 active:scale-95 dark:hover:bg-sumi-800 ${focusRing}`}
+                      >
+                        <KebabIcon className="h-4.5 w-4.5 sm:h-5 sm:w-5" />
+                      </button>
+                      {menuOpen && (
+                        <div
+                          role="menu"
+                          className="absolute right-0 top-full z-20 mt-1 w-52 overflow-hidden rounded-2xl border border-slate-100 bg-white py-1 shadow-xl dark:border-slate-700 dark:bg-sumi-800"
+                        >
+                          <button
+                            type="button"
+                            role="menuitem"
+                            onClick={() => {
+                              setMenuOpen(false);
+                              setIsTopicModalOpen(true);
+                            }}
+                            className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-xs font-bold text-slate-700 hover:bg-rose-50 dark:text-slate-200 dark:hover:bg-sumi-900"
+                          >
+                            <SparkleIcon className="h-4 w-4 text-rose-500" />
+                            Đổi chủ đề đàm thoại
+                          </button>
+                          <button
+                            type="button"
+                            role="menuitem"
+                            onClick={() => {
+                              setMenuOpen(false);
+                              handleSelectScenario(selectedScenario);
+                            }}
+                            className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-xs font-bold text-slate-700 hover:bg-rose-50 dark:text-slate-200 dark:hover:bg-sumi-900"
+                          >
+                            <Icon name="refresh" className="h-4 w-4 text-slate-500" />
+                            Bắt đầu lại cuộc thoại
+                          </button>
+                          <button
+                            type="button"
+                            role="menuitem"
+                            onClick={() => {
+                              setMenuOpen(false);
+                              setTempKeyInput(apiKey);
+                              setIsKeyModalOpen(true);
+                              playClick();
+                            }}
+                            className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-xs font-bold text-slate-700 hover:bg-rose-50 dark:text-slate-200 dark:hover:bg-sumi-900"
+                          >
+                            <Icon name="settings" className="h-4 w-4 text-slate-500" />
+                            <span className="flex-1">{apiKey ? "AI Key: Đã kết nối" : "Cài đặt AI Key"}</span>
+                            {apiKey && <span aria-hidden="true" className="h-2 w-2 rounded-full bg-emerald-500" />}
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              {/* Tuỳ chọn hiển thị */}
-              <div
-                role="group"
-                aria-label="Tùy chọn hiển thị"
-                className="no-scrollbar -mx-1 flex items-center gap-2 overflow-x-auto px-1 py-3"
-              >
-                <Pill
-                  on={showFurigana}
-                  onClick={() => {
-                    setShowFurigana(!showFurigana);
-                    playClick();
-                  }}
-                  title="Bật/Tắt Furigana"
-                  icon={<span lang="ja" className="font-jp font-black">あ</span>}
+                {/* Tuỳ chọn hiển thị */}
+                <div
+                  role="group"
+                  aria-label="Tùy chọn hiển thị"
+                  className="no-scrollbar -mx-1 flex items-center gap-2 overflow-x-auto px-1 py-2 sm:py-3"
                 >
-                  Furigana
-                </Pill>
-                <Pill
-                  on={showRomaji}
-                  onClick={() => {
-                    setShowRomaji(!showRomaji);
-                    playClick();
-                  }}
-                  title="Bật/Tắt Phiên âm Romaji"
-                  icon={<span className="text-[11px] font-black">Aa</span>}
-                >
-                  Romaji
-                </Pill>
-                <Pill
-                  on={showTranslations}
-                  onClick={() => {
-                    setShowTranslations(!showTranslations);
-                    playClick();
-                  }}
-                  title="Bật/Tắt Dịch nghĩa tiếng Việt"
-                  icon={<span className="text-[11px] font-black">VI</span>}
-                >
-                  Dịch nghĩa
-                </Pill>
-                <Pill
-                  on={autoVoice}
-                  onClick={() => {
-                    setAutoVoice(!autoVoice);
-                    playClick();
-                  }}
-                  title="Tự động phát giọng nói khi Sensei trả lời"
-                  icon={<Icon name="speaker" className="h-4 w-4" />}
-                >
-                  {autoVoice ? "Tự đọc" : "Tắt đọc"}
-                </Pill>
-              </div>
+                  <Pill
+                    on={showFurigana}
+                    onClick={() => {
+                      setShowFurigana(!showFurigana);
+                      playClick();
+                    }}
+                    title="Bật/Tắt Furigana"
+                    icon={<span lang="ja" className="font-jp font-black">あ</span>}
+                  >
+                    Furigana
+                  </Pill>
+                  <Pill
+                    on={showRomaji}
+                    onClick={() => {
+                      setShowRomaji(!showRomaji);
+                      playClick();
+                    }}
+                    title="Bật/Tắt Phiên âm Romaji"
+                    icon={<span className="text-[11px] font-black">Aa</span>}
+                  >
+                    Romaji
+                  </Pill>
+                  <Pill
+                    on={showTranslations}
+                    onClick={() => {
+                      setShowTranslations(!showTranslations);
+                      playClick();
+                    }}
+                    title="Bật/Tắt Dịch nghĩa tiếng Việt"
+                    icon={<span className="text-[11px] font-black">VI</span>}
+                  >
+                    Dịch nghĩa
+                  </Pill>
+                  <Pill
+                    on={autoVoice}
+                    onClick={() => {
+                      setAutoVoice(!autoVoice);
+                      playClick();
+                    }}
+                    title="Tự động phát giọng nói khi Sensei trả lời"
+                    icon={<Icon name="speaker" className="h-3.5 w-3.5 sm:h-4 sm:w-4" />}
+                  >
+                    {autoVoice ? "Tự đọc" : "Tắt đọc"}
+                  </Pill>
+                </div>
 
-              {/* Tin nhắn */}
-              <div className="min-h-0 flex-1 space-y-4 overflow-y-auto rounded-2xl border border-slate-100 bg-white/70 p-3 dark:border-slate-800 dark:bg-sumi-950/40 sm:p-4">
-                {messages.map((msg) => {
-                  const isUser = msg.role === "user";
-                  const romaji = showRomaji ? kanaToRomaji(msg.furigana || msg.content) : "";
-                  return isUser ? (
-                    <div key={msg.id} className="flex justify-end">
-                      <div className="relative max-w-[88%] rounded-2xl rounded-tr-md bg-[#1c2745] py-3 pl-4 pr-12 text-white shadow-md sm:max-w-[72%]">
+                {/* Tin nhắn */}
+                <div className="min-h-0 flex-1 space-y-3 sm:space-y-4 overflow-y-auto rounded-2xl border border-slate-100 bg-white/70 p-2.5 sm:p-4 dark:border-slate-800 dark:bg-sumi-950/40">
+                  {messages.map((msg) => {
+                    const isUser = msg.role === "user";
+                    const romaji = showRomaji ? kanaToRomaji(msg.furigana || msg.content) : "";
+                    return isUser ? (
+                      <div key={msg.id} className="flex justify-end items-end gap-2">
+                        <div className="relative max-w-[85%] rounded-2xl rounded-br-sm bg-[#1c2745] px-3.5 py-2.5 text-white shadow-md sm:max-w-[75%] sm:px-4 sm:py-3">
+                          <p lang="ja" className="whitespace-pre-wrap font-jp text-[14px] sm:text-[15px] font-medium leading-relaxed">
+                            {msg.content}
+                          </p>
+                          {showFurigana && msg.furigana && (
+                            <p className="mt-0.5 font-jp text-xs text-slate-300">{msg.furigana}</p>
+                          )}
+                          {romaji && <p className="mt-0.5 text-xs text-slate-300">{romaji}</p>}
+                          {showTranslations && msg.meaning && (
+                            <p className="mt-1.5 border-t border-white/15 pt-1.5 text-xs text-slate-200">{msg.meaning}</p>
+                          )}
+                          <div className="mt-1 flex items-center justify-end gap-1 text-[10px] text-slate-400">
+                            <DoubleCheckIcon className="h-3.5 w-3.5 text-rose-300" />
+                          </div>
+                        </div>
                         <span
                           aria-hidden="true"
-                          className="absolute right-2.5 top-2.5 grid h-8 w-8 place-items-center rounded-full bg-sky-100 text-sky-500"
+                          className="hidden sm:grid h-7 w-7 shrink-0 place-items-center rounded-full bg-sky-100 text-sky-600 mb-1"
                         >
-                          <UserIcon className="h-4 w-4" />
+                          <UserIcon className="h-3.5 w-3.5" />
                         </span>
-                        <p lang="ja" className="whitespace-pre-wrap font-jp text-[15px] font-medium leading-relaxed">
-                          {msg.content}
-                        </p>
-                        {showFurigana && msg.furigana && (
-                          <p className="mt-0.5 font-jp text-xs text-slate-300">{msg.furigana}</p>
-                        )}
-                        {romaji && <p className="mt-0.5 text-xs text-slate-300">{romaji}</p>}
-                        {showTranslations && msg.meaning && (
-                          <p className="mt-1.5 border-t border-white/15 pt-1.5 text-xs text-slate-200">{msg.meaning}</p>
-                        )}
-                        <DoubleCheckIcon className="ml-auto mt-1 h-4 w-4 text-rose-300" />
                       </div>
-                    </div>
-                  ) : (
-                    <div key={msg.id} className="flex items-start gap-3">
-                      <SenseiPortrait character={character} className="mt-0.5 h-10 w-10" />
-                      <div className="max-w-[88%] rounded-2xl rounded-tl-md border border-slate-100 bg-white px-4 py-3 shadow-sm dark:border-slate-700 dark:bg-sumi-800 sm:max-w-[78%]">
-                        <p lang="ja" className="whitespace-pre-wrap font-jp text-[15px] font-medium leading-relaxed text-slate-900 dark:text-slate-100">
-                          {msg.content}
-                        </p>
-                        {(romaji || (showFurigana && msg.furigana)) && (
-                          <p className="mt-1 text-xs leading-relaxed text-sky-700 dark:text-sky-300">
-                            {romaji}
-                            {romaji && showFurigana && msg.furigana ? " " : ""}
-                            {showFurigana && msg.furigana && <span lang="ja" className="font-jp">{msg.furigana}</span>}
+                    ) : (
+                      <div key={msg.id} className="flex items-start gap-2 sm:gap-3">
+                        <SenseiPortrait character={character} className="mt-0.5 h-8 w-8 sm:h-10 sm:w-10" />
+                        <div className="max-w-[88%] sm:max-w-[78%] rounded-2xl rounded-tl-sm border border-slate-100 bg-white px-3.5 py-2.5 shadow-sm dark:border-slate-700 dark:bg-sumi-800 sm:px-4 sm:py-3">
+                          <p lang="ja" className="whitespace-pre-wrap font-jp text-[14px] sm:text-[15px] font-medium leading-relaxed text-slate-900 dark:text-slate-100">
+                            {msg.content}
                           </p>
-                        )}
-                        {showTranslations && msg.meaning && (
-                          <p className="mt-1 text-xs leading-relaxed text-slate-500 dark:text-slate-400">
-                            {msg.meaning.startsWith("(") ? msg.meaning : `(${msg.meaning})`}
-                          </p>
-                        )}
-                        <button
-                          type="button"
-                          onClick={() => {
-                            playClick();
-                            speakJapanese(msg.content, msg.furigana);
-                          }}
-                          className={`mt-2.5 inline-flex h-8 items-center gap-1.5 rounded-full bg-rose-50 px-3.5 text-[11px] font-extrabold text-rose-600 transition hover:bg-rose-100 dark:bg-rose-950/40 dark:text-rose-300 ${focusRing}`}
-                        >
-                          <Icon name="speaker" className="h-3.5 w-3.5" />
-                          Nghe lại
-                        </button>
+                          {(romaji || (showFurigana && msg.furigana)) && (
+                            <p className="mt-1 text-xs leading-relaxed text-sky-700 dark:text-sky-300">
+                              {romaji}
+                              {romaji && showFurigana && msg.furigana ? " " : ""}
+                              {showFurigana && msg.furigana && <span lang="ja" className="font-jp">{msg.furigana}</span>}
+                            </p>
+                          )}
+                          {showTranslations && msg.meaning && (
+                            <p className="mt-1 text-xs leading-relaxed text-slate-500 dark:text-slate-400">
+                              {msg.meaning.startsWith("(") ? msg.meaning : `(${msg.meaning})`}
+                            </p>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              playClick();
+                              speakJapanese(msg.content, msg.furigana);
+                            }}
+                            className={`mt-2 inline-flex h-7 sm:h-8 items-center gap-1.5 rounded-full bg-rose-50 px-2.5 sm:px-3 text-[11px] font-extrabold text-rose-600 transition hover:bg-rose-100 active:scale-95 dark:bg-rose-950/40 dark:text-rose-300 ${focusRing}`}
+                          >
+                            <Icon name="speaker" className="h-3.5 w-3.5" />
+                            <span>Nghe lại</span>
+                          </button>
+                        </div>
                       </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
 
-                {loading && (
-                  <div className="flex items-center gap-3">
-                    <SenseiPortrait character={character} className="h-10 w-10 motion-safe:animate-pulse" />
-                    <div className="flex items-center gap-2 rounded-2xl rounded-tl-md border border-slate-100 bg-white px-4 py-3 text-xs font-medium text-slate-500 shadow-sm dark:border-slate-700 dark:bg-sumi-800">
-                      <span aria-hidden="true" className="flex items-center gap-1">
-                        <span className="h-1.5 w-1.5 rounded-full bg-rose-400 motion-safe:animate-bounce" style={{ animationDelay: "0ms" }} />
-                        <span className="h-1.5 w-1.5 rounded-full bg-rose-400 motion-safe:animate-bounce" style={{ animationDelay: "150ms" }} />
-                        <span className="h-1.5 w-1.5 rounded-full bg-rose-400 motion-safe:animate-bounce" style={{ animationDelay: "300ms" }} />
+                  {loading && (
+                    <div className="flex items-center gap-2 sm:gap-3">
+                      <SenseiPortrait character={character} className="h-8 w-8 sm:h-10 sm:w-10 motion-safe:animate-pulse" />
+                      <div className="flex items-center gap-2 rounded-2xl rounded-tl-sm border border-slate-100 bg-white px-3.5 py-2.5 text-xs font-medium text-slate-500 shadow-sm dark:border-slate-700 dark:bg-sumi-800">
+                        <span aria-hidden="true" className="flex items-center gap-1">
+                          <span className="h-1.5 w-1.5 rounded-full bg-rose-400 motion-safe:animate-bounce" style={{ animationDelay: "0ms" }} />
+                          <span className="h-1.5 w-1.5 rounded-full bg-rose-400 motion-safe:animate-bounce" style={{ animationDelay: "150ms" }} />
+                          <span className="h-1.5 w-1.5 rounded-full bg-rose-400 motion-safe:animate-bounce" style={{ animationDelay: "300ms" }} />
+                        </span>
+                        Sensei đang suy nghĩ câu trả lời...
+                      </div>
+                    </div>
+                  )}
+                  <div ref={messagesEndRef} />
+                </div>
+
+                {/* Trả lời nhanh */}
+                {!loading && selectedScenario.suggestedReplies.length > 0 && (
+                  <div className="mt-2.5">
+                    <div className="flex items-center justify-between px-1 mb-1">
+                      <span className="flex items-center gap-1 text-[11px] font-extrabold text-slate-500 dark:text-slate-400">
+                        <SparkleIcon className="h-3 w-3 text-rose-500" />
+                        Gợi ý đối đáp nhanh:
                       </span>
-                      Sensei đang suy nghĩ câu trả lời...
+                      <span className="text-[10px] text-slate-400">Chạm để gửi</span>
+                    </div>
+                    <div className="no-scrollbar flex items-center gap-2 overflow-x-auto pb-1" aria-label="Gợi ý trả lời nhanh">
+                      {selectedScenario.suggestedReplies.map((reply, idx) => (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => handleSendMessage(reply.ja)}
+                          title={reply.vi}
+                          className={`group flex max-w-[260px] sm:max-w-[280px] shrink-0 items-center justify-between gap-2 rounded-2xl border border-rose-100 bg-white/90 px-3 py-1.5 text-left shadow-xs transition hover:border-rose-300 hover:bg-rose-50 active:scale-95 dark:border-slate-700 dark:bg-sumi-800 dark:hover:bg-rose-950/30 ${focusRing}`}
+                        >
+                          <div className="min-w-0">
+                            <span lang="ja" className="block truncate font-jp text-xs font-bold text-slate-800 dark:text-slate-200">
+                              {reply.ja}
+                            </span>
+                            <span className="block truncate text-[10px] text-slate-400 dark:text-slate-500">{reply.vi}</span>
+                          </div>
+                          <SendIcon className="h-3.5 w-3.5 shrink-0 text-rose-400 opacity-60 transition group-hover:opacity-100" />
+                        </button>
+                      ))}
                     </div>
                   </div>
                 )}
-                <div ref={messagesEndRef} />
-              </div>
 
-              {/* Trả lời nhanh (giữ từ bản cũ để người học không bị kẹt) */}
-              {!loading && selectedScenario.suggestedReplies.length > 0 && (
-                <div className="no-scrollbar mt-3 flex items-center gap-2 overflow-x-auto" aria-label="Gợi ý trả lời nhanh">
-                  {selectedScenario.suggestedReplies.map((reply, idx) => (
+                {/* Ô nhập */}
+                <div className="mt-2 sm:mt-3 flex items-center gap-1.5 sm:gap-2 rounded-2xl sm:rounded-full border border-slate-200 bg-white p-1 sm:p-1.5 shadow-sm transition focus-within:border-rose-400 focus-within:ring-2 focus-within:ring-rose-500/20 dark:border-slate-700 dark:bg-sumi-950">
+                  <button
+                    type="button"
+                    onClick={toggleListening}
+                    aria-pressed={isListening}
+                    aria-label={isListening ? "Đang thu âm — nhấn để dừng" : "Nói tiếng Nhật bằng micro"}
+                    title={isListening ? "Đang thu âm... Nhấn để dừng" : "Nhấn để nói tiếng Nhật (Micro)"}
+                    className={`grid h-10 w-10 sm:h-11 sm:w-11 shrink-0 place-items-center rounded-full transition active:scale-95 ${focusRing} ${
+                      isListening
+                        ? "bg-rose-500 text-white shadow-md shadow-rose-500/30 motion-safe:animate-pulse"
+                        : "bg-rose-50 text-rose-500 hover:bg-rose-100 dark:bg-rose-950/40"
+                    }`}
+                  >
+                    <MicIcon className="h-5 w-5" />
+                  </button>
+
+                  <input
+                    type="text"
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
+                        e.preventDefault();
+                        handleSendMessage();
+                      }
+                    }}
+                    aria-label="Nhập câu tiếng Nhật"
+                    autoComplete="off"
+                    autoCorrect="off"
+                    autoCapitalize="none"
+                    spellCheck={false}
+                    enterKeyHint="send"
+                    placeholder={
+                      isListening
+                        ? "Sensei đang nghe..."
+                        : "Nhập câu tiếng Nhật hoặc bấm mic..."
+                    }
+                    className="min-w-0 flex-1 bg-transparent px-2 py-2 font-jp text-[14px] sm:text-base text-slate-900 outline-none placeholder:text-slate-400 dark:text-white sm:text-sm"
+                  />
+
+                  {input.trim() && (
                     <button
-                      key={idx}
                       type="button"
-                      onClick={() => handleSendMessage(reply.ja)}
-                      title={reply.vi}
-                      className={`max-w-[260px] shrink-0 rounded-full border border-rose-100 bg-white px-3.5 py-1.5 text-left transition hover:border-rose-300 hover:bg-rose-50 dark:border-slate-700 dark:bg-sumi-800 dark:hover:bg-rose-950/30 ${focusRing}`}
+                      onClick={() => setInput("")}
+                      aria-label="Xoá nội dung vừa nhập"
+                      className="grid h-7 w-7 shrink-0 place-items-center rounded-full text-slate-400 transition hover:bg-slate-100 hover:text-slate-600 active:scale-90 dark:hover:bg-sumi-800"
                     >
-                      <span lang="ja" className="block truncate font-jp text-xs font-bold text-slate-700 dark:text-slate-200">
-                        {reply.ja}
-                      </span>
-                      <span className="block truncate text-[10px] text-slate-400">{reply.vi}</span>
+                      <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18" />
+                        <line x1="6" y1="6" x2="18" y2="18" />
+                      </svg>
                     </button>
-                  ))}
-                </div>
-              )}
+                  )}
 
-              {/* Gợi ý chủ đề hôm nay = danh sách scenario */}
-              <div className="mt-3">
-                <p className="mb-1.5 flex items-center gap-1.5 text-[11px] font-extrabold text-slate-500 dark:text-slate-400">
-                  <SparkleIcon className="h-3.5 w-3.5 text-rose-500" />
-                  Gợi ý chủ đề hôm nay
-                </p>
+                  <button
+                    type="button"
+                    onClick={() => handleSendMessage()}
+                    disabled={!input.trim() || loading}
+                    aria-label="Gửi tin nhắn"
+                    className={`grid h-10 w-10 shrink-0 place-items-center rounded-full bg-gradient-to-r from-[#ff3d6e] to-[#f0245a] text-white shadow-md shadow-rose-500/25 transition hover:brightness-105 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40 disabled:shadow-none sm:h-11 sm:w-auto sm:px-5 sm:inline-flex sm:items-center sm:gap-2 sm:rounded-full ${focusRing}`}
+                  >
+                    <span className="hidden sm:inline text-xs sm:text-sm font-black">Gửi</span>
+                    <SendIcon className="h-4 w-4" />
+                  </button>
+                </div>
+              </section>
+
+              {/* Gợi ý chủ đề nhanh (đặt bên ngoài khung chat để không chiếm diện tích tin nhắn) */}
+              <div className="rounded-2xl border border-white/70 bg-white/75 p-3 shadow-xs backdrop-blur dark:border-slate-800 dark:bg-sumi-900/75">
+                <div className="mb-2 flex items-center justify-between">
+                  <p className="flex items-center gap-1.5 text-xs font-extrabold text-slate-700 dark:text-slate-300">
+                    <SparkleIcon className="h-3.5 w-3.5 text-rose-500" />
+                    Chủ đề đàm thoại hôm nay
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setIsTopicModalOpen(true)}
+                    className="text-[11px] font-bold text-rose-600 hover:underline dark:text-rose-400"
+                  >
+                    Xem tất cả ({N3_KAIWA_SCENARIOS.length}) ↗
+                  </button>
+                </div>
                 <div className="no-scrollbar flex items-stretch gap-2 overflow-x-auto pb-1">
                   {N3_KAIWA_SCENARIOS.map((sc) => {
                     const on = selectedScenario.id === sc.id;
@@ -1066,7 +1203,7 @@ export function SenseiKaiwaClient({ recentLessons = [] }: SenseiKaiwaClientProps
                         type="button"
                         onClick={() => handleSelectScenario(sc)}
                         aria-pressed={on}
-                        className={`flex min-w-[170px] shrink-0 items-center justify-between gap-2 rounded-2xl border px-3 py-2 text-left transition ${focusRing} ${
+                        className={`flex min-w-[170px] shrink-0 items-center justify-between gap-2 rounded-xl border px-3 py-2 text-left transition ${focusRing} ${
                           on
                             ? "border-rose-300 bg-rose-50 dark:border-rose-900/60 dark:bg-rose-950/30"
                             : "border-slate-100 bg-white hover:border-rose-200 dark:border-slate-700 dark:bg-sumi-800"
@@ -1078,56 +1215,13 @@ export function SenseiKaiwaClient({ recentLessons = [] }: SenseiKaiwaClientProps
                             {sc.titleJa}
                           </span>
                         </span>
-                        <ChevronRight className="h-4 w-4 shrink-0 text-slate-400" />
+                        <ChevronRight className="h-3.5 w-3.5 shrink-0 text-slate-400" />
                       </button>
                     );
                   })}
                 </div>
               </div>
-
-              {/* Ô nhập */}
-              <div className="mt-3 flex items-center gap-2 rounded-full border border-slate-200 bg-white p-1.5 transition focus-within:border-rose-300 focus-within:ring-2 focus-within:ring-rose-500/20 dark:border-slate-700 dark:bg-sumi-950">
-                <button
-                  type="button"
-                  onClick={toggleListening}
-                  aria-pressed={isListening}
-                  aria-label={isListening ? "Đang thu âm — nhấn để dừng" : "Nói tiếng Nhật bằng micro"}
-                  title={isListening ? "Đang thu âm... Nhấn để dừng" : "Nhấn để nói tiếng Nhật (Micro)"}
-                  className={`grid h-11 w-11 shrink-0 place-items-center rounded-full transition ${focusRing} ${
-                    isListening
-                      ? "bg-rose-500 text-white shadow-md shadow-rose-500/30 motion-safe:animate-pulse"
-                      : "bg-rose-50 text-rose-500 hover:bg-rose-100 dark:bg-rose-950/40"
-                  }`}
-                >
-                  <MicIcon />
-                </button>
-
-                <input
-                  type="text"
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && !e.shiftKey) {
-                      e.preventDefault();
-                      handleSendMessage();
-                    }
-                  }}
-                  aria-label="Nhập câu tiếng Nhật"
-                  placeholder={isListening ? "Đang lắng nghe giọng nói tiếng Nhật..." : "Nhập tin nhắn hoặc nhấn giữ để nói..."}
-                  className="min-w-0 flex-1 bg-transparent px-1 py-2.5 font-jp text-base text-slate-900 outline-none placeholder:text-slate-400 dark:text-white sm:text-sm"
-                />
-
-                <button
-                  type="button"
-                  onClick={() => handleSendMessage()}
-                  disabled={!input.trim() || loading}
-                  className={`inline-flex h-11 shrink-0 items-center gap-2 rounded-full bg-gradient-to-r from-[#ff3d6e] to-[#f0245a] px-6 text-sm font-black text-white shadow-md shadow-rose-500/30 transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none ${focusRing}`}
-                >
-                  Gửi
-                  <SendIcon className="h-4 w-4" />
-                </button>
-              </div>
-            </section>
+            </div>
 
             {/* ═════════ CỘT PHẢI ═════════ */}
             <div className="lg:col-span-2 xl:col-span-1">
@@ -1154,6 +1248,67 @@ export function SenseiKaiwaClient({ recentLessons = [] }: SenseiKaiwaClientProps
                 </li>
               ))}
             </ul>
+          </Modal>
+
+          {/* Modal Chọn chủ đề đàm thoại N3 */}
+          <Modal isOpen={isTopicModalOpen} onClose={closeTopicModal} title="Chọn chủ đề đàm thoại N3" maxWidth="lg">
+            <div className="space-y-3">
+              <p className="text-xs text-slate-600 dark:text-slate-400">
+                Chọn một tình huống thực tế để cùng {character.nameRomaji} đàm thoại phản xạ:
+              </p>
+              <div className="no-scrollbar max-h-[60vh] space-y-2.5 overflow-y-auto pr-1">
+                {N3_KAIWA_SCENARIOS.map((sc) => {
+                  const on = selectedScenario.id === sc.id;
+                  return (
+                    <button
+                      key={sc.id}
+                      type="button"
+                      onClick={() => {
+                        handleSelectScenario(sc);
+                        closeTopicModal();
+                      }}
+                      className={`flex w-full items-start gap-3 rounded-2xl border p-3 text-left transition ${focusRing} ${
+                        on
+                          ? "border-rose-400 bg-rose-50/80 shadow-sm dark:border-rose-700 dark:bg-rose-950/40"
+                          : "border-slate-100 bg-white hover:border-rose-200 hover:bg-slate-50 dark:border-slate-800 dark:bg-sumi-800 dark:hover:bg-sumi-700"
+                      }`}
+                    >
+                      <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-white text-2xl shadow-sm dark:bg-sumi-900">
+                        {sc.icon}
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center justify-between gap-1">
+                          <h3 className="truncate text-xs sm:text-sm font-extrabold text-slate-900 dark:text-white">
+                            {sc.title}
+                          </h3>
+                          {on && (
+                            <span className="shrink-0 rounded-full bg-rose-500 px-2 py-0.5 text-[10px] font-bold text-white">
+                              Đang chọn
+                            </span>
+                          )}
+                        </div>
+                        <p lang="ja" className="font-jp text-[11px] font-medium text-slate-500 dark:text-slate-400">
+                          {sc.titleJa}
+                        </p>
+                        <p className="mt-1 text-[11px] leading-relaxed text-slate-600 dark:text-slate-300">
+                          {sc.description}
+                        </p>
+                        <div className="mt-2 flex flex-wrap gap-1">
+                          <span className="rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-bold text-slate-600 dark:bg-sumi-900 dark:text-slate-300">
+                            {sc.badge}
+                          </span>
+                          {sc.keyGrammar.slice(0, 2).map((g, gi) => (
+                            <span key={gi} className="rounded-md bg-rose-50 px-1.5 py-0.5 font-jp text-[10px] font-semibold text-rose-600 dark:bg-rose-950/50 dark:text-rose-300">
+                              {g.pattern}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
           </Modal>
 
 
