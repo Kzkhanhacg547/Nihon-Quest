@@ -78,10 +78,10 @@ export function LeaderboardClient({
                   {/* Bots are synthetic. Labelling them here stops the banner
                       from reading as a real person challenging the user. */}
                   <Badge variant="slate" className="shrink-0 text-[9px] uppercase tracking-wider">
-                    Học viên
+                    🤖 Đối thủ AI (Mô phỏng)
                   </Badge>
                   <span className="text-xs text-slate-500 dark:text-slate-400 font-bold">
-                    {directRival.bot.displayName || "Học viên ảo"}
+                    {directRival.bot.displayName || "Đối thủ AI"}
                   </span>
                 </div>
                 <h4 className="font-black text-sm sm:text-base text-slate-900 dark:text-white">
@@ -190,7 +190,11 @@ export function LeaderboardClient({
                     <Badge variant={rank <= 3 ? "amber" : "slate"} className="text-[10px] shrink-0">
                       {tier.name}
                     </Badge>
-                   
+                    {user.isBot && (
+                      <Badge variant="slate" className="text-[10px] shrink-0">
+                        🤖 Đối thủ AI
+                      </Badge>
+                    )}
                   </div>
                   <div className="flex items-center gap-2.5 mt-0.5 text-xs text-slate-500 font-medium">
                     <span>🎯 Lv.{user.level}</span>
@@ -224,13 +228,12 @@ export function LeaderboardClient({
             <p className="text-xs text-slate-500 mt-1">Hãy hoàn thành một bài học hoặc ôn tập để dẫn đầu bảng xếp hạng！🌸</p>
           </Card>
         )}
-  
-        {/*users.some((u) => u.isBot) && (
-          <p className="text-[11px] leading-relaxed text-slate-500 dark:text-slate-400">
-            Các học viên có nhãn <b>BOT ảo</b> là nhân vật do hệ thống tạo ra để luyện cạnh tranh —
-            không phải người dùng thật. Thứ hạng và XP của họ không phản ánh hoạt động của người thật.
+
+        {users.some((u) => u.isBot) && (
+          <p className="rounded-xl border border-slate-200/80 bg-slate-50/70 px-3.5 py-2.5 text-[11px] leading-relaxed text-slate-500 dark:border-slate-800 dark:bg-sumi-900/60 dark:text-slate-400">
+            💡 Các tài khoản có nhãn <b>🤖 Đối thủ AI</b> là nhân vật mô phỏng do hệ thống tạo ra để duy trì nhịp độ luyện tập cạnh tranh — không phải người dùng thật.
           </p>
-        )*/} 
+        )}
       </div>
     </div>
   );

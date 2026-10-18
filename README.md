@@ -115,10 +115,10 @@
 | **Giao diện** | React 18, Tailwind CSS | UI components tinh chỉnh, responsive đa thiết bị |
 | **Đồ họa & 3D** | HTML5 Canvas, Three.js | Vẽ nét Kana/Kanji, render phòng 3D tương tác |
 | **Ngôn ngữ** | TypeScript 5.5 | Type-safe toàn dự án |
-| **Cơ sở dữ liệu** | SQLite (Dev) / PostgreSQL (Prod) | Zero-config cho môi trường phát triển |
-| **ORM** | Prisma 5.18.0 | Type-safe queries, migrations, seeding tự động |
-| **Xác thực** | NextAuth.js v4 + Prisma Adapter | Email/Password (bcrypt), JWT session |
-| **Kiểm thử** | Vitest 2.0 | Unit tests cho SRS, Level, Streak, Quiz |
+| **Cơ sở dữ liệu** | PostgreSQL | Quản lý qua `DATABASE_URL` và `DIRECT_URL` (hỗ trợ Neon / Supabase / Local Postgres) |
+| **ORM** | Prisma 5.18.0 | Type-safe queries, migrations, seeding idempotent |
+| **Xác thực & Bảo mật** | NextAuth.js v4 + Upstash Rate Limit | Email/Password (`bcryptjs`), Google OAuth, OTP 6 số, Rate Limiting phân tán |
+| **Kiểm thử** | Vitest 2.0 | Unit & regression tests cho Auth, SRS, Learning Level, Japanese Content, Quiz |
 | **Validation** | Zod 3.23 | Schema validation cho form và API payloads |
 
 ---
@@ -126,49 +126,56 @@
 ## 📁 Cấu trúc thư mục
 
 ```plaintext
-SSA-GR3-/
+nihonquest/
 ├── app/                           # Next.js 14 App Router
 │   ├── api/                       # REST API Route Handlers
-│   │   ├── account/               # Thông tin tài khoản & đổi mật khẩu
-│   │   ├── auth/[...nextauth]/    # Endpoints xác thực NextAuth
-│   │   ├── journey/               # Tiến độ mở khóa bản đồ
+│   │   ├── account/               # Thông tin tài khoản, cấp độ JLPT & đổi mật khẩu
+│   │   ├── auth/                  # NextAuth, đăng ký, gửi OTP & đặt lại mật khẩu
+│   │   ├── journey/               # Tiến độ mở khóa bản đồ Nhật Bản
 │   │   ├── kana/                  # Dữ liệu & lịch sử tập viết Kana
-│   │   ├── lessons/               # Bài học & nộp bài kiểm tra
+│   │   ├── learning-path/         # Lộ trình cá nhân hóa theo cấp độ JLPT
+│   │   ├── lessons/               # Bài học, kiểm tra quyền truy cập & nộp bài
 │   │   ├── review/                # Thuật toán & tương tác SRS
-│   │   └── ...                    # Các API khác
+│   │   └── ...                    # Các API khác (AI Sensei, Exams, Documents)
 │   ├── app/                       # Ứng dụng chính sau khi đăng nhập
-│   │   ├── grammar/               # Ngữ pháp N5 - N3
-│   │   ├── journey/               # Bản đồ hành trình
-│   │   ├── leaderboard/           # Bảng xếp hạng
-│   │   ├── learn/                 # Kana Lab & luyện nét viết
-│   │   ├── practice/              # Bài tập & Quiz Runner
-│   │   ├── profile/               # Trang cá nhân, bảo mật
+│   │   ├── grammar/               # Ngữ pháp JLPT N5 - N3
+│   │   ├── journey/               # Bản đồ hành trình Nhật Bản
+│   │   ├── leaderboard/           # Bảng xếp hạng (học viên & đối thủ AI mô phỏng)
+│   │   ├── learn/                 # Bảng chữ cái Kana & luyện nét viết
+│   │   ├── path/                  # Lộ trình học tập cá nhân hóa
+│   │   ├── practice/              # Bài học & Quiz Runner theo cấp độ
+│   │   ├── profile/               # Hồ sơ cá nhân & bảo mật
 │   │   ├── review/                # Trung tâm ôn tập SRS
-│   │   ├── sensei/                # AI Sensei Chat
-│   │   ├── survival/              # Tình huống sinh tồn
-│   │   └── vocabulary/            # Từ điển từ vựng & chữ Hán
+│   │   ├── sensei/                # Hội thoại AI Sensei
+│   │   ├── settings/              # Cài đặt cấp độ JLPT, giao diện & âm thanh
+│   │   ├── survival/              # Thực chiến tiếng Nhật (Survival)
+│   │   ├── test/                  # Kiểm tra năng lực 4 kỹ năng JLPT
+│   │   └── vocabulary/            # Từ điển Từ vựng & Chữ Hán (Phiên âm | Chữ Nhật | Nghĩa)
 │   ├── layout.tsx                 # Root layout, Fonts & Providers
 │   └── page.tsx                   # Landing page
 ├── components/                    # React Components tái sử dụng
-│   ├── AppNav.tsx                 # Thanh điều hướng
-│   ├── Japanese3DRoom.tsx         # Phòng 3D Nhật Bản
+│   ├── AppNav.tsx                 # Thanh điều hướng hợp nhất
+│   ├── JapaneseTerm.tsx           # Hiển thị Furigana chuẩn <ruby><rt> & cấu trúc Phiên âm | Chữ Nhật | Nghĩa
 │   ├── KanaCanvas.tsx             # Canvas tập viết chữ
-│   ├── SoundAndThemeContext.tsx   # Âm thanh & giao diện Sáng/Tối
+│   ├── SoundAndThemeContext.tsx   # Âm thanh, TTS & giao diện Sáng/Tối
 │   └── ui.tsx                     # Button, Card, Dialog, Badge...
+├── docs/
+│   └── CONTENT_PROVENANCE.md      # Chuẩn trình bày tiếng Nhật & nguồn gốc học liệu
 ├── lib/                           # Logic cốt lõi & pure functions
-│   ├── auth.ts                    # Cấu hình NextAuth & session helper
-│   ├── level.ts                   # Tính XP & cấp độ
-│   ├── prisma.ts                  # Prisma Client singleton
-│   ├── quiz.ts                    # Bộ sinh đề trắc nghiệm
-│   ├── srs.ts                     # Thuật toán SRS
+│   ├── auth-options.ts            # Cấu hình NextAuth & bảo mật phiên
+│   ├── auth-secret.ts             # Kiểm tra bắt buộc NEXTAUTH_SECRET trên Production
+│   ├── learning-level.ts          # Nguồn sự thật duy nhất (Single Source of Truth) cho cấp độ JLPT & phân quyền bài học
+│   ├── missionDay.ts              # Quản lý ngày học theo múi giờ & hoàn thành nhiệm vụ hàng ngày
+│   ├── progress-service.ts        # Đồng bộ XP, Level, Streak & Thành tựu
+│   ├── rateLimit.ts               # Rate limit bộ nhớ đệm + Upstash Redis REST cho Serverless
+│   ├── srs.ts                     # Thuật toán lặp lại ngắt quãng (SRS)
 │   └── streak.ts                  # Quản lý chuỗi ngày học
 ├── prisma/
-│   ├── migrations/                # Lịch sử lược đồ CSDL
-│   ├── schema.prisma              # Định nghĩa models
-│   ├── seed.ts                    # Script nạp dữ liệu mẫu
-│   └── seed-data/                 # Dữ liệu Kana, Từ vựng, Ngữ pháp, Bài học
-├── scripts/                       # Tiện ích (cleanup, check db)
-└── vitest.config.ts               # Cấu hình Unit Tests
+│   ├── migrations/                # Lịch sử lược đồ CSDL PostgreSQL
+│   ├── schema.prisma              # Định nghĩa models & composite indexes
+│   ├── seed.ts                    # Script nạp dữ liệu mẫu idempotent
+│   └── seed-data/                 # Dữ liệu Kana, Từ vựng, Kanji, Ngữ pháp, Bài học (N5 - N3)
+└── vitest.config.ts               # Cấu hình Unit & Regression Tests
 ```
 
 ---
@@ -178,7 +185,8 @@ SSA-GR3-/
 | Công cụ | Phiên bản |
 | :--- | :--- |
 | **Node.js** | ≥ 18.17.0 (khuyến nghị **20 LTS**) |
-| **Package manager** | `npm` (đi kèm Node.js), `yarn` hoặc `pnpm` |
+| **PostgreSQL** | ≥ 14 (Local PostgreSQL hoặc Cloud như Neon / Supabase) |
+| **Package manager** | `npm` (đi kèm Node.js) |
 | **Git** | Bản mới |
 
 Kiểm tra phiên bản:
@@ -231,17 +239,17 @@ cp .env.example .env
 </tr>
 </table>
 
-> 💡 Mặc định dự án dùng **SQLite** cục bộ (`DATABASE_URL="file:./dev.db"`), không cần cài thêm MySQL hay PostgreSQL.
+> 💡 Dự án sử dụng **PostgreSQL** (`provider = "postgresql"` trong `prisma/schema.prisma`). Hãy cập nhật `DATABASE_URL` và `DIRECT_URL` trong `.env` trỏ tới PostgreSQL cục bộ hoặc Neon/Supabase trước khi chạy migration.
 
-### Bước 4 — Setup database và seed dữ liệu
+### Bước 4 — Đồng bộ database và seed dữ liệu
 
-Dùng cho repo mới hoặc khi database thiếu dữ liệu. Script chạy idempotent (chạy lại nhiều lần vẫn an toàn):
+Dùng cho môi trường mới hoặc khi cần cập nhật dữ liệu mẫu. Script chạy idempotent (bảo toàn dữ liệu người dùng hiện có):
 
 ```bash
 npm run setup
 ```
 
-Sau khi xong, CSDL có sẵn hàng ngàn từ vựng, chữ cái, bài học và dữ liệu nền từ N5 đến N3.
+Sau khi xong, CSDL có sẵn hệ thống Kana, 434 từ vựng, 260 chữ Hán (Kanji), 99 cấu trúc ngữ pháp và các bài học từ N5 đến N3.
 
 ### Bước 5 — Chạy development server
 
@@ -251,42 +259,27 @@ npm run dev
 
 👉 Mở trình duyệt: **http://localhost:3000**
 
-> 🔄 `npm run dev` và `npm run build` đều tự chạy `prisma migrate deploy` và `db:seed` trước khi khởi động, nên dữ liệu luôn đồng bộ sau mỗi lần restart.
-
-<details>
-<summary><b>Cách thay thế: chạy từng lệnh thủ công</b></summary>
-
-```bash
-npm install
-npx prisma generate
-npx prisma migrate deploy
-npm run db:seed   # nếu cần seed dữ liệu ban đầu
-npm run dev
-```
-
-</details>
-
 ---
 
 ## 🔑 Cấu hình biến môi trường
 
-Nội dung cơ bản của file `.env`:
+Xem đầy đủ các biến môi trường và hướng dẫn trong file [`.env.example`](file:///d:/Projects/nihonquest/.env.example):
 
 ```env
-# 1. Cơ sở dữ liệu mặc định (SQLite cho môi trường Dev)
-DATABASE_URL="file:./dev.db"
+# 1. Cơ sở dữ liệu PostgreSQL (Bắt buộc)
+DATABASE_URL="postgresql://postgres:postgres@localhost:5432/nihonquest?schema=public"
+DIRECT_URL="postgresql://postgres:postgres@localhost:5432/nihonquest?schema=public"
 
-# 2. Cấu hình NextAuth
+# 2. Cấu hình NextAuth (Bắt buộc >= 32 ký tự trên Production)
 NEXTAUTH_URL="http://localhost:3000"
-NEXTAUTH_SECRET="dev-only-change-me-min-32-chars-long-secret"
+NEXTAUTH_SECRET="replace-with-at-least-32-bytes-of-high-entropy-secret"
 
-# 3. Production (PostgreSQL)
-# DATABASE_URL="postgresql://username:password@localhost:5432/nihon_quest?schema=public"
-# NEXTAUTH_URL="https://your-domain.com"
-# NEXTAUTH_SECRET="chuoi-bi-mat-dai-sinh-bang-openssl"
+# 3. Tùy chọn: Upstash Redis cho Rate Limiting phân tán (Multi-instance / Serverless)
+# UPSTASH_REDIS_REST_URL="https://your-instance.upstash.io"
+# UPSTASH_REDIS_REST_TOKEN="your-upstash-rest-token"
 ```
 
-> 🔐 **Tạo `NEXTAUTH_SECRET` ngẫu nhiên:**
+> 🔐 **Tạo `NEXTAUTH_SECRET` ngẫu nhiên an toàn:**
 >
 > ```bash
 > openssl rand -base64 32
@@ -302,7 +295,7 @@ NEXTAUTH_SECRET="dev-only-change-me-min-32-chars-long-secret"
 npm run db:studio
 ```
 
-Truy cập http://localhost:5555 để xem các bảng: `User`, `Lesson`, `Vocabulary`, `Grammar`, `Kana`, `ReviewItem`…
+Truy cập http://localhost:5555 để xem các bảng: `User`, `Lesson`, `Vocabulary`, `Kanji`, `Grammar`, `Kana`, `ReviewItem`…
 
 **Nạp lại dữ liệu bài học và từ vựng (idempotent):**
 
@@ -310,24 +303,24 @@ Truy cập http://localhost:5555 để xem các bảng: `User`, `Lesson`, `Vocab
 npm run db:seed
 ```
 
-**Tài khoản thử nghiệm:** đăng ký trực tiếp tại trang `/register`. Mật khẩu được băm an toàn bằng `bcryptjs`.
-
 ---
 
 ## 📜 Danh sách lệnh scripts
 
 | Lệnh | Công dụng |
 | :--- | :--- |
-| `npm run setup` | Cài đặt, đồng bộ database và seed dữ liệu mẫu |
+| `npm run setup` | Cài đặt, generate Prisma Client, chạy `prisma migrate deploy` và seed dữ liệu mẫu |
 | `npm run dev` | Chạy dev server tại cổng 3000 |
-| `npm run build` | Tạo bản build production |
+| `npm run build` | Generate Prisma Client và tạo bản build production (`next build`) |
+| `npm run build:deploy` | Generate Prisma Client, chạy `prisma migrate deploy` và build production |
 | `npm run start` | Chạy bản build production |
 | `npm run typecheck` | Kiểm tra kiểu TypeScript (`tsc --noEmit`) |
-| `npm test` | Chạy Unit Tests với Vitest |
+| `npm test` | Chạy toàn bộ Unit & Regression Tests với Vitest |
 | `npm run test:watch` | Chạy Unit Tests ở chế độ watch |
 | `npm run lint` | Kiểm tra code với Next.js ESLint |
-| `npm run db:migrate` | Tạo và áp dụng migration Prisma mới |
-| `npm run db:seed` | Nạp dữ liệu học tập vào CSDL |
+| `npm run db:migrate` | Tạo và áp dụng migration Prisma mới (`prisma migrate dev`) |
+| `npm run db:deploy` | Áp dụng các migration đã có lên CSDL (`prisma migrate deploy`) |
+| `npm run db:seed` | Nạp dữ liệu học tập vào CSDL (idempotent) |
 | `npm run db:studio` | Mở Prisma Studio |
 
 ---

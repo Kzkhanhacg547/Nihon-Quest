@@ -1,43 +1,22 @@
-import fs from "node:fs";
-import path from "node:path";
 import Image from "next/image";
 import Link from "next/link";
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 import { authOptions } from "@/lib/auth-options";
 import { prisma } from "@/lib/prisma";
+import { resolveCanonicalUserLevel } from "@/lib/learning-level";
 import { BASE64_IMAGES, LEVEL_IMAGES } from "@/lib/assets/base64Images";
 import { AppNav } from "@/components/AppNav";
 import { GrammarClient } from "./GrammarClient";
 
 export const metadata = { title: "Ngữ Pháp JLPT — Nihon Quest" };
-// Mỗi lần tải trang sẽ xáo ảnh cấp độ lại từ đầu
 export const dynamic = "force-dynamic";
 
-const IMG_EXT = /\.(webp|jpe?g|png|avif)$/i;
 const LEVELS = ["N5", "N4", "N3"] as const;
 
-/**
- * Đọc toàn bộ ảnh trong public/images/level, xáo trộn (Fisher-Yates),
- * rồi gán cho N5/N4/N3 để 3 thẻ không trùng ảnh trong cùng một lần hiển thị.
- * Chạy ở server nên kết quả được truyền xuống client dưới dạng props
- * -> không bị lệch hydration và không đổi ảnh khi re-render.
- */
 function pickLevelImages(): Record<(typeof LEVELS)[number], string | null> {
-  const dir = path.join(process.cwd(), "public", "images", "level");
-  let files: string[] = [];
-  try {
-    files = fs.readdirSync(dir).filter((f) => IMG_EXT.test(f));
-  } catch {
-    files = [];
-  }
-  for (let i = files.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [files[i], files[j]] = [files[j], files[i]];
-  }
   const result = {} as Record<(typeof LEVELS)[number], string | null>;
   LEVELS.forEach((lv, i) => {
-    // Nếu thư mục có ít hơn 3 ảnh thì buộc phải lặp lại
     result[lv] = LEVEL_IMAGES[i % LEVEL_IMAGES.length] || null;
   });
   return result;
@@ -50,9 +29,9 @@ export default async function GrammarPage() {
 
   const user = await prisma.user.findUnique({
     where: { id: uid },
-    select: { learningLevel: true, name: true },
+    select: { learningLevel: true, levelChoice: true, name: true },
   });
-  const userLevel = user?.learningLevel ?? "N5";
+  const userLevel = resolveCanonicalUserLevel(user);
   const displayName = user?.name ?? session?.user?.name ?? "bạn";
 
   // Chỉ hỗ trợ N5, N4, N3
@@ -96,7 +75,7 @@ export default async function GrammarPage() {
 
           <div className="relative px-6 py-10 sm:px-10 sm:py-14 lg:py-16">
             <p className="mb-4 text-xs font-bold tracking-[0.14em] text-white/80">
-              <span className="border-b-2 border-red-500 pb-0.5">CHÀO MỪNG BẠN ĐẾN VỚI NIHONGUEST</span>
+              <span className="border-b-2 border-red-500 pb-0.5">CHÀO MỪNG BẠN ĐẾN VỚI NIHON QUEST</span>
             </p>
             <h1 className="max-w-xl text-[clamp(2rem,7.5vw,3.5rem)] font-black leading-[1.08] tracking-tight text-white">
               Từ vựng, Hán tự,

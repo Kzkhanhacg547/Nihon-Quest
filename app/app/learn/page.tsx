@@ -4,6 +4,7 @@ import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 import { authOptions } from "@/lib/auth-options";
 import { prisma } from "@/lib/prisma";
+import { resolveCanonicalUserLevel } from "@/lib/learning-level";
 import { AppNav } from "@/components/AppNav";
 import { JapanBackdrop } from "@/components/JapanIllustration";
 import { SceneArt } from "@/components/SceneArt";
@@ -18,8 +19,11 @@ export default async function LearnPage() {
   const uid = (session?.user as { id?: string } | undefined)?.id;
   if (!uid) redirect("/login");
 
-  const user = await prisma.user.findUnique({ where: { id: uid }, select: { learningLevel: true } });
-  const level = user?.learningLevel || "N5";
+  const user = await prisma.user.findUnique({
+    where: { id: uid },
+    select: { learningLevel: true, levelChoice: true },
+  });
+  const level = resolveCanonicalUserLevel(user);
   const kana = await prisma.kana.findMany({ orderBy: [{ script: "asc" }, { row: "asc" }, { romaji: "asc" }] });
   const practiced = await prisma.reviewItem.findMany({ where: { userId: uid, contentType: "KANA" } });
   const done = new Set(practiced.map((p) => p.contentId));

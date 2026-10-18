@@ -24,6 +24,12 @@ export async function POST(req: Request) {
   } else if (contentType === "KANJI") {
     const k = await prisma.kanji.findUnique({ where: { id: contentId } });
     if (!k) return NextResponse.json({ error: "Không tìm thấy Hán tự." }, { status: 404 });
+  } else if (contentType === "KANA") {
+    const [script, character] = contentId.includes(":") ? contentId.split(":") : ["", contentId];
+    const ka = script
+      ? await prisma.kana.findUnique({ where: { character_script: { character, script } } })
+      : await prisma.kana.findFirst({ where: { OR: [{ id: contentId }, { character }] } });
+    if (!ka) return NextResponse.json({ error: "Không tìm thấy Kana." }, { status: 404 });
   }
 
   const now = new Date();

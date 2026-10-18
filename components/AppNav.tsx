@@ -24,33 +24,43 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { href: "/app", label: "Dashboard", icon: "dashboard", short: "Home" },
-  { href: "/app/path", label: "Lộ trình", glyph: "道", short: "Đường" },
-  { href: "/app/practice", label: "Bài Học", icon: "book", short: "Học" },
-  { href: "/app/review", label: "Ôn Tập", icon: "cards", short: "Ôn" },
-  { href: "/app/vocabulary", label: "Từ Vựng", glyph: "あ", short: "Từ" },
-  { href: "/app/grammar", label: "Ngữ Pháp", glyph: "文", short: "Ngữ" },
+  { href: "/app", label: "Tổng quan", icon: "dashboard", short: "Tổng quan" },
+  { href: "/app/path", label: "Lộ trình", glyph: "道", short: "Lộ trình" },
+  { href: "/app/practice", label: "Bài học", icon: "book", short: "Bài học" },
+  { href: "/app/review", label: "Ôn tập", icon: "cards", short: "Ôn tập" },
+  { href: "/app/vocabulary", label: "Từ vựng", glyph: "あ", short: "Từ vựng" },
+  { href: "/app/grammar", label: "Ngữ pháp", glyph: "文", short: "Ngữ pháp" },
 ];
 
-const MORE_ITEMS: NavItem[] = [
-  { href: "/app/yokai-dash", label: "Yōkai Dash (Mini Game)", glyph: "狐", short: "Dash" },
-  { href: "/app/survival", label: "Survival Mode (Sinh tồn)", glyph: "食", short: "Sinh tồn" },
-  { href: "/app/test", label: "Kiểm tra năng lực (4 kỹ năng)", glyph: "★", short: "Test" },
-  { href: "/app/journey", label: "Hành trình Nhật Bản", glyph: "⌁", short: "Trình" },
-  { href: "/app/learn", label: "Kana Lab & Tổng quan", glyph: "学", short: "Kana" },
-  { href: "/app/sensei", label: "AI Kaiwa Sensei", glyph: "話", short: "Sensei" },
-  { href: "/app/achievements", label: "Huy hiệu & Thành tựu", glyph: "🏆", short: "Huy hiệu" },
-  { href: "/app/leaderboard", label: "Bảng xếp hạng", glyph: "杯", short: "BXH" },
-  { href: "/app/analytics", label: "Đánh giá tiến bộ (Chu trình 8 bước)", glyph: "進", short: "Tiến bộ" },
-  { href: "/app/stats", label: "Thống kê học tập", glyph: "計", short: "Thống kê" },
+const MORE_GROUPS: { title: string; items: NavItem[] }[] = [
   {
-    href: "/app/profile",
-    label: "Hồ sơ & Cài đặt tài khoản",
-    glyph: "人",
-    short: "Tài khoản",
-    matchPrefixes: ["/app/profile", "/app/settings"],
+    title: "Luyện tập & Kiểm tra",
+    items: [
+      { href: "/app/test", label: "Kiểm tra năng lực (4 kỹ năng)", glyph: "★", short: "Kiểm tra" },
+      { href: "/app/learn", label: "Bảng chữ cái Kana & Tổng quan", glyph: "学", short: "Kana" },
+      { href: "/app/sensei", label: "Hội thoại AI Sensei", glyph: "話", short: "Sensei" },
+    ],
+  },
+  {
+    title: "Tiến độ & Cộng đồng",
+    items: [
+      { href: "/app/analytics", label: "Đánh giá tiến bộ (Chu trình 8 bước)", glyph: "進", short: "Tiến bộ" },
+      { href: "/app/stats", label: "Thống kê học tập", glyph: "計", short: "Thống kê" },
+      { href: "/app/leaderboard", label: "Bảng xếp hạng", glyph: "杯", short: "BXH" },
+      { href: "/app/achievements", label: "Huy hiệu & Thành tựu", glyph: "🏆", short: "Huy hiệu" },
+    ],
+  },
+  {
+    title: "Trò chơi & Khám phá",
+    items: [
+      { href: "/app/journey", label: "Hành trình Nhật Bản", glyph: "⌁", short: "Hành trình" },
+      { href: "/app/survival", label: "Thực chiến tiếng Nhật (Survival)", glyph: "食", short: "Thực chiến" },
+      { href: "/app/yokai-dash", label: "Mini-game Yōkai Dash", glyph: "狐", short: "Yōkai Dash" },
+    ],
   },
 ];
+
+const MORE_ITEMS: NavItem[] = MORE_GROUPS.flatMap((g) => g.items);
 
 function NavGlyph({ item }: { item: NavItem }) {
   if (item.icon) return <Icon name={item.icon} className="h-[18px] w-[18px]" />;
@@ -233,32 +243,38 @@ export function AppNav({
                 aria-haspopup="true"
               >
                 <Icon name="bookmark" className="h-[18px] w-[18px]" />
-                <span>Khám Phá</span>
+                <span>Khám phá</span>
                 <Icon name="chevron" className={`h-3.5 w-3.5 transition ${moreOpen ? "rotate-180" : ""}`} />
               </button>
               {moreOpen && (
-                <div className="absolute left-0 top-12 z-50 w-72 rounded-2xl border border-slate-200 bg-white p-2 shadow-xl dark:border-slate-700 dark:bg-sumi-900">
-                  <p className="px-3 pb-1.5 pt-2 text-[11px] font-bold tracking-wider text-slate-400">Không gian khám phá</p>
-                  {MORE_ITEMS.map((item) => (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      onClick={() => {
-                        playClick();
-                        setMoreOpen(false);
-                      }}
-                      className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition ${
-                        active(item.href, item.matchPrefixes)
-                          ? "bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-300"
-                          : "text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-sumi-800"
-                      }`}
-                    >
-                      <span className="jp-text inline-flex h-7 w-7 items-center justify-center rounded-lg bg-slate-100 text-sm font-bold dark:bg-sumi-800">
-                        {item.glyph}
-                      </span>
-                      <b className="flex-1 font-semibold">{item.label}</b>
-                      <Icon name="arrow" className="h-3.5 w-3.5 text-slate-400" />
-                    </Link>
+                <div className="absolute left-0 top-12 z-50 max-h-[80vh] w-80 overflow-y-auto rounded-2xl border border-slate-200 bg-white p-2 shadow-xl dark:border-slate-700 dark:bg-sumi-900">
+                  {MORE_GROUPS.map((group, gIdx) => (
+                    <div key={group.title} className={gIdx > 0 ? "mt-2 border-t border-slate-100 pt-1 dark:border-slate-800" : ""}>
+                      <p className="px-3 pb-1 pt-1.5 text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
+                        {group.title}
+                      </p>
+                      {group.items.map((item) => (
+                        <Link
+                          key={item.href}
+                          href={item.href}
+                          onClick={() => {
+                            playClick();
+                            setMoreOpen(false);
+                          }}
+                          className={`flex items-center gap-3 rounded-xl px-3 py-2 text-sm transition ${
+                            active(item.href, item.matchPrefixes)
+                              ? "bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-300"
+                              : "text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-sumi-800"
+                          }`}
+                        >
+                          <span className="jp-text inline-flex h-7 w-7 items-center justify-center rounded-lg bg-slate-100 text-sm font-bold dark:bg-sumi-800">
+                            {item.glyph}
+                          </span>
+                          <b className="flex-1 font-semibold">{item.label}</b>
+                          <Icon name="arrow" className="h-3.5 w-3.5 text-slate-400" />
+                        </Link>
+                      ))}
+                    </div>
                   ))}
                 </div>
               )}
@@ -591,30 +607,34 @@ export function AppNav({
               </Link>
             ))}
 
-            <p className="px-2 pb-1 pt-3 text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
-              Mini Game, Kiểm tra &amp; Khám phá
-            </p>
-            {MORE_ITEMS.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                aria-current={active(item.href, item.matchPrefixes) ? "page" : undefined}
-                onClick={() => {
-                  playClick();
-                  setMobileOpen(false);
-                }}
-                className={`flex min-h-[48px] items-center gap-3 rounded-xl px-3 py-2 text-sm font-semibold transition active:scale-[0.98] ${
-                  active(item.href, item.matchPrefixes)
-                    ? "bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-300"
-                    : "text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-sumi-800"
-                }`}
-              >
-                <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center">
-                  <NavGlyph item={item} />
-                </span>
-                <span className="flex-1">{item.label}</span>
-                <Icon name="arrow" className="h-3.5 w-3.5 shrink-0 text-slate-400" />
-              </Link>
+            {MORE_GROUPS.map((group) => (
+              <div key={group.title}>
+                <p className="px-2 pb-1 pt-3 text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
+                  {group.title}
+                </p>
+                {group.items.map((item) => (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    aria-current={active(item.href, item.matchPrefixes) ? "page" : undefined}
+                    onClick={() => {
+                      playClick();
+                      setMobileOpen(false);
+                    }}
+                    className={`flex min-h-[48px] items-center gap-3 rounded-xl px-3 py-2 text-sm font-semibold transition active:scale-[0.98] ${
+                      active(item.href, item.matchPrefixes)
+                        ? "bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-300"
+                        : "text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-sumi-800"
+                    }`}
+                  >
+                    <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center">
+                      <NavGlyph item={item} />
+                    </span>
+                    <span className="flex-1">{item.label}</span>
+                    <Icon name="arrow" className="h-3.5 w-3.5 shrink-0 text-slate-400" />
+                  </Link>
+                ))}
+              </div>
             ))}
           </div>
         </div>

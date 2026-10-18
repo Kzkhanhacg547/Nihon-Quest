@@ -251,14 +251,47 @@ async function main() {
     };
 
     // -----------------------------------------------------------------------
-    // STEP 1: KANJI DEDUPLICATION & IMPORT
+    // STEP 1: KANJI DEDUPLICATION, RECONCILIATION & IMPORT
     // -----------------------------------------------------------------------
     const kanjiToCreate: typeof payload.kanjiNew = [];
     for (const ck of payload.kanjiNew) {
       const ch = normText(ck.character);
       if (!ch) continue;
-      if (kanjiByChar.has(ch)) {
-        stats.kanji.duplicate++;
+      const existingK = kanjiByChar.get(ch);
+      if (existingK) {
+        const nextMeaning = normText(ck.meaning);
+        const nextStroke = ck.strokeCount || existingK.strokeCount;
+        const needsMeaningOrStrokeUpdate =
+          existingK.meaning !== nextMeaning || existingK.strokeCount !== nextStroke;
+        const needsReadings =
+          (!existingK.readings || existingK.readings.length === 0) &&
+          Array.isArray(ck.readings) &&
+          ck.readings.length > 0;
+
+        if (needsMeaningOrStrokeUpdate || needsReadings) {
+          stats.kanji.updated++;
+          if (!isDryRun && existingK.id !== "pending") {
+            await prisma.kanji.update({
+              where: { id: existingK.id },
+              data: {
+                meaning: nextMeaning,
+                strokeCount: nextStroke,
+              },
+            });
+            if (needsReadings) {
+              await prisma.kanjiReading.deleteMany({ where: { kanjiId: existingK.id } });
+              await prisma.kanjiReading.createMany({
+                data: ck.readings.map((r) => ({
+                  kanjiId: existingK.id,
+                  reading: r.reading,
+                  type: r.type || "KUN",
+                })),
+              });
+            }
+          }
+        } else {
+          stats.kanji.duplicate++;
+        }
       } else {
         stats.kanji.new++;
         kanjiToCreate.push(ck);
@@ -301,6 +334,55 @@ async function main() {
     // -----------------------------------------------------------------------
     // STEP 2: VOCABULARY DEDUPLICATION, UPDATE ENRICHMENT & IMPORT
     // -----------------------------------------------------------------------
+    // Also index legacy uncleaned forms (e.g. "が 壊れる", "~辺", "奇麗 (な)") to existing records
+    for (const v of existingVocab) {
+      const strippedParticleWord = v.word.replace(/^(が|を|に|へ|で|と)\s+/, "").trim();
+      const strippedNaWord = strippedParticleWord.replace(/\s*[（(]な[)）]$/, "").trim();
+      const strippedKana = v.kana.replace(/^(が|を|に)\s+/, "").trim();
+      if (strippedNaWord !== v.word) {
+        vocabByWordKana.set(`${normJpKey(strippedNaWord)}|${normJpKey(strippedKana)}`, v);
+        if (!vocabByWord.has(normJpKey(strippedNaWord))) {
+          vocabByWord.set(normJpKey(strippedNaWord), v);
+        }
+      }
+      if (v.word === "形" && v.kana === "ちから") {
+        if (!vocabByWordKana.has(`${normJpKey("格好")}|${normJpKey("かっこう")}`)) {
+          vocabByWordKana.set(`${normJpKey("格好")}|${normJpKey("かっこう")}`, v);
+        }
+      }
+      if (v.word === "が つく") {
+        vocabByWordKana.set(`${normJpKey("点く")}|${normJpKey("つく")}`, v);
+      }
+      if (v.word === "が すく") {
+        vocabByWordKana.set(`${normJpKey("空く")}|${normJpKey("すく")}`, v);
+      }
+      if (v.word === "明後日" && v.kana === "あした") {
+        vocabByWordKana.set(`${normJpKey("明後日")}|${normJpKey("あさって")}`, v);
+      }
+      if (v.word === "お知らせ" && v.kana === "しらせる") {
+        vocabByWordKana.set(`${normJpKey("お知らせ")}|${normJpKey("おしらせ")}`, v);
+      }
+      if (v.word === "検査" && v.kana === "ちょうさ") {
+        vocabByWordKana.set(`${normJpKey("検査")}|${normJpKey("けんさ")}`, v);
+      }
+    }
+
+    // Remove orphaned bogus duplicate "形" (kana="ちから") if "格好" already exists
+    const bogusKatachi = existingVocab.find((v) => v.word === "形" && v.kana === "ちから");
+    const validKakkou = existingVocab.find((v) => v.word === "格好" && v.kana === "かっこう");
+    if (bogusKatachi && validKakkou && !isDryRun) {
+      await prisma.lessonItem.updateMany({
+        where: { contentType: "VOCAB", contentId: bogusKatachi.id },
+        data: { contentId: validKakkou.id },
+      });
+      await prisma.reviewItem.updateMany({
+        where: { contentType: "VOCAB", contentId: bogusKatachi.id },
+        data: { contentId: validKakkou.id },
+      });
+      await prisma.vocabularyExample.deleteMany({ where: { vocabularyId: bogusKatachi.id } });
+      await prisma.vocabulary.delete({ where: { id: bogusKatachi.id } });
+    }
+
     // 2a. Enrich UPDATE_CANDIDATE records (e.g., adding FPT JPD tags or missing Kanji)
     for (const upd of payload.vocabUpdates) {
       const kFull = `${normJpKey(upd.item.word)}|${normJpKey(upd.item.kana)}`;
@@ -335,19 +417,97 @@ async function main() {
       }
     }
 
-    // 2b. Insert NEW Vocabulary records
+    // 2b. Reconcile or Insert Vocabulary records
     const vocabToCreate: typeof payload.vocabNew = [];
+    const exampleResetVocabIds: string[] = [];
+    const examplesToInsert: Array<{
+      vocabularyId: string;
+      japanese: string;
+      meaning: string;
+      romaji: string | null;
+    }> = [];
+
     for (const cv of payload.vocabNew) {
       const kFull = `${normJpKey(cv.word)}|${normJpKey(cv.kana)}`;
       const kWord = normJpKey(cv.word);
-      if (vocabByWordKana.has(kFull) || vocabByWord.has(kWord)) {
-        stats.vocab.duplicate++;
+      const existingV = vocabByWordKana.get(kFull);
+      if (existingV) {
+        const nextWord = normText(cv.word);
+        const nextKana = normText(cv.kana);
+        const nextRomaji = normText(cv.romaji) || existingV.romaji;
+        const nextMeaning = normText(cv.meaning);
+        const nextPos = cv.partOfSpeech || existingV.partOfSpeech;
+        const hasSyntheticExample = Boolean(
+          existingV.examples?.some((e) => e.japanese.includes("の意味と使い方を覚えます"))
+        );
+
+        const tags = existingV.tags || "";
+        const isUnitcumentsRecord =
+          tags.includes("unitcuments") ||
+          tags.includes("Mimi-") ||
+          tags.includes("TongHop-") ||
+          tags.includes("FPT-JPD");
+        const hasFieldDiff =
+          existingV.word !== nextWord ||
+          existingV.kana !== nextKana ||
+          existingV.romaji !== nextRomaji ||
+          existingV.meaning !== nextMeaning ||
+          existingV.partOfSpeech !== nextPos;
+        const needsFieldRepair = isUnitcumentsRecord && (hasFieldDiff || hasSyntheticExample);
+
+        if (needsFieldRepair && existingV.id !== "pending") {
+          stats.vocab.updated++;
+          if (!isDryRun) {
+            if (hasFieldDiff) {
+              await prisma.vocabulary.update({
+                where: { id: existingV.id },
+                data: {
+                  word: nextWord,
+                  kana: nextKana,
+                  romaji: nextRomaji,
+                  meaning: nextMeaning,
+                  partOfSpeech: nextPos,
+                },
+              });
+            }
+            if (hasSyntheticExample && cv.exampleJp && cv.exampleVi) {
+              exampleResetVocabIds.push(existingV.id);
+              examplesToInsert.push({
+                vocabularyId: existingV.id,
+                japanese: cv.exampleJp,
+                meaning: cv.exampleVi,
+                romaji: nextRomaji,
+              });
+            }
+          }
+          existingV.word = nextWord;
+          existingV.kana = nextKana;
+          existingV.romaji = nextRomaji;
+          existingV.meaning = nextMeaning;
+          existingV.partOfSpeech = nextPos;
+          if (hasSyntheticExample && existingV.examples) {
+            existingV.examples = [
+              { id: "updated", vocabularyId: existingV.id, japanese: cv.exampleJp, meaning: cv.exampleVi, romaji: nextRomaji },
+            ];
+          }
+        } else {
+          stats.vocab.duplicate++;
+        }
       } else {
         stats.vocab.new++;
         vocabToCreate.push(cv);
         vocabByWordKana.set(kFull, { id: "pending", word: cv.word, kana: cv.kana } as any);
         vocabByWord.set(kWord, { id: "pending", word: cv.word, kana: cv.kana } as any);
       }
+    }
+
+    if (!isDryRun && exampleResetVocabIds.length > 0) {
+      await prisma.vocabularyExample.deleteMany({
+        where: { vocabularyId: { in: exampleResetVocabIds } },
+      });
+      await prisma.vocabularyExample.createMany({
+        data: examplesToInsert,
+      });
     }
 
     if (!isDryRun && vocabToCreate.length > 0) {
@@ -406,17 +566,67 @@ async function main() {
     }
 
     // -----------------------------------------------------------------------
-    // STEP 3: GRAMMAR DEDUPLICATION & IMPORT
+    // STEP 3: GRAMMAR DEDUPLICATION, RECONCILIATION & IMPORT
     // -----------------------------------------------------------------------
+    const grammarByStructure = new Map<string, (typeof existingGrammar)[number]>();
+    for (const g of existingGrammar) {
+      if (g.structure) {
+        grammarByStructure.set(normJpKey(g.structure), g);
+      }
+    }
+
     const grammarToCreate: typeof payload.grammarNew = [];
     for (const cg of payload.grammarNew) {
       const kTitle = normJpKey(cg.title);
       const core = cg.title.replace(/\([^)]*\)|（[^）]*）/g, "").trim();
       const kCore = normJpKey(core);
+      const kStruct = normJpKey(cg.structure);
       const isFpt = cg.title.includes("FPT");
 
-      if (grammarByKey.has(kTitle) || (!isFpt && kCore && grammarByKey.has(kCore))) {
-        stats.grammar.duplicate++;
+      const existingG =
+        grammarByKey.get(kTitle) ||
+        (!isFpt && kCore ? grammarByKey.get(kCore) : undefined) ||
+        (kStruct ? grammarByStructure.get(kStruct) : undefined);
+
+      if (existingG) {
+        const nextTitle = normText(cg.title);
+        const nextMeaning = normText(cg.meaning);
+        const needsGrammarRepair =
+          existingG.id !== "pending" &&
+          (existingG.meaning.includes("Cấu trúc ngữ pháp trung cấp Shinkanzen N3") ||
+            existingG.meaning.includes("新完全マスターN3") ||
+            existingG.meaning.startsWith("A 意味") ||
+            existingG.meaning.startsWith("* Ý nghĩa:") ||
+            existingG.meaning.startsWith("意味 ") ||
+            existingG.title.startsWith("~~する") ||
+            existingG.title === "~こと" ||
+            (existingG.examples && existingG.examples.length === 0 && cg.examples?.length > 0));
+
+        if (needsGrammarRepair) {
+          stats.grammar.updated++;
+          if (!isDryRun) {
+            await prisma.grammar.update({
+              where: { id: existingG.id },
+              data: {
+                title: nextTitle,
+                meaning: nextMeaning,
+              },
+            });
+            if (cg.examples?.length) {
+              await prisma.grammarExample.deleteMany({ where: { grammarId: existingG.id } });
+              await prisma.grammarExample.createMany({
+                data: cg.examples.map((ex) => ({
+                  grammarId: existingG.id,
+                  japanese: normText(ex.japanese),
+                  meaning: normText(ex.meaning),
+                  romaji: ex.romaji ? normText(ex.romaji) : null,
+                })),
+              });
+            }
+          }
+        } else {
+          stats.grammar.duplicate++;
+        }
       } else {
         stats.grammar.new++;
         grammarToCreate.push(cg);

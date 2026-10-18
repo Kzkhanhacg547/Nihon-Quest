@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
+import { enforceRateLimit } from "@/lib/rateLimit";
 
 export async function GET(req: NextRequest) {
+  const limited = enforceRateLimit(req, "ai-tts", 60, 60_000);
+  if (limited) return limited;
+
   const { searchParams } = new URL(req.url);
   const text = searchParams.get("text")?.trim();
 
@@ -26,6 +30,7 @@ export async function GET(req: NextRequest) {
         "User-Agent":
           "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
       },
+      signal: AbortSignal.timeout(8000),
     });
 
     if (!response.ok) {

@@ -1,11 +1,44 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, afterEach } from "vitest";
 import { authOptions } from "./auth-options";
+import { getAuthSecret } from "./auth-secret";
 import { encode, decode } from "next-auth/jwt";
 import type { JWT } from "next-auth/jwt";
 import { middleware } from "../middleware";
 import { NextRequest } from "next/server";
 
 const TEST_SECRET = "test-secret-at-least-32-characters-long-123456";
+
+describe("Auth Secret & Production Fail-Safe", () => {
+  const originalEnv = { ...process.env };
+
+  afterEach(() => {
+    process.env = { ...originalEnv };
+  });
+
+  it("throws when NEXTAUTH_SECRET is missing or too short in production runtime", () => {
+    (process.env as Record<string, string | undefined>).NODE_ENV = "production";
+    delete process.env.NEXT_PHASE;
+    delete process.env.NEXTAUTH_SECRET;
+    delete process.env.AUTH_SECRET;
+
+    expect(() => getAuthSecret()).toThrow(/NEXTAUTH_SECRET is missing/);
+
+    process.env.NEXTAUTH_SECRET = "too-short";
+    expect(() => getAuthSecret()).toThrow(/NEXTAUTH_SECRET is missing or shorter than 32/);
+  });
+
+  it("fails closed in middleware when NEXTAUTH_SECRET is missing in production runtime", async () => {
+    (process.env as Record<string, string | undefined>).NODE_ENV = "production";
+    delete process.env.NEXT_PHASE;
+    delete process.env.NEXTAUTH_SECRET;
+    delete process.env.AUTH_SECRET;
+
+    const req = new NextRequest("https://nihonquest-rho.vercel.app/app");
+    const res = await middleware(req);
+    expect(res.status).toBe(307);
+    expect(res.headers.get("location")).toContain("/login?error=Configuration");
+  });
+});
 
 describe("Auth Session & JWT Header Size Safety", () => {
   it("strips base64 data URLs from JWT token to prevent oversized cookies", async () => {
@@ -93,6 +126,21 @@ describe("Auth Session & JWT Header Size Safety", () => {
     expect((sessionResult.user as any).id).toBe("user-789");
     expect(sessionResult.user?.image).toBeNull();
   });
+
+  it("blocks protocol-relative open redirects in redirect callback", async () => {
+    const baseUrl = "https://nihonquest.app";
+    const evilRedirect = await authOptions.callbacks!.redirect!({
+      url: "//evil.example.com/phish",
+      baseUrl,
+    });
+    expect(evilRedirect).toBe(baseUrl);
+
+    const validRelative = await authOptions.callbacks!.redirect!({
+      url: "/app/practice",
+      baseUrl,
+    });
+    expect(validRelative).toBe("https://nihonquest.app/app/practice");
+  });
 });
 
 describe("Middleware & Navigation Flow", () => {
@@ -121,7 +169,7 @@ describe("Middleware & Navigation Flow", () => {
   });
 
   it("permits authenticated requests to access protected app routes", async () => {
-    const secret = process.env.NEXTAUTH_SECRET || "dev-only-change-me-min-32-chars-long-secret";
+    const secret = getAuthSecret();
     const token = await encode({
       token: { uid: "user-123", email: "test@example.com" },
       secret,
@@ -140,7 +188,7 @@ describe("Middleware & Navigation Flow", () => {
   });
 
   it("supports multi-device concurrent sessions without cookie pollution", async () => {
-    const secret = process.env.NEXTAUTH_SECRET || "dev-only-change-me-min-32-chars-long-secret";
+    const secret = getAuthSecret();
 
     // Device A (Mobile)
     const tokenA = await encode({

@@ -1,7 +1,7 @@
 import { randomInt } from "node:crypto";
 import { prisma } from "@/lib/prisma";
 import { sendOtpEmail } from "@/lib/email";
-import { rateLimit } from "@/lib/rateLimit";
+import { rateLimit, resetRateLimitKey } from "@/lib/rateLimit";
 
 export type OtpType = "REGISTER" | "RESET_PASSWORD";
 
@@ -13,7 +13,10 @@ function getIdentifier(type: OtpType, email: string): string {
   return `${type}:${email.trim().toLowerCase()}`;
 }
 
-export async function requestOtp(email: string, type: OtpType): Promise<{ success: boolean; error?: string; devCode?: string }> {
+export async function requestOtp(
+  email: string,
+  type: OtpType,
+): Promise<{ success: boolean; error?: string; devCode?: string }> {
   const normalizedEmail = email.trim().toLowerCase();
   const identifier = getIdentifier(type, normalizedEmail);
 
@@ -39,8 +42,7 @@ export async function requestOtp(email: string, type: OtpType): Promise<{ succes
     });
   }
 
-  // Math.random() is not cryptographically secure. A 6-digit OTP guarding
-  // account registration and password reset must be.
+  // Cryptographically secure 6-digit OTP
   const code = randomInt(100000, 1000000).toString();
   const expires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
@@ -52,26 +54,39 @@ export async function requestOtp(email: string, type: OtpType): Promise<{ succes
     },
   });
 
+  // Reset verification lockout counter when a new OTP is issued
+  resetRateLimitKey(`otp-verify:${identifier}`);
+
   const mailRes = await sendOtpEmail({
     to: normalizedEmail,
     code,
     type,
   });
 
+  // Never expose devCode in production even if mailRes.devPreview is set
+  const allowDevCode =
+    process.env.NODE_ENV !== "production" &&
+    (process.env.NODE_ENV === "development" || process.env.NODE_ENV === "test" || mailRes.devPreview);
+
   return {
     success: mailRes.success,
     error: mailRes.error,
-    devCode: (process.env.NODE_ENV === "development" || process.env.NODE_ENV === "test" || mailRes.devPreview) ? code : undefined,
+    devCode: allowDevCode ? code : undefined,
   };
 }
 
-export async function verifyAndConsumeOtp(email: string, type: OtpType, code?: string): Promise<{ valid: boolean; error?: string }> {
+export async function verifyAndConsumeOtp(
+  email: string,
+  type: OtpType,
+  code?: string,
+): Promise<{ valid: boolean; error?: string }> {
   const normalizedEmail = (email || "").trim().toLowerCase();
   const identifier = getIdentifier(type, normalizedEmail);
+  const rateKey = `otp-verify:${identifier}`;
 
   // Unlimited guesses against a 6-digit code inside a 10-minute window is an
   // account-takeover path, so wrong attempts lock the identifier out.
-  const attempt = rateLimit(`otp-verify:${identifier}`, MAX_VERIFY_ATTEMPTS, LOCKOUT_MS);
+  const attempt = rateLimit(rateKey, MAX_VERIFY_ATTEMPTS, LOCKOUT_MS);
   if (!attempt.ok) {
     return {
       valid: false,
@@ -105,6 +120,7 @@ export async function verifyAndConsumeOtp(email: string, type: OtpType, code?: s
 
   // Valid -> consume token and reset the attempt counter.
   await prisma.verificationToken.deleteMany({ where: { identifier } });
+  resetRateLimitKey(rateKey);
 
   return { valid: true };
 }

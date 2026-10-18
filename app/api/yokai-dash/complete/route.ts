@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { awardUserXP, touchUserActivity } from "@/lib/progress-service";
 import { getYokaiPlayerState } from "@/lib/yokai-dash/state";
 import { updateSrs, nextDueDate } from "@/lib/srs";
+import { todayKeyForUser } from "@/lib/missionDay";
 
 const completeSchema = z.object({
   zoneId: z.string(),
@@ -218,7 +219,7 @@ export async function POST(req: Request) {
     const updatedState = await getYokaiPlayerState(userId);
 
     // Award XP for any newly completed daily quests today (idempotent per user + day + questId)
-    const dayKey = now.toISOString().slice(0, 10);
+    const dayKey = await todayKeyForUser(userId, now);
     let questBonusXP = 0;
     for (const q of updatedState.dailyQuests) {
       if (q.completed && q.rewardXP > 0) {

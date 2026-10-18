@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 import { authOptions } from "@/lib/auth-options";
 import { prisma } from "@/lib/prisma";
+import { resolveCanonicalUserLevel } from "@/lib/learning-level";
 import { AppNav } from "@/components/AppNav";
 import { AchievementsClient } from "./AchievementsClient";
 
@@ -22,6 +23,7 @@ export default async function AchievementsPage() {
         name: true,
         image: true,
         learningLevel: true,
+        levelChoice: true,
         totalXP: true,
         currentStreak: true,
         profile: { select: { displayName: true, avatar: true } },
@@ -37,7 +39,7 @@ export default async function AchievementsPage() {
   ]);
 
   const displayName = user?.profile?.displayName || user?.name || session?.user?.name || "Học viên";
-  const userLevel = user?.learningLevel || "N5";
+  const userLevel = resolveCanonicalUserLevel(user);
   const avatarUrl = user?.profile?.avatar || user?.image || null;
 
   return (

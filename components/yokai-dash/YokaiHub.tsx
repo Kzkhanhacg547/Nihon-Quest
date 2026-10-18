@@ -390,7 +390,7 @@ export function YokaiHub({
   dailyQuests,
   highScore,
   bestCombo,
-  clearedZones = ["torii_path", "sakura_grove"],
+  clearedZones = [],
   isPractice,
   questionMode,
   speedDifficulty,

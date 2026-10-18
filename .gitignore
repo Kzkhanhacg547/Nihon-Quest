@@ -28,6 +28,10 @@ unitcuments/
 *.tar.gz
 skills-lock.json
 docs/
+research/
+docs.txt
+extracted_*.json
+extracted_*.txt
 **/*.md
 !/README.md
 !vendor/**/README.md

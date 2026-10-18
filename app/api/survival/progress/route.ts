@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireUserId } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { todayKeyForUser } from "@/lib/missionDay";
+import { todayKeyForUser, incrementDailyMission } from "@/lib/missionDay";
 import { awardUserXP } from "@/lib/progress-service";
 
 const schema = z.object({
@@ -49,11 +49,7 @@ export async function POST(req: Request) {
   });
 
   // Update daily mission if applicable
-  const todayKey = await todayKeyForUser(userId, now);
-  await prisma.userDailyMission.updateMany({
-    where: { userId, date: todayKey, mission: { type: "LESSON" } },
-    data: { progress: { increment: 1 } },
-  });
+  await incrementDailyMission(userId, "LESSON", 1, now);
 
   return NextResponse.json({
     ok: true,

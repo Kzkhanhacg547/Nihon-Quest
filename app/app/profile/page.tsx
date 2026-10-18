@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 import { authOptions } from "@/lib/auth-options";
 import { prisma } from "@/lib/prisma";
+import { resolveCanonicalUserLevel } from "@/lib/learning-level";
 import { AppNav } from "@/components/AppNav";
 import { AvatarEditor } from "./AvatarEditor";
 import { ProfileForm } from "./ProfileForm";
@@ -21,6 +22,7 @@ export default async function ProfilePage() {
   const user = await prisma.user.findUnique({ where: { id: uid }, include: { profile: true } });
   if (!user) redirect("/login");
 
+  const canonicalLevel = resolveCanonicalUserLevel(user);
   const displayName = user.profile?.displayName ?? user.name ?? user.email.split("@")[0];
   const initial = displayName.slice(0, 1).toUpperCase();
   const avatarSrc = user.profile?.avatar ?? user.image ?? null;
@@ -69,7 +71,7 @@ export default async function ProfilePage() {
               </div>
               <h1 className="mt-4 break-words text-xl font-bold tracking-tight">{displayName}</h1>
               <p className="mt-1 break-all text-sm text-slate-500 dark:text-slate-400">{user.email}</p>
-              <span className="mt-3 inline-flex rounded-full bg-rose-50 px-3 py-1 text-xs font-semibold text-rose-700 dark:bg-rose-500/10 dark:text-rose-300">JLPT {user.learningLevel ?? "N5"}</span>
+              <span className="mt-3 inline-flex rounded-full bg-rose-50 px-3 py-1 text-xs font-semibold text-rose-700 dark:bg-rose-500/10 dark:text-rose-300">JLPT {canonicalLevel}</span>
 
               <dl className="mt-6 divide-y divide-slate-100 border-t border-slate-100 text-left text-sm dark:divide-slate-800 dark:border-slate-800">
                 {stats.map(([k, v]) => (
@@ -91,7 +93,7 @@ export default async function ProfilePage() {
             <div className="min-w-0 space-y-6">
               <ProfileForm initial={{
                 displayName: user.profile?.displayName ?? user.name ?? "",
-                learningLevel: user.learningLevel,
+                learningLevel: canonicalLevel,
                 learningGoal: user.learningGoal,
                 dailyGoalMinutes: user.dailyGoalMinutes,
                 focusSkill: user.focusSkill,

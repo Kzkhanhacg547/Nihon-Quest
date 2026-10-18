@@ -1,13 +1,14 @@
 import { NextResponse } from "next/server";
 import { requireUserId } from "@/lib/auth";
+import { resolvePersonalizationTrack } from "@/lib/learning-level";
 import { prisma } from "@/lib/prisma";
 import { buildLearningPath, sanitizeAnswers, type PathModule } from "@/lib/personalization";
 
 /**
  * GET /api/learning-path
  * Returns the personalized learning path (lộ trình cá nhân hóa) for the
- * current user, computed from their 5 onboarding answers and enriched
- * with real lesson rows + completion progress.
+ * current user, computed from their canonical learning level & onboarding answers
+ * and enriched with real lesson rows + completion progress.
  */
 export async function GET() {
   const userId = await requireUserId();
@@ -27,7 +28,7 @@ export async function GET() {
   if (!user) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   const answers = sanitizeAnswers({
-    level: user.levelChoice || user.learningLevel,
+    level: resolvePersonalizationTrack(user),
     goal: user.learningGoal,
     dailyGoalMinutes: user.dailyGoalMinutes,
     focusSkill: user.focusSkill,

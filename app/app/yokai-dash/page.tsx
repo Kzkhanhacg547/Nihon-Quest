@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { authOptions } from "@/lib/auth-options";
 import { prisma } from "@/lib/prisma";
 import { calculateLevel } from "@/lib/level";
+import { resolveCanonicalUserLevel } from "@/lib/learning-level";
 import { AppNav } from "@/components/AppNav";
 import { JapanBackdrop } from "@/components/JapanIllustration";
 import { YokaiDashClient } from "@/components/yokai-dash/YokaiDashClient";
@@ -26,7 +27,7 @@ export default async function YokaiDashPage() {
   if (!user) redirect("/login");
 
   const levelInfo = calculateLevel(user.totalXP);
-  const userLevel = user.learningLevel ?? "N5";
+  const userLevel = resolveCanonicalUserLevel(user);
 
   return (
     <div className="relative min-h-[100dvh] flex flex-col bg-[#f6eef3] dark:bg-[#07041a] text-slate-900 dark:text-slate-100 transition-colors">

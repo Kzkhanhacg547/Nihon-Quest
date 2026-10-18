@@ -56,7 +56,19 @@ const KANA_ROMAJI_MAP: Record<string, string> = {
   ジャ: "ja", ジュ: "ju", ジョ: "jo",
   ビャ: "bya", ビュ: "byu", ビョ: "byo",
   ピャ: "pya", ピュ: "pyu", ピョ: "pyo",
-  ー: "-",
+};
+
+const LONG_VOWEL_MAP: Record<string, string> = {
+  a: "ā",
+  i: "ī",
+  u: "ū",
+  e: "ē",
+  o: "ō",
+  A: "Ā",
+  I: "Ī",
+  U: "Ū",
+  E: "Ē",
+  O: "Ō",
 };
 
 /**
@@ -71,12 +83,26 @@ export function kanaToRomaji(kanaStr: string): string {
     const char = kanaStr[i];
     const nextChar = kanaStr[i + 1] || "";
 
+    // Chōonpu (ー): lengthen previous vowel with Hepburn macron
+    if (char === "ー") {
+      const lastChar = result.slice(-1);
+      if (LONG_VOWEL_MAP[lastChar]) {
+        result = result.slice(0, -1) + LONG_VOWEL_MAP[lastChar];
+      } else {
+        result += "-";
+      }
+      i++;
+      continue;
+    }
+
     // Check double consonants (っ / ッ)
     if (char === "っ" || char === "ッ") {
       if (nextChar) {
-        const nextRomaji = KANA_ROMAJI_MAP[nextChar] || KANA_ROMAJI_MAP[nextChar + (kanaStr[i + 2] || "")];
+        const nextRomaji =
+          KANA_ROMAJI_MAP[nextChar + (kanaStr[i + 2] || "")] || KANA_ROMAJI_MAP[nextChar];
         if (nextRomaji) {
-          result += nextRomaji[0]; // double first consonant (e.g. kk, tt, pp)
+          // Standard Hepburn: っ before ch becomes t (e.g. matcha, kotchi)
+          result += nextRomaji.startsWith("ch") ? "t" : nextRomaji[0];
           i++;
           continue;
         }
@@ -88,6 +114,19 @@ export function kanaToRomaji(kanaStr: string): string {
     if (KANA_ROMAJI_MAP[comboKey]) {
       result += KANA_ROMAJI_MAP[comboKey];
       i += 2;
+      continue;
+    }
+
+    // Hatsuon (ん / ン) before vowels or 'y' uses apostrophe in Hepburn (e.g. kin'en)
+    if (char === "ん" || char === "ン") {
+      result += "n";
+      const peek = nextChar;
+      const peekCombo = peek + (kanaStr[i + 2] || "");
+      const nextRomaji = KANA_ROMAJI_MAP[peekCombo] || KANA_ROMAJI_MAP[peek];
+      if (nextRomaji && /^[aeiouy]/i.test(nextRomaji)) {
+        result += "'";
+      }
+      i++;
       continue;
     }
 

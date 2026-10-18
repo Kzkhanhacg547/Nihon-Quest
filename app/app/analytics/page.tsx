@@ -1,6 +1,7 @@
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 import { authOptions } from "@/lib/auth-options";
+import { resolveCanonicalUserLevel, resolvePersonalizationTrack } from "@/lib/learning-level";
 import { prisma } from "@/lib/prisma";
 import { calculateLevel } from "@/lib/level";
 import { AppNav } from "@/components/AppNav";
@@ -39,12 +40,12 @@ export default async function AnalyticsPage() {
   if (!user) redirect("/login");
   if (!user.onboardingCompleted) redirect("/onboarding");
 
-  const userLevel = user.learningLevel || "N5";
+  const userLevel = resolveCanonicalUserLevel(user);
   const levelInfo = calculateLevel(user.totalXP);
   const levelProgressPercent = Math.round(levelInfo.progress * 100);
 
   const answers = sanitizeAnswers({
-    level: user.levelChoice || user.learningLevel,
+    level: resolvePersonalizationTrack(user),
     goal: user.learningGoal,
     dailyGoalMinutes: user.dailyGoalMinutes,
     focusSkill: user.focusSkill,

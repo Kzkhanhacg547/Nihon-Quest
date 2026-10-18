@@ -3,6 +3,7 @@ import { z } from "zod";
 import { requireUserId } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { localDateKey } from "@/lib/streak";
+import { incrementDailyMission } from "@/lib/missionDay";
 import { awardUserXP } from "@/lib/progress-service";
 
 const submitSchema = z.object({
@@ -44,36 +45,8 @@ export async function POST(req: Request) {
     now,
   });
 
-  // Update Daily Mission if any KANA or LESSON mission exists
-  const missions = await prisma.dailyMission.findMany({
-    take: 5,
-  });
-  if (missions.length > 0) {
-    const firstMission = missions[0];
-    await prisma.userDailyMission.upsert({
-      where: {
-        userId_missionId_date: {
-          userId,
-          missionId: firstMission.id,
-          date: dateKey,
-        },
-      },
-      update: {
-        progress: { increment: 1 },
-        status: "COMPLETED",
-        completedAt: now,
-      },
-      create: {
-        userId,
-        missionId: firstMission.id,
-        date: dateKey,
-        progress: 1,
-        targetCount: 1,
-        status: "COMPLETED",
-        completedAt: now,
-      },
-    });
-  }
+  // Update Daily Mission if any LESSON mission exists
+  await incrementDailyMission(userId, "LESSON", 1, now);
 
   // Calculate new streak
   const recentDungeonTxs = await prisma.xpTransaction.findMany({

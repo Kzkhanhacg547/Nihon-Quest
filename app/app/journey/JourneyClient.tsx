@@ -141,8 +141,8 @@ function CityImage({ slug, fallback, className }: { slug: string; fallback?: str
 
 function PinThumb({ slug, tone }: { slug: string; tone: MapTone }) {
   if (tone === "locked") return <span>🔒</span>;
-  // eslint-disable-next-line @next/next/no-img-element
   const b64 = getJourneyImage(slug);
+  // eslint-disable-next-line @next/next/no-img-element
   return <img src={b64 || `${IMG_BASE}/${slug}.png`} alt="" onError={(e) => ((e.currentTarget.style.display = "none"))} />;
 }
 

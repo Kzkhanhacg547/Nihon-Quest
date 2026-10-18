@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { authOptions } from "@/lib/auth-options";
 import { prisma } from "@/lib/prisma";
 import { calculateLevel } from "@/lib/level";
+import { resolveCanonicalUserLevel } from "@/lib/learning-level";
 import { AppNav } from "@/components/AppNav";
 import {
   aggregateXpHistory,
@@ -45,7 +46,7 @@ export default async function StatsPage() {
   if (!user) redirect("/login");
   if (!user.onboardingCompleted) redirect("/onboarding");
 
-  const userLevel = user.learningLevel || "N5";
+  const userLevel = resolveCanonicalUserLevel(user);
   const levelInfo = calculateLevel(user.totalXP);
   const levelProgressPercent = Math.round(levelInfo.progress * 100);
 

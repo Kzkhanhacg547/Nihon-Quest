@@ -4,10 +4,16 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
 import { PrismaAdapter } from "@next-auth/prisma-adapter";
 import { z } from "zod";
+import { getAuthSecret } from "@/lib/auth-secret";
 import { prisma } from "@/lib/prisma";
+import { rateLimit } from "@/lib/rateLimit";
 
-// Tự động bật AUTH_TRUST_HOST để NextAuth tự đọc request host header khi dùng ngrok / cloudflared / vercel / netlify / local IP
-if (!process.env.AUTH_TRUST_HOST) {
+// Chỉ bật AUTH_TRUST_HOST khi chạy trên nền tảng serverless uy tín (Vercel/Netlify) hoặc môi trường dev
+if (
+  !process.env.AUTH_TRUST_HOST &&
+  (process.env.NODE_ENV !== "production" ||
+    Boolean(process.env.VERCEL || process.env.NETLIFY || process.env.DEPLOY_PRIME_URL))
+) {
   process.env.AUTH_TRUST_HOST = "true";
 }
 
@@ -27,21 +33,19 @@ const loginSchema = z.object({
   password: z.string().min(8),
 });
 
-function requiredSecret(): string {
-  const secret = process.env.NEXTAUTH_SECRET;
-  if (!secret || secret.length < 32) {
-    console.warn(
-      "[NextAuth Warning] NEXTAUTH_SECRET is missing or shorter than 32 characters. Falling back to default secret to prevent crash.",
-    );
-    return process.env.NEXTAUTH_SECRET || "dev-only-change-me-min-32-chars-long-secret";
-  }
-  return secret;
-}
+const isSecureCookieEnv =
+  process.env.NODE_ENV === "production" &&
+  Boolean(
+    process.env.VERCEL ||
+      process.env.NEXTAUTH_URL?.startsWith("https://") ||
+      process.env.URL?.startsWith("https://") ||
+      process.env.DEPLOY_PRIME_URL?.startsWith("https://"),
+  );
 
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma),
   session: { strategy: "jwt" },
-  secret: requiredSecret(),
+  secret: getAuthSecret(),
   pages: { signIn: "/login", newUser: "/onboarding" },
   providers: [
     CredentialsProvider({
@@ -53,6 +57,11 @@ export const authOptions: NextAuthOptions = {
       async authorize(credentials) {
         const parsed = loginSchema.safeParse(credentials);
         if (!parsed.success) return null;
+
+        // Chống brute-force mật khẩu theo từng email
+        const attempt = rateLimit(`login:${parsed.data.email}`, 10, 15 * 60_000);
+        if (!attempt.ok) return null;
+
         const user = await prisma.user.findUnique({
           where: { email: parsed.data.email },
         });
@@ -67,7 +76,7 @@ export const authOptions: NextAuthOptions = {
           GoogleProvider({
             clientId: process.env.GOOGLE_CLIENT_ID,
             clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-            allowDangerousEmailAccountLinking: true,
+            allowDangerousEmailAccountLinking: false,
             checks: ["state"],
             authorization: {
               params: {
@@ -81,15 +90,15 @@ export const authOptions: NextAuthOptions = {
   ],
   callbacks: {
     async redirect({ url, baseUrl }) {
-      // 1. Cho phép các đường dẫn tương đối (vd: "/app", "/onboarding")
-      if (url.startsWith("/")) {
+      // 1. Cho phép các đường dẫn tương đối (vd: "/app", "/onboarding"), chặn protocol-relative "//evil.com"
+      if (url.startsWith("/") && !url.startsWith("//")) {
         return `${baseUrl}${url}`;
       }
-      // 2. Cho phép redirect nếu cùng origin/domain (kể cả ngrok, cloudflared, custom domain)
+      // 2. Cho phép redirect nếu cùng origin/domain
       try {
         const targetUrl = new URL(url);
         const baseObj = new URL(baseUrl);
-        if (targetUrl.host === baseObj.host) {
+        if (targetUrl.origin === baseObj.origin) {
           return url;
         }
       } catch {
@@ -106,7 +115,12 @@ export const authOptions: NextAuthOptions = {
       if (typeof token.picture === "string" && (token.picture.startsWith("data:") || token.picture.length > 256)) {
         delete token.picture;
       }
-      if ("image" in token && (typeof token.image !== "string" || (token.image as string).startsWith("data:") || (token.image as string).length > 256)) {
+      if (
+        "image" in token &&
+        (typeof token.image !== "string" ||
+          (token.image as string).startsWith("data:") ||
+          (token.image as string).length > 256)
+      ) {
         delete (token as Record<string, unknown>).image;
       }
       return token;
@@ -126,145 +140,59 @@ export const authOptions: NextAuthOptions = {
       return session;
     },
   },
-  useSecureCookies:
-    process.env.NODE_ENV === "production" &&
-    Boolean(
-      process.env.VERCEL ||
-      process.env.NEXTAUTH_URL?.startsWith("https://") ||
-      process.env.URL?.startsWith("https://") ||
-      process.env.DEPLOY_PRIME_URL?.startsWith("https://")
-    ),
+  useSecureCookies: isSecureCookieEnv,
   cookies: {
     sessionToken: {
-      name:
-        process.env.NODE_ENV === "production" &&
-        Boolean(
-          process.env.VERCEL ||
-          process.env.NEXTAUTH_URL?.startsWith("https://") ||
-          process.env.URL?.startsWith("https://") ||
-          process.env.DEPLOY_PRIME_URL?.startsWith("https://")
-        )
-          ? "__Secure-next-auth.session-token"
-          : "next-auth.session-token",
+      name: isSecureCookieEnv ? "__Secure-next-auth.session-token" : "next-auth.session-token",
       options: {
         httpOnly: true,
         sameSite: "lax",
         path: "/",
-        secure:
-          process.env.NODE_ENV === "production" &&
-          Boolean(
-            process.env.VERCEL ||
-            process.env.NEXTAUTH_URL?.startsWith("https://") ||
-            process.env.URL?.startsWith("https://") ||
-            process.env.DEPLOY_PRIME_URL?.startsWith("https://")
-          ),
+        secure: isSecureCookieEnv,
       },
     },
     callbackUrl: {
-      name:
-        process.env.NODE_ENV === "production" &&
-        Boolean(
-          process.env.VERCEL ||
-          process.env.NEXTAUTH_URL?.startsWith("https://") ||
-          process.env.URL?.startsWith("https://") ||
-          process.env.DEPLOY_PRIME_URL?.startsWith("https://")
-        )
-          ? "__Secure-next-auth.callback-url"
-          : "next-auth.callback-url",
+      name: isSecureCookieEnv ? "__Secure-next-auth.callback-url" : "next-auth.callback-url",
       options: {
         sameSite: "lax",
         path: "/",
-        secure:
-          process.env.NODE_ENV === "production" &&
-          Boolean(
-            process.env.VERCEL ||
-            process.env.NEXTAUTH_URL?.startsWith("https://") ||
-            process.env.URL?.startsWith("https://") ||
-            process.env.DEPLOY_PRIME_URL?.startsWith("https://")
-          ),
+        secure: isSecureCookieEnv,
       },
     },
     csrfToken: {
-      name:
-        process.env.NODE_ENV === "production" &&
-        Boolean(
-          process.env.VERCEL ||
-          process.env.NEXTAUTH_URL?.startsWith("https://") ||
-          process.env.URL?.startsWith("https://") ||
-          process.env.DEPLOY_PRIME_URL?.startsWith("https://")
-        )
-          ? "__Host-next-auth.csrf-token"
-          : "next-auth.csrf-token",
+      name: isSecureCookieEnv ? "__Host-next-auth.csrf-token" : "next-auth.csrf-token",
       options: {
         httpOnly: true,
         sameSite: "lax",
         path: "/",
-        secure:
-          process.env.NODE_ENV === "production" &&
-          Boolean(
-            process.env.VERCEL ||
-            process.env.NEXTAUTH_URL?.startsWith("https://") ||
-            process.env.URL?.startsWith("https://") ||
-            process.env.DEPLOY_PRIME_URL?.startsWith("https://")
-          ),
+        secure: isSecureCookieEnv,
       },
     },
     pkceCodeVerifier: {
-      name:
-        process.env.NODE_ENV === "production" &&
-        Boolean(
-          process.env.VERCEL ||
-          process.env.NEXTAUTH_URL?.startsWith("https://") ||
-          process.env.URL?.startsWith("https://") ||
-          process.env.DEPLOY_PRIME_URL?.startsWith("https://")
-        )
-          ? "__Secure-next-auth.pkce.code_verifier"
-          : "next-auth.pkce.code_verifier",
+      name: isSecureCookieEnv ? "__Secure-next-auth.pkce.code_verifier" : "next-auth.pkce.code_verifier",
       options: {
         httpOnly: true,
         sameSite: "lax",
         path: "/",
-        secure:
-          process.env.NODE_ENV === "production" &&
-          Boolean(
-            process.env.VERCEL ||
-            process.env.NEXTAUTH_URL?.startsWith("https://") ||
-            process.env.URL?.startsWith("https://") ||
-            process.env.DEPLOY_PRIME_URL?.startsWith("https://")
-          ),
+        secure: isSecureCookieEnv,
         maxAge: 60 * 15,
       },
     },
     state: {
-      name:
-        process.env.NODE_ENV === "production" &&
-        Boolean(
-          process.env.VERCEL ||
-          process.env.NEXTAUTH_URL?.startsWith("https://") ||
-          process.env.URL?.startsWith("https://") ||
-          process.env.DEPLOY_PRIME_URL?.startsWith("https://")
-        )
-          ? "__Secure-next-auth.state"
-          : "next-auth.state",
+      name: isSecureCookieEnv ? "__Secure-next-auth.state" : "next-auth.state",
       options: {
         httpOnly: true,
         sameSite: "lax",
         path: "/",
-        secure:
-          process.env.NODE_ENV === "production" &&
-          Boolean(
-            process.env.VERCEL ||
-            process.env.NEXTAUTH_URL?.startsWith("https://") ||
-            process.env.URL?.startsWith("https://") ||
-            process.env.DEPLOY_PRIME_URL?.startsWith("https://")
-          ),
+        secure: isSecureCookieEnv,
         maxAge: 60 * 15,
       },
     },
   },
   logger: {
-    error(code, metadata) {
-      console.error("[NextAuth Error]", code, metadata);
+    error(code) {
+      // Tránh log toàn bộ metadata nhạy cảm ra stdout
+      console.error("[NextAuth Error]", code);
     },
     warn(code) {
       console.warn("[NextAuth Warning]", code);

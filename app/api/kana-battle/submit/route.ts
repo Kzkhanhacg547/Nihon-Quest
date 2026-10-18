@@ -4,6 +4,7 @@ import { requireUserId } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { updateSrs, nextDueDate, type Grade } from "@/lib/srs";
 import { localDateKey } from "@/lib/streak";
+import { incrementDailyMission } from "@/lib/missionDay";
 import { awardUserXP, touchUserActivity } from "@/lib/progress-service";
 
 const schema = z.object({
@@ -107,10 +108,9 @@ export async function POST(req: Request) {
   }
 
   // --- Update daily missions (KANA type) ---
-  await prisma.userDailyMission.updateMany({
-    where: { userId, date: dateKey, mission: { type: "KANA" } },
-    data: { progress: { increment: correctCount } },
-  });
+  if (correctCount > 0) {
+    await incrementDailyMission(userId, "KANA", correctCount, now);
+  }
 
   return NextResponse.json({
     ok: true,

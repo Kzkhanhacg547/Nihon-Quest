@@ -56,7 +56,7 @@ const SoundAndThemeContext = createContext<SoundAndThemeContextType | null>(null
 export function SoundAndThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setThemeState] = useState<Theme>("system");
   const [resolvedTheme, setResolvedTheme] = useState<ResolvedTheme>("light");
-  const [soundEnabled, setSoundEnabledState] = useState<boolean>(true);
+  const [soundEnabled, setSoundEnabledState] = useState<boolean>(false);
   const [toasts, setToasts] = useState<ToastItem[]>([]);
 
   // Speech TTS State
@@ -65,6 +65,7 @@ export function SoundAndThemeProvider({ children }: { children: React.ReactNode 
   const [availableVoices, setAvailableVoices] = useState<VoiceOption[]>([]);
   const [speakingText, setSpeakingText] = useState<string | null>(null);
   const speakIdRef = useRef(0);
+  const audioCtxRef = useRef<AudioContext | null>(null);
 
   // Initialize from localStorage & load voices
   useEffect(() => {
@@ -311,9 +312,17 @@ export function SoundAndThemeProvider({ children }: { children: React.ReactNode 
   // Web Audio Synthesizer (Instant Chimes)
   const getAudioContext = useCallback(() => {
     if (typeof window === "undefined") return null;
+    if (audioCtxRef.current && audioCtxRef.current.state !== "closed") {
+      if (audioCtxRef.current.state === "suspended") {
+        audioCtxRef.current.resume().catch(() => {});
+      }
+      return audioCtxRef.current;
+    }
     const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
     if (!AudioCtx) return null;
-    return new AudioCtx();
+    const ctx = new AudioCtx();
+    audioCtxRef.current = ctx;
+    return ctx;
   }, []);
 
   const playCorrect = useCallback(() => {

@@ -1,4 +1,10 @@
 import { prisma } from "@/lib/prisma";
+import {
+  extractHanVietFromMeaning,
+  formatJapaneseWithReading,
+  normalizeJapaneseWord,
+  parseKanjiMeaningAndHanViet,
+} from "@/lib/canonical-vocab";
 import { YokaiLevel, YokaiQuestion, YokaiQuestionMode } from "./types";
 
 function shuffleArray<T>(arr: T[]): T[] {
@@ -2240,14 +2246,27 @@ export async function fetchYokaiQuestions(
 
       // 1. Generate VOCAB questions
       if (vocabList.length >= 4) {
-        const shuffledVocab = shuffleArray(vocabList);
+        const cleanedVocab = vocabList.map((v) => {
+          const { japanese } = normalizeJapaneseWord(v.word);
+          const { meaningVi, hanVietNote } = extractHanVietFromMeaning(v.meaning);
+          const formatted = formatJapaneseWithReading(japanese, v.kana);
+          return {
+            ...v,
+            cleanWord: japanese,
+            cleanMeaning: meaningVi,
+            hanViet: hanVietNote,
+            displayWord: formatted,
+          };
+        });
+
+        const shuffledVocab = shuffleArray(cleanedVocab);
         for (let i = 0; i < Math.min(40, shuffledVocab.length); i++) {
           const target = shuffledVocab[i];
           const distractors = shuffleArray(shuffledVocab.filter((v) => v.id !== target.id))
             .slice(0, 4)
-            .map((v) => v.meaning);
+            .map((v) => v.cleanMeaning);
           const { options, correctLane } = buildThreeOptions(
-            target.meaning,
+            target.cleanMeaning,
             distractors,
             "Thời gian rảnh",
             "Chuẩn bị trước"
@@ -2259,24 +2278,24 @@ export async function fetchYokaiQuestions(
             id: `db_vocab_wm_${target.id}`,
             category: "VOCAB",
             questionType: "WORD_TO_MEANING",
-            prompt: `Từ vựng '${target.word}' (${target.kana}) có nghĩa là gì?`,
+            prompt: `Từ vựng '${target.cleanWord}' (${target.kana}) có nghĩa là gì?`,
             subPrompt: target.romaji,
-            audioText: target.kana || target.word,
+            audioText: target.kana || target.cleanWord,
             targetLevel: level,
-            correctAnswer: target.meaning,
+            correctAnswer: target.cleanMeaning,
             options,
             correctLane,
-            explanation: `'${target.word}' (${target.kana} - ${target.romaji}) nghĩa là: ${target.meaning}.${
-              firstExample ? ` Ví dụ: ${firstExample}` : ""
-            }`,
+            explanation: `'${target.cleanWord}' (${target.kana} - ${target.romaji}) nghĩa là: ${target.cleanMeaning}.${
+              target.hanViet ? ` Hán Việt: ${target.hanViet}.` : ""
+            }${firstExample ? ` Ví dụ: ${firstExample}` : ""}`,
           });
 
           // Nghĩa -> Từ
           const distractorWords = shuffleArray(shuffledVocab.filter((v) => v.id !== target.id))
             .slice(0, 4)
-            .map((v) => `${v.word} (${v.kana})`);
+            .map((v) => v.displayWord);
           const { options: wordOptions, correctLane: wordLane } = buildThreeOptions(
-            `${target.word} (${target.kana})`,
+            target.displayWord,
             distractorWords,
             "たべる (食べる)",
             "いく (行く)"
@@ -2285,14 +2304,16 @@ export async function fetchYokaiQuestions(
             id: `db_vocab_mw_${target.id}`,
             category: "VOCAB",
             questionType: "MEANING_TO_WORD",
-            prompt: `Từ tiếng Nhật nào có nghĩa: '${target.meaning}'?`,
+            prompt: `Từ tiếng Nhật nào có nghĩa: '${target.cleanMeaning}'?`,
             subPrompt: `Chọn từ vựng đúng`,
-            audioText: target.kana || target.word,
+            audioText: target.kana || target.cleanWord,
             targetLevel: level,
-            correctAnswer: `${target.word} (${target.kana})`,
+            correctAnswer: target.displayWord,
             options: wordOptions,
             correctLane: wordLane,
-            explanation: `Nghĩa '${target.meaning}' trong tiếng Nhật là '${target.word}' (${target.kana} - ${target.romaji}).`,
+            explanation: `Nghĩa '${target.cleanMeaning}' trong tiếng Nhật là '${target.displayWord}' (${target.romaji}).${
+              target.hanViet ? ` Hán Việt: ${target.hanViet}.` : ""
+            }`,
           });
 
           // Câu ví dụ của từ vựng (Sentence to meaning & Meaning to sentence)
@@ -2316,13 +2337,13 @@ export async function fetchYokaiQuestions(
               category: "SENTENCE",
               questionType: "SENTENCE_TO_MEANING",
               prompt: `Câu ví dụ '${ex.japanese}' có nghĩa là gì?`,
-              subPrompt: `Chứa từ vựng '${target.word}' (${target.meaning})`,
+              subPrompt: `Chứa từ vựng '${target.cleanWord}' (${target.cleanMeaning})`,
               audioText: ex.japanese,
               targetLevel: level,
               correctAnswer: ex.meaning,
               options: smOptions,
               correctLane: smLane,
-              explanation: `Câu '${ex.japanese}' có nghĩa: '${ex.meaning}' (từ khóa: ${target.word}).`,
+              explanation: `Câu '${ex.japanese}' có nghĩa: '${ex.meaning}' (từ khóa: ${target.cleanWord}).`,
             });
 
             // Nghĩa -> Câu Nhật
@@ -2344,7 +2365,7 @@ export async function fetchYokaiQuestions(
               category: "SENTENCE",
               questionType: "MEANING_TO_SENTENCE",
               prompt: `Câu tiếng Nhật nào diễn đạt: '${ex.meaning}'?`,
-              subPrompt: `Ứng dụng từ '${target.word}'`,
+              subPrompt: `Ứng dụng từ '${target.cleanWord}'`,
               audioText: ex.japanese,
               targetLevel: level,
               correctAnswer: ex.japanese,
@@ -2358,14 +2379,22 @@ export async function fetchYokaiQuestions(
 
       // 2. Generate KANJI questions
       if (kanjiList.length >= 4) {
-        const shuffledKanji = shuffleArray(kanjiList);
+        const cleanedKanjiList = kanjiList.map((k) => {
+          const parsed = parseKanjiMeaningAndHanViet(k.meaning);
+          return {
+            ...k,
+            cleanMeaning: parsed.meaningVi,
+            hanViet: parsed.hanViet,
+          };
+        });
+        const shuffledKanji = shuffleArray(cleanedKanjiList);
         for (let i = 0; i < Math.min(30, shuffledKanji.length); i++) {
           const target = shuffledKanji[i];
           const distractors = shuffleArray(shuffledKanji.filter((k) => k.id !== target.id))
             .slice(0, 4)
-            .map((k) => k.meaning);
+            .map((k) => k.cleanMeaning);
           const { options, correctLane } = buildThreeOptions(
-            target.meaning,
+            target.cleanMeaning,
             distractors,
             "Sự chuyển động",
             "Phương hướng"
@@ -2385,12 +2414,12 @@ export async function fetchYokaiQuestions(
             subPrompt: readingSummary ? `Cách đọc: ${readingSummary}` : `Số nét: ${target.strokeCount}`,
             audioText: target.character,
             targetLevel: level,
-            correctAnswer: target.meaning,
+            correctAnswer: target.cleanMeaning,
             options,
             correctLane,
-            explanation: `Hán tự '${target.character}' nghĩa là '${target.meaning}'${
-              readingSummary ? ` (Âm đọc: ${readingSummary})` : ""
-            }.`,
+            explanation: `Hán tự '${target.character}' nghĩa là '${target.cleanMeaning}'${
+              target.hanViet ? ` (Hán Việt: ${target.hanViet})` : ""
+            }${readingSummary ? ` (Âm đọc: ${readingSummary})` : ""}.`,
           });
 
           // Nghĩa -> Hán tự (MEANING_TO_WORD)
@@ -2407,16 +2436,16 @@ export async function fetchYokaiQuestions(
             id: `db_kanji_mw_${target.id}`,
             category: "KANJI",
             questionType: "MEANING_TO_WORD",
-            prompt: `Hán tự nào mang ý nghĩa: '${target.meaning}'?`,
+            prompt: `Hán tự nào mang ý nghĩa: '${target.cleanMeaning}'?`,
             subPrompt: readingSummary ? `Gợi ý âm đọc: ${readingSummary}` : `Cấp độ ${level}`,
             audioText: target.character,
             targetLevel: level,
             correctAnswer: target.character,
             options: charOptions,
             correctLane: charLane,
-            explanation: `Ý nghĩa '${target.meaning}' được viết bằng chữ Hán '${target.character}'${
-              readingSummary ? ` (Âm đọc: ${readingSummary})` : ""
-            }.`,
+            explanation: `Ý nghĩa '${target.cleanMeaning}' được viết bằng chữ Hán '${target.character}'${
+              target.hanViet ? ` (Hán Việt: ${target.hanViet})` : ""
+            }${readingSummary ? ` (Âm đọc: ${readingSummary})` : ""}.`,
           });
         }
       }

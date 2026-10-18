@@ -1,12 +1,18 @@
 "use client";
 
 import { Fragment, useEffect, useMemo, useState } from "react";
-import Image from "next/image";
-import { BASE64_IMAGES } from "@/lib/assets/base64Images";
 import Link from "next/link";
 import { Badge, Button, Card, EmptyState, Icon, IconButton, Modal, SelectField } from "@/components/ui";
+import { RubyWord } from "@/components/JapaneseTerm";
 import { useSoundAndTheme } from "@/components/SoundAndThemeContext";
 import { notifyProgressUpdated } from "@/components/UserProgressContext";
+import {
+  toCanonicalVocabularyItem,
+  parseKanjiMeaningAndHanViet,
+  SCRIPT_SHORT_LABELS_VI,
+  type CanonicalVocabularyItem,
+  type JapaneseScriptType,
+} from "@/lib/canonical-vocab";
 import { Sakura } from "./Sakura";
 
 /* ============================== TYPES ============================== */
@@ -37,6 +43,7 @@ interface VocabItem {
   partOfSpeech: string;
   jlptLevel: string;
   tags?: string;
+  lessonId?: string | null;
   /** Tuỳ chọn 1–5. Nếu DB chưa có cột này, tần suất sẽ được ước lượng theo cấp JLPT. */
   frequency?: number;
   examples: ExampleItem[];
@@ -47,9 +54,14 @@ interface CardData {
   id: string;
   type: "VOCAB" | "KANJI";
   front: string;
+  frontWithReading: string;
   reading: string;
   romaji?: string;
+  displayRomaji?: string;
   meaning: string;
+  hanVietNote?: string | null;
+  scriptBadge?: string;
+  provenanceLabel?: string;
   label: string;
   level: string;
   topic: string;
@@ -70,11 +82,28 @@ const LEVEL_OPTIONS = [
   { value: "N3", label: "N3" },
 ];
 
+const SCRIPT_FILTER_OPTIONS: Array<{ value: "ALL" | JapaneseScriptType; label: string }> = [
+  { value: "ALL", label: "Tất cả chữ viết" },
+  { value: "KANJI", label: "Kanji (学校)" },
+  { value: "MIXED", label: "Kết hợp (食べる)" },
+  { value: "HIRAGANA", label: "Hiragana (こんにちは)" },
+  { value: "KATAKANA", label: "Katakana (コーヒー)" },
+];
+
+const SCRIPT_BADGE_TONE: Record<JapaneseScriptType, string> = {
+  HIRAGANA: "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800/60 dark:bg-emerald-950/40 dark:text-emerald-300",
+  KATAKANA: "border-sky-200 bg-sky-50 text-sky-700 dark:border-sky-800/60 dark:bg-sky-950/40 dark:text-sky-300",
+  KANJI: "border-indigo-200 bg-indigo-50 text-indigo-700 dark:border-indigo-800/60 dark:bg-indigo-950/40 dark:text-indigo-300",
+  MIXED: "border-violet-200 bg-violet-50 text-violet-700 dark:border-violet-800/60 dark:bg-violet-950/40 dark:text-violet-300",
+};
+
 const POS_LABELS: Record<string, string> = {
   noun: "Danh từ",
   verb: "Động từ",
-  adjective: "Tính từ -i",
+  adjective: "Tính từ",
   "na-adjective": "Tính từ -na",
+  adverb: "Trạng từ",
+  particle: "Trợ từ",
   expression: "Cụm từ / Giao tiếp",
   pronoun: "Đại từ",
 };
@@ -87,9 +116,9 @@ const FREQUENCY_LABELS = ["Hiếm gặp", "Ít gặp", "Phổ biến", "Rất ph
 const KANJI_RE = /[\u3400-\u9fff]/;
 const HIRAGANA_RE = /[\u3041-\u309f]/;
 
-/** Lưới 1 hàng trong danh sách: cột ví dụ chỉ hiện ở md (từ lg đã có panel chi tiết bên phải). */
+/** Lưới 1 hàng theo chuẩn: [Star] | Pronunciation / Romaji | Japanese writing | Vietnamese meaning | [Ví dụ ở md] | [Loa] | [Lưu] */
 const ROW_GRID =
-  "flex flex-wrap items-center gap-x-3 gap-y-2 md:grid md:grid-cols-[20px_minmax(84px,108px)_minmax(84px,108px)_minmax(110px,150px)_minmax(0,1fr)_40px_84px] lg:grid-cols-[20px_minmax(84px,108px)_minmax(84px,108px)_minmax(110px,150px)_40px_84px] xl:grid-cols-[20px_minmax(84px,108px)_minmax(84px,108px)_minmax(110px,150px)_40px_84px]";
+  "grid grid-cols-[24px_minmax(0,1fr)_auto_auto] items-center gap-x-3 gap-y-2 md:grid-cols-[24px_minmax(125px,155px)_minmax(130px,165px)_minmax(160px,1fr)_minmax(0,1fr)_44px_84px] lg:grid-cols-[24px_minmax(130px,165px)_minmax(140px,180px)_minmax(170px,1fr)_44px_84px]";
 const ROW_EXTRA_COL = "hidden min-w-0 md:block lg:hidden";
 
 const tagsOf = (tags?: string) => (tags ? tags.split(",").map((t) => t.trim()).filter(Boolean) : []);
@@ -106,8 +135,15 @@ const foldText = (value: string) =>
     .replace(/đ/g, "d")
     .replace(/Đ/g, "D")
     .toLowerCase();
+
 const readingsOf = (k: KanjiItem, type: "ONYOMI" | "KUNYOMI") =>
-  k.readings.filter((r) => r.type === type).map((r) => r.reading);
+  k.readings
+    .filter((r) =>
+      type === "ONYOMI"
+        ? r.type === "ONYOMI" || r.type === "ON"
+        : r.type === "KUNYOMI" || r.type === "KUN"
+    )
+    .map((r) => r.reading);
 
 /** Tách phần chữ Hán của từ (để tô đỏ trong câu) và cách đọc tương ứng (để làm furigana). */
 function splitWord(word: string, kana: string): { target: string; reading: string | null } {
@@ -141,31 +177,40 @@ function sortItems<T extends { id: string; jlptLevel: string }>(
   return copy;
 }
 
-function vocabToCard(v: VocabItem): CardData {
+function vocabToCard(v: VocabItem, canon: CanonicalVocabularyItem): CardData {
   return {
     id: v.id,
     type: "VOCAB",
-    front: v.word,
-    reading: v.kana,
-    romaji: v.romaji,
-    meaning: v.meaning,
-    label: POS_LABELS[v.partOfSpeech] ?? v.partOfSpeech,
+    front: canon.japanese,
+    frontWithReading: canon.japaneseWithReading,
+    reading: canon.kana,
+    romaji: canon.romaji,
+    displayRomaji: canon.displayRomaji,
+    meaning: canon.meaningVi,
+    hanVietNote: canon.hanVietNote,
+    scriptBadge: SCRIPT_SHORT_LABELS_VI[canon.primaryScript],
+    provenanceLabel: canon.provenance.shortLabelVi,
+    label: POS_LABELS[canon.partOfSpeech] ?? canon.partOfSpeechVi,
     level: v.jlptLevel,
     topic: tagsOf(v.tags)[0] ?? "Chung",
     example: v.examples[0],
-    highlight: { word: v.word, kana: v.kana },
+    highlight: { word: canon.japanese, kana: canon.kana },
   };
 }
 
 function kanjiToCard(k: KanjiItem): CardData {
   const on = readingsOf(k, "ONYOMI").join("、");
   const kun = readingsOf(k, "KUNYOMI").join("、");
+  const parsed = parseKanjiMeaningAndHanViet(k.meaning);
   return {
     id: k.id,
     type: "KANJI",
     front: k.character,
+    frontWithReading: k.character,
     reading: [on && `On: ${on}`, kun && `Kun: ${kun}`].filter(Boolean).join("  ·  "),
-    meaning: k.meaning,
+    meaning: parsed.meaningVi,
+    hanVietNote: parsed.hanViet,
+    scriptBadge: "Kanji",
     label: `${k.strokeCount} nét`,
     level: k.jlptLevel,
     topic: "Hán tự",
@@ -361,11 +406,31 @@ function StarToggle({ starred, name, onToggle }: { starred: boolean; name: strin
   );
 }
 
+function ListColumnsHeader({ tab }: { tab: Tab }) {
+  return (
+    <div
+      aria-hidden="true"
+      className="mb-1.5 hidden rounded-xl border border-slate-200/80 bg-slate-50/90 px-3 py-2 text-[11px] font-extrabold uppercase tracking-wider text-slate-500 dark:border-slate-800 dark:bg-sumi-950/80 dark:text-slate-400 md:grid md:grid-cols-[24px_minmax(125px,155px)_minmax(130px,165px)_minmax(160px,1fr)_minmax(0,1fr)_44px_84px] md:gap-x-3 lg:grid-cols-[24px_minmax(130px,165px)_minmax(140px,180px)_minmax(170px,1fr)_44px_84px]"
+    >
+      <span />
+      <span>{tab === "VOCAB" ? "Phát âm / Romaji" : "Phiên âm (On/Kun)"}</span>
+      <span>Chữ viết tiếng Nhật</span>
+      <span>Nghĩa tiếng Việt</span>
+      <span className="hidden md:block lg:hidden">{tab === "VOCAB" ? "Ví dụ" : "Số nét"}</span>
+      <span className="text-center">Nghe</span>
+      <span className="text-center">Sổ SRS</span>
+    </div>
+  );
+}
+
 function VocabRow({
   v,
+  canon,
   selected,
   starred,
   saved,
+  showRomaji,
+  isHigherLevel,
   speakingText,
   onSelect,
   onToggleStar,
@@ -373,9 +438,12 @@ function VocabRow({
   onSave,
 }: {
   v: VocabItem;
+  canon: CanonicalVocabularyItem;
   selected: boolean;
   starred: boolean;
   saved: boolean;
+  showRomaji: boolean;
+  isHigherLevel: boolean;
   speakingText: string | null;
   onSelect: () => void;
   onToggleStar: () => void;
@@ -396,26 +464,61 @@ function VocabRow({
       }}
       className={`${ROW_GRID} ${rowClass(selected)} focus-visible:outline focus-visible:outline-2 focus-visible:outline-red-500`}
     >
-      <StarToggle starred={starred} name={v.word} onToggle={onToggleStar} />
+      <StarToggle starred={starred} name={canon.japanese} onToggle={onToggleStar} />
 
-      <div className="jp-text break-words text-[22px] font-black leading-tight text-slate-900 dark:text-white sm:text-[26px] md:text-[28px]">{v.word}</div>
+      {/* Chuẩn trình bày: 1. Phát âm / Romaji | 2. Chữ viết tiếng Nhật | 3. Nghĩa tiếng Việt */}
+      <div className="min-w-0 md:contents">
+        {/* Cột 1: Phát âm / Romaji */}
+        <div className="min-w-0">
+          <p className="break-words text-xs font-extrabold text-red-600 dark:text-red-400 sm:text-sm">
+            {showRomaji && canon.displayRomaji ? canon.displayRomaji : canon.kana || "—"}
+          </p>
+          {showRomaji && canon.kana && (
+            <p className="jp-text break-words text-[11px] font-semibold text-slate-500 dark:text-slate-400">
+              {canon.kana}
+            </p>
+          )}
+        </div>
 
-      <div className="min-w-0">
-        <p className="jp-text text-xs sm:text-sm text-slate-600 dark:text-slate-300">{v.kana}</p>
-        {/* slate-400 on white is ~4.1:1, under AA. Romaji is core learning
-            content, not decoration, so it uses slate-500 (~7:1). */}
-        <p className="truncate text-[11px] sm:text-xs text-slate-500 dark:text-slate-400">{v.romaji}</p>
-      </div>
+        {/* Cột 2: Chữ viết tiếng Nhật */}
+        <div className="mt-0.5 min-w-0 md:mt-0">
+          <div className="jp-text break-words text-[18px] font-black leading-tight text-slate-900 dark:text-white sm:text-[21px]">
+            {canon.japaneseWithReading}
+          </div>
+          <div className="mt-1 flex flex-wrap items-center gap-1">
+            <span
+              className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-bold ${
+                SCRIPT_BADGE_TONE[canon.primaryScript]
+              }`}
+            >
+              {SCRIPT_SHORT_LABELS_VI[canon.primaryScript]}
+            </span>
+          </div>
+        </div>
 
-      <div className="min-w-0 basis-full md:basis-auto">
-        <p className="text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-100">{v.meaning}</p>
-        <div className="mt-1 flex flex-wrap gap-1 sm:gap-1.5">
-          <Badge variant="sky" className="text-[10px] sm:text-[11px]">
-            {POS_LABELS[v.partOfSpeech] ?? v.partOfSpeech}
-          </Badge>
-          <Badge variant="amber" className="text-[10px] sm:text-[11px]">
-            JLPT {v.jlptLevel}
-          </Badge>
+        {/* Cột 3: Nghĩa tiếng Việt (tách riêng âm Hán Việt) */}
+        <div className="mt-1 min-w-0 md:mt-0">
+          <p className="break-words text-xs font-semibold text-slate-800 dark:text-slate-100 sm:text-sm">
+            {canon.meaningVi}
+          </p>
+          <div className="mt-1 flex flex-wrap gap-1 sm:gap-1.5">
+            {canon.hanVietNote && (
+              <span className="inline-flex items-center rounded-full border border-slate-200 bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-600 dark:border-slate-700 dark:bg-sumi-800 dark:text-slate-300">
+                Hán Việt: {canon.hanVietNote}
+              </span>
+            )}
+            <Badge variant="sky" className="text-[10px] sm:text-[11px]">
+              {POS_LABELS[canon.partOfSpeech] ?? canon.partOfSpeechVi}
+            </Badge>
+            <Badge variant="amber" className="text-[10px] sm:text-[11px]">
+              JLPT {v.jlptLevel}
+            </Badge>
+            {isHigherLevel && (
+              <span className="inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-800 dark:border-amber-800/60 dark:bg-amber-950/40 dark:text-amber-300">
+                🔒 Cấp cao hơn
+              </span>
+            )}
+          </div>
         </div>
       </div>
 
@@ -425,16 +528,16 @@ function VocabRow({
             <p className="jp-text flex items-start gap-2 text-[13px] font-medium leading-[2] text-slate-800 dark:text-slate-100">
               <span className="mt-[13px] h-1.5 w-1.5 shrink-0 rounded-full bg-red-500" aria-hidden="true" />
               <span className="min-w-0">
-                <ExampleText sentence={ex.japanese} highlight={{ word: v.word, kana: v.kana }} />
+                <ExampleText sentence={ex.japanese} highlight={{ word: canon.japanese, kana: canon.kana }} />
               </span>
             </p>
-            <p className="truncate pl-3.5 text-xs text-slate-500">{ex.meaning}</p>
+            <p className="pl-3.5 text-xs text-slate-500">{ex.meaning}</p>
           </>
         )}
       </div>
 
-      <PlayButton text={v.word} speakingText={speakingText} onSpeak={onSpeak} />
-      <SaveButton saved={saved} onSave={onSave} className="ml-auto w-[84px] md:ml-0" />
+      <PlayButton text={canon.kana || canon.japanese} speakingText={speakingText} onSpeak={onSpeak} />
+      <SaveButton saved={saved} onSave={onSave} className="w-[84px]" />
     </li>
   );
 }
@@ -444,6 +547,7 @@ function KanjiRow({
   selected,
   starred,
   saved,
+  isHigherLevel,
   speakingText,
   onSelect,
   onToggleStar,
@@ -454,6 +558,7 @@ function KanjiRow({
   selected: boolean;
   starred: boolean;
   saved: boolean;
+  isHigherLevel: boolean;
   speakingText: string | null;
   onSelect: () => void;
   onToggleStar: () => void;
@@ -462,6 +567,7 @@ function KanjiRow({
 }) {
   const on = readingsOf(k, "ONYOMI");
   const kun = readingsOf(k, "KUNYOMI");
+  const parsed = parseKanjiMeaningAndHanViet(k.meaning);
   return (
     <li
       tabIndex={0}
@@ -475,27 +581,53 @@ function KanjiRow({
       }}
       className={`${ROW_GRID} ${rowClass(selected)} focus-visible:outline focus-visible:outline-2 focus-visible:outline-red-500`}
     >
-       <StarToggle starred={starred} name={k.character} onToggle={onToggleStar} />
+      <StarToggle starred={starred} name={k.character} onToggle={onToggleStar} />
 
-       <div className="jp-text text-[28px] sm:text-[34px] font-black leading-none text-slate-900 dark:text-white">{k.character}</div>
-      <div className="min-w-0">
-        <p className="text-sm text-slate-600 dark:text-slate-300">{k.strokeCount} nét</p>
-        <p className="text-xs text-slate-500 dark:text-slate-400">Số nét viết</p>
-      </div>
-      <div className="min-w-0 basis-full md:basis-auto">
-        <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">{k.meaning}</p>
-        <div className="mt-1.5 flex flex-wrap gap-1.5">
-          <Badge variant="amber" className="text-[11px]">
-            JLPT {k.jlptLevel}
-          </Badge>
+      <div className="min-w-0 md:contents">
+        {/* Cột 1: Phiên âm (On / Kun) */}
+        <div className="min-w-0 space-y-0.5">
+          <p className="jp-text break-words text-xs font-semibold text-amber-700 dark:text-amber-300">
+            <span className="font-bold">On:</span> {on.join("、") || "—"}
+          </p>
+          <p className="jp-text break-words text-xs font-semibold text-sky-700 dark:text-sky-300">
+            <span className="font-bold">Kun:</span> {kun.join("、") || "—"}
+          </p>
+        </div>
+
+        {/* Cột 2: Chữ Nhật (Hán tự) */}
+        <div className="mt-0.5 flex items-baseline gap-2 md:mt-0">
+          <span className="jp-text text-[28px] font-black leading-none text-slate-900 dark:text-white sm:text-[34px]">
+            {k.character}
+          </span>
+          <span className="text-xs text-slate-500 dark:text-slate-400">{k.strokeCount} nét</span>
+        </div>
+
+        {/* Cột 3: Nghĩa tiếng Việt (tách riêng âm Hán Việt) */}
+        <div className="mt-1 min-w-0 md:mt-0">
+          <p className="break-words text-sm font-semibold text-slate-800 dark:text-slate-100">{parsed.meaningVi}</p>
+          <div className="mt-1.5 flex flex-wrap gap-1.5">
+            {parsed.hanViet && (
+              <span className="inline-flex items-center rounded-full border border-slate-200 bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-700 dark:border-slate-700 dark:bg-sumi-800 dark:text-slate-200">
+                Hán Việt: {parsed.hanViet}
+              </span>
+            )}
+            <Badge variant="amber" className="text-[11px]">
+              JLPT {k.jlptLevel}
+            </Badge>
+            {isHigherLevel && (
+              <span className="inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-800 dark:border-amber-800/60 dark:bg-amber-950/40 dark:text-amber-300">
+                🔒 Cấp cao hơn
+              </span>
+            )}
+          </div>
         </div>
       </div>
+
       <div className={ROW_EXTRA_COL}>
-        <p className="jp-text truncate text-[13px] font-semibold text-amber-700 dark:text-amber-300">On: {on.join("、") || "—"}</p>
-        <p className="jp-text truncate text-[13px] font-semibold text-sky-700 dark:text-sky-300">Kun: {kun.join("、") || "—"}</p>
+        <p className="text-xs font-semibold text-slate-600 dark:text-slate-300">{k.strokeCount} nét viết</p>
       </div>
       <PlayButton text={k.character} speakingText={speakingText} onSpeak={onSpeak} />
-      <SaveButton saved={saved} onSave={onSave} className="ml-auto w-[84px] md:ml-0" />
+      <SaveButton saved={saved} onSave={onSave} className="w-[84px]" />
     </li>
   );
 }
@@ -504,9 +636,9 @@ function KanjiRow({
 
 function DetailRow({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="grid grid-cols-[116px_1fr] border-b border-slate-100 last:border-b-0 dark:border-slate-800">
-      <dt className="bg-slate-50/80 px-3.5 py-3 text-[13px] font-medium text-slate-500 dark:bg-sumi-950/60">{label}</dt>
-      <dd className="flex flex-wrap items-center gap-1.5 px-3.5 py-3 text-[13px] font-semibold text-slate-800 dark:text-slate-100">{children}</dd>
+    <div className="grid grid-cols-[126px_1fr] border-b border-slate-100 last:border-b-0 dark:border-slate-800">
+      <dt className="bg-slate-50/80 px-3.5 py-2.5 text-[12px] font-medium text-slate-500 dark:bg-sumi-950/60">{label}</dt>
+      <dd className="flex flex-wrap items-center gap-1.5 px-3.5 py-2.5 text-[13px] font-semibold text-slate-800 dark:text-slate-100">{children}</dd>
     </div>
   );
 }
@@ -520,8 +652,8 @@ function SrsBox({ name, saved, onSave }: { name: string; saved: boolean; onSave:
         <Icon name="cards" className="h-5 w-5" />
       </span>
       <div className="min-w-0 flex-1">
-        <p className="text-sm font-extrabold text-red-700 dark:text-red-300">Thêm vào sổ</p>
-        <p className="text-xs text-slate-600 dark:text-slate-400">Lưu {name} để ôn tập định kỳ, ghi nhớ lâu dài.</p>
+        <p className="text-sm font-extrabold text-red-700 dark:text-red-300">Thêm vào sổ SRS</p>
+        <p className="text-xs text-slate-600 dark:text-slate-400">Lưu {name} để ôn tập định kỳ theo thuật toán lặp lại ngắt quãng.</p>
       </div>
       <SaveButton saved={saved} onSave={onSave} className="shrink-0 px-3.5" />
     </div>
@@ -554,11 +686,11 @@ function parseLinguisticMeta(v: VocabItem) {
   } else if (raw.includes("Phương ngữ") || raw.includes("方言")) {
     registerLabel = "Phương ngữ vùng miền (方言 - Hōgen)";
     registerTone = "bg-amber-50 text-amber-800 border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800/60";
-    usageContext = "Giao tiếp địa phương mang bản sắc vùng miền (Kansai, Kyoto, Hakata, Hokkaido...). Trong văn bản hành chính/thi JLPT nên quy đổi về tiếng Nhật chuẩn (標準語).";
+    usageContext = "Giao tiếp địa phương mang bản sắc vùng miền. Trong văn bản hành chính/thi JLPT nên quy đổi về tiếng Nhật chuẩn (標準語).";
   } else if (raw.includes("Tiếng lóng") || raw.includes("若者言葉") || raw.includes("俗語")) {
     registerLabel = "Tiếng lóng / Khẩu ngữ thân mật (若者言葉・タメ口)";
     registerTone = "bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-800/60";
-    usageContext = "Chỉ dùng giữa bạn bè thân thiết, mạng xã hội hoặc hội thoại suồng sã. Không dùng với cấp trên, người lớn tuổi hoặc trong phỏng vấn.";
+    usageContext = "Chỉ dùng giữa bạn bè thân thiết, mạng xã hội hoặc hội thoại suồng sã. Không dùng với cấp trên hoặc trong phỏng vấn.";
   } else if (raw.includes("Thành ngữ") || raw.includes("ことわざ") || raw.includes("慣用句") || raw.includes("四字熟語")) {
     registerLabel = "Thành ngữ / Quán dụng ngữ (慣用句・ことわざ)";
     registerTone = "bg-teal-50 text-teal-700 border-teal-200 dark:bg-teal-950/40 dark:text-teal-300 dark:border-teal-800/60";
@@ -572,13 +704,15 @@ function parseLinguisticMeta(v: VocabItem) {
     origin: originTag ? originTag.replace(/^Xuất xứ:\s*/i, "") : null,
     standardCounterpart: standardTag ? standardTag.replace(/^Chuẩn:\s*/i, "") : null,
     nuance: nuanceTag ? nuanceTag.replace(/^Sắc thái:\s*/i, "") : null,
-    cleanTags: tags.filter((t) => !t.startsWith("Xuất xứ:") && !t.startsWith("Chuẩn:") && !t.startsWith("Sắc thái:")),
+    cleanTags: tags.filter((t) => !t.startsWith("Xuất xứ:") && !t.startsWith("Chuẩn:") && !t.startsWith("Sắc thái:") && t !== "unitcuments"),
   };
 }
 
 function VocabDetail({
   v,
+  canon,
   saved,
+  showRomaji,
   speakingText,
   showAllExamples,
   onToggleExamples,
@@ -586,7 +720,9 @@ function VocabDetail({
   onSave,
 }: {
   v: VocabItem;
+  canon: CanonicalVocabularyItem;
   saved: boolean;
+  showRomaji: boolean;
   speakingText: string | null;
   showAllExamples: boolean;
   onToggleExamples: () => void;
@@ -596,30 +732,44 @@ function VocabDetail({
   const freq = frequencyOf(v);
   const meta = parseLinguisticMeta(v);
   const examples = showAllExamples ? v.examples : v.examples.slice(0, 3);
-  const hl = { word: v.word, kana: v.kana };
+  const hl = { word: canon.japanese, kana: canon.kana };
 
   return (
-    <div className="space-y-5">
-      <div className="flex flex-wrap items-center gap-2">
-        <Badge variant="brand" className="text-[11px] uppercase">
-          Từ vựng
-        </Badge>
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-center gap-1.5">
+        <span
+          className={`rounded-full border px-2.5 py-0.5 text-[11px] font-bold ${
+            SCRIPT_BADGE_TONE[canon.primaryScript]
+          }`}
+        >
+          {canon.primaryScriptLabelVi}
+        </span>
         <Badge variant="amber" className="text-[11px]">
           JLPT {v.jlptLevel}
         </Badge>
-        <span className={`rounded-full border px-2.5 py-0.5 text-[11px] font-bold ${meta.registerTone}`}>
-          {meta.registerLabel}
+        <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-0.5 text-[10px] font-bold text-slate-600 dark:border-slate-700 dark:bg-sumi-800 dark:text-slate-300">
+          {canon.provenance.status} • {canon.provenance.shortLabelVi}
         </span>
       </div>
 
+      {/* Trình bày chuẩn: 1. Phát âm / Romaji -> 2. Chữ viết Nhật (kèm Furigana) -> 3. Nghĩa tiếng Việt */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="min-w-0">
-          <h2 className="jp-text break-words text-5xl font-black leading-tight text-slate-900 dark:text-white sm:text-[56px]">{v.word}</h2>
-          <p className="jp-text mt-1.5 text-base text-slate-700 dark:text-slate-200">{v.kana}</p>
-          <p className="text-sm text-slate-500 dark:text-slate-400">{v.romaji}</p>
+          <p className="text-base font-extrabold text-red-600 dark:text-red-400">
+            {canon.displayRomaji || canon.kana}
+            {canon.kana && (
+              <span className="jp-text ml-2 text-sm font-bold text-slate-600 dark:text-slate-300">
+                （{canon.kana}）
+              </span>
+            )}
+          </p>
+          <h2 className="jp-text mt-1 break-words text-4xl font-black leading-tight text-slate-900 dark:text-white sm:text-5xl">
+            <RubyWord word={canon.japanese} kana={canon.kana} />
+          </h2>
+          <p className="mt-2 text-base font-bold text-slate-800 dark:text-slate-100">{canon.meaningVi}</p>
         </div>
         <div className="flex shrink-0 items-center gap-2">
-          <IconButton label="Nghe phát âm" tone="brand" active={speakingText === v.word} className="h-11 w-11" onClick={() => onSpeak(v.word)}>
+          <IconButton label="Nghe phát âm" tone="brand" active={speakingText === canon.japanese} className="h-11 w-11" onClick={() => onSpeak(canon.kana || canon.japanese)}>
             <Icon name="speaker" className="h-5 w-5" />
           </IconButton>
           <Button size="sm" variant="brand" className="h-11" onClick={onSave}>
@@ -640,53 +790,55 @@ function VocabDetail({
       </div>
 
       <dl className={detailTable}>
-        <DetailRow label="Nghĩa tiếng Việt">{v.meaning}</DetailRow>
-        <DetailRow label="Loại từ">{POS_LABELS[v.partOfSpeech] ?? v.partOfSpeech}</DetailRow>
+        <DetailRow label="Phát âm / Romaji">
+          <span className="font-extrabold text-red-600 dark:text-red-400">{canon.displayRomaji}</span>
+          <span className="jp-text text-xs font-bold text-slate-600 dark:text-slate-300">({canon.kana})</span>
+        </DetailRow>
+        <DetailRow label="Chữ viết Nhật">
+          <span className="jp-text text-base font-black">{canon.japaneseWithReading}</span>
+        </DetailRow>
+        <DetailRow label="Nghĩa tiếng Việt">{canon.meaningVi}</DetailRow>
+        <DetailRow label="Hệ chữ (Script)">
+          <span
+            className={`rounded-lg border px-2 py-0.5 text-xs font-bold ${
+              SCRIPT_BADGE_TONE[canon.primaryScript]
+            }`}
+          >
+            {canon.primaryScript} — {canon.primaryScriptLabelVi}
+          </span>
+        </DetailRow>
+        {canon.hanVietNote && (
+          <DetailRow label="Âm Hán Việt">
+            <span className="rounded-lg border border-slate-200 bg-slate-100 px-2.5 py-0.5 text-xs font-bold text-slate-700 dark:border-slate-700 dark:bg-sumi-800 dark:text-slate-200">
+              {canon.hanVietNote}
+            </span>
+            <span className="text-[11px] font-normal text-slate-500">(Từ nguyên Hán–Việt hỗ trợ ghi nhớ)</span>
+          </DetailRow>
+        )}
+        <DetailRow label="Loại từ">{POS_LABELS[canon.partOfSpeech] ?? canon.partOfSpeechVi}</DetailRow>
+        {canon.usageNote && (
+          <DetailRow label="Ghi chú cú pháp">
+            <span className="text-xs font-semibold text-amber-700 dark:text-amber-300">{canon.usageNote}</span>
+          </DetailRow>
+        )}
         <DetailRow label="Ngữ vực (Register)">
           <span className={`rounded-lg border px-2 py-0.5 text-xs font-bold ${meta.registerTone}`}>
             {meta.registerLabel}
           </span>
         </DetailRow>
-        {meta.standardCounterpart && (
-          <DetailRow label="Đối chiếu Chuẩn">
-            <span className="jp-text rounded-md bg-slate-100 px-2 py-0.5 font-bold text-slate-800 dark:bg-sumi-800 dark:text-slate-100">
-              標準語: {meta.standardCounterpart}
-            </span>
-          </DetailRow>
-        )}
-        {meta.origin && (
-          <DetailRow label="Xuất xứ / Vùng">{meta.origin}</DetailRow>
-        )}
-        {meta.nuance && (
-          <DetailRow label="Sắc thái">{meta.nuance}</DetailRow>
-        )}
-        <DetailRow label="Hoàn cảnh dùng">
-          <span className="text-xs font-normal leading-relaxed text-slate-600 dark:text-slate-300">
-            {meta.usageContext}
+        <DetailRow label="Nguồn xác thực">
+          <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+            {canon.provenance.labelVi} ({canon.provenance.status})
           </span>
         </DetailRow>
         <DetailRow label="Tần suất">
           <FrequencyDots dots={freq.dots} label={freq.label} />
         </DetailRow>
-        <DetailRow label="Chủ đề">
-          {meta.cleanTags.length === 0 ? (
-            <span className="text-slate-500 dark:text-slate-400">Giao tiếp & Đời sống</span>
-          ) : (
-            meta.cleanTags.map((t) => (
-              <span
-                key={t}
-                className="rounded-full border border-red-100 bg-red-50 px-2.5 py-0.5 text-[11px] font-semibold text-red-600 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-300"
-              >
-                {t}
-              </span>
-            ))
-          )}
-        </DetailRow>
       </dl>
 
       <section aria-labelledby="vocab-examples">
         <div className="mb-1 flex items-center justify-between">
-          <h3 id="vocab-examples" className="text-base font-extrabold text-slate-900 dark:text-white">
+          <h3 id="vocab-examples" className="text-sm font-extrabold text-slate-900 dark:text-white">
             Ví dụ câu
           </h3>
           {v.examples.length > 3 && (
@@ -700,7 +852,7 @@ function VocabDetail({
             Từ này chưa có câu ví dụ.
           </p>
         ) : (
-          <ol className="mt-2 space-y-2.5">
+          <ol className="mt-2 space-y-2">
             {examples.map((ex, i) => (
               <li
                 key={ex.id ?? i}
@@ -708,10 +860,13 @@ function VocabDetail({
               >
                 <Icon name="star" filled className="h-3.5 w-3.5 text-red-500" />
                 <div className="min-w-0">
-                  <p className="jp-text text-[15px] font-semibold leading-[2] text-slate-900 dark:text-white">
+                  <p className="jp-text text-[14px] font-semibold leading-[1.9] text-slate-900 dark:text-white">
                     <ExampleText sentence={ex.japanese} highlight={hl} />
                   </p>
-                  <p className="text-[13px] text-slate-500 dark:text-slate-400">{ex.meaning}</p>
+                  {showRomaji && ex.romaji && (
+                    <p className="text-xs italic text-slate-400 dark:text-slate-500">{ex.romaji}</p>
+                  )}
+                  <p className="text-[12px] text-slate-600 dark:text-slate-300">{ex.meaning}</p>
                 </div>
                 <IconButton label="Nghe câu ví dụ" tone="brand" active={speakingText === ex.japanese} onClick={() => onSpeak(ex.japanese)}>
                   <Icon name="speaker" className="h-4 w-4" />
@@ -722,7 +877,7 @@ function VocabDetail({
         )}
       </section>
 
-      <SrsBox name={`「${v.word}」`} saved={saved} onSave={onSave} />
+      <SrsBox name={`「${canon.japanese}」`} saved={saved} onSave={onSave} />
     </div>
   );
 }
@@ -746,12 +901,13 @@ function KanjiDetail({
 }) {
   const on = readingsOf(k, "ONYOMI");
   const kun = readingsOf(k, "KUNYOMI");
+  const parsed = parseKanjiMeaningAndHanViet(k.meaning);
   return (
-    <div className="space-y-5">
+    <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Badge variant="brand" className="text-[11px] uppercase">
-            Hán tự
+            Kanji (Chữ Hán Nhật)
           </Badge>
           <Badge variant="amber" className="text-[11px]">
             JLPT {k.jlptLevel}
@@ -767,10 +923,14 @@ function KanjiDetail({
         </IconButton>
       </div>
 
+      {/* Trình bày chuẩn: Phiên âm (On/Kun) -> Chữ Nhật -> Nghĩa tiếng Việt */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="jp-text text-7xl font-black leading-none text-slate-900 dark:text-white">{k.character}</h2>
-          <p className="mt-2 text-base font-semibold text-slate-600 dark:text-slate-300">{k.meaning}</p>
+          <p className="jp-text text-sm font-semibold text-red-600 dark:text-red-400">
+            {[on.length > 0 && `On: ${on.join("、")}`, kun.length > 0 && `Kun: ${kun.join("、")}`].filter(Boolean).join("  ·  ") || "—"}
+          </p>
+          <h2 className="jp-text mt-1 text-6xl font-black leading-none text-slate-900 dark:text-white">{k.character}</h2>
+          <p className="mt-2 text-base font-bold text-slate-800 dark:text-slate-100">{parsed.meaningVi}</p>
         </div>
         <div className="flex shrink-0 items-center gap-2">
           <IconButton label="Nghe phát âm" tone="brand" active={speakingText === k.character} className="h-11 w-11" onClick={() => onSpeak(k.character)}>
@@ -791,9 +951,7 @@ function KanjiDetail({
       </div>
 
       <dl className={detailTable}>
-        <DetailRow label="Nghĩa tiếng Việt">{k.meaning}</DetailRow>
-        <DetailRow label="Số nét viết">{k.strokeCount} nét</DetailRow>
-        <DetailRow label="Âm On">
+        <DetailRow label="Âm On (Âm Hán Nhật)">
           {on.length === 0 ? (
             <span className="text-slate-400">—</span>
           ) : (
@@ -804,7 +962,7 @@ function KanjiDetail({
             ))
           )}
         </DetailRow>
-        <DetailRow label="Âm Kun">
+        <DetailRow label="Âm Kun (Âm Thuần Nhật)">
           {kun.length === 0 ? (
             <span className="text-slate-400">—</span>
           ) : (
@@ -815,9 +973,21 @@ function KanjiDetail({
             ))
           )}
         </DetailRow>
+        <DetailRow label="Chữ viết Nhật">
+          <span className="jp-text text-xl font-black">{k.character}</span>
+        </DetailRow>
+        <DetailRow label="Nghĩa tiếng Việt">{parsed.meaningVi}</DetailRow>
+        {parsed.hanViet && (
+          <DetailRow label="Âm Hán Việt">
+            <span className="rounded-lg border border-slate-200 bg-slate-100 px-2.5 py-0.5 text-xs font-bold text-slate-700 dark:border-slate-700 dark:bg-sumi-800 dark:text-slate-200">
+              {parsed.hanViet}
+            </span>
+          </DetailRow>
+        )}
+        <DetailRow label="Số nét viết">{k.strokeCount} nét</DetailRow>
       </dl>
 
-      <SrsBox name="Hán tự này" saved={saved} onSave={onSave} />
+      <SrsBox name={`chữ 「${k.character}」`} saved={saved} onSave={onSave} />
     </div>
   );
 }
@@ -828,6 +998,7 @@ function GridCard({
   c,
   saved,
   mastered,
+  showRomaji,
   speakingText,
   onSpeak,
   onSave,
@@ -836,6 +1007,7 @@ function GridCard({
   c: CardData;
   saved: boolean;
   mastered: boolean;
+  showRomaji: boolean;
   speakingText: string | null;
   onSpeak: (t: string) => void;
   onSave: () => void;
@@ -846,16 +1018,24 @@ function GridCard({
       <div>
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
-            <div className="flex items-center gap-2">
-              <h3 className="jp-text break-words text-3xl font-black text-slate-900 dark:text-white">{c.front}</h3>
-              <IconButton label="Nghe phát âm" tone="brand" active={speakingText === c.front} className="h-11 w-11" onClick={() => onSpeak(c.front)}>
+            {/* 1. Phát âm / Romaji */}
+            <p className="text-sm font-extrabold text-red-600 dark:text-red-400">
+              {showRomaji && c.displayRomaji ? c.displayRomaji : c.reading}
+              {showRomaji && c.displayRomaji && c.reading && (
+                <span className="jp-text ml-2 text-xs font-semibold text-slate-500 dark:text-slate-400">
+                  ({c.reading})
+                </span>
+              )}
+            </p>
+            {/* 2. Chữ viết Nhật */}
+            <div className="mt-1 flex items-center gap-2">
+              <h3 className="jp-text break-words text-2xl font-black text-slate-900 dark:text-white">
+                {c.frontWithReading}
+              </h3>
+              <IconButton label="Nghe phát âm" tone="brand" active={speakingText === c.front} className="h-10 w-10" onClick={() => onSpeak(c.front)}>
                 <Icon name="speaker" className="h-4 w-4" />
               </IconButton>
             </div>
-            <p className="jp-text mt-1 text-sm text-slate-600 dark:text-slate-300">
-              {c.reading}
-              {c.romaji && <span className="ml-2 text-slate-500 dark:text-slate-400">{c.romaji}</span>}
-            </p>
           </div>
           <div className="flex flex-col items-end gap-1">
             <Badge variant="amber" className="text-[11px]">
@@ -864,10 +1044,23 @@ function GridCard({
             <Badge variant="sky" className="text-[11px]">
               {c.label}
             </Badge>
+            {c.scriptBadge && (
+              <span className="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[10px] font-bold text-slate-600 dark:border-slate-700 dark:bg-sumi-800 dark:text-slate-300">
+                {c.scriptBadge}
+              </span>
+            )}
           </div>
         </div>
 
-        <p className="mt-3 border-t border-slate-100 pt-3 text-sm font-bold text-slate-800 dark:border-slate-800 dark:text-slate-100">{c.meaning}</p>
+        {/* 3. Nghĩa tiếng Việt */}
+        <div className="mt-3 border-t border-slate-100 pt-3 dark:border-slate-800">
+          <p className="text-sm font-bold text-slate-800 dark:text-slate-100">{c.meaning}</p>
+          {c.hanVietNote && (
+            <p className="mt-1 text-[11px] font-semibold text-slate-500 dark:text-slate-400">
+              Hán Việt: {c.hanVietNote}
+            </p>
+          )}
+        </div>
 
         {c.example && (
           <div className="mt-3 rounded-2xl border border-slate-100 bg-slate-50 p-3 dark:border-slate-800 dark:bg-sumi-950">
@@ -898,21 +1091,6 @@ function GridCard({
 }
 
 /* ============================== SIDEBAR & DECOR ============================== */
-
-function PromoBanner() {
-  return (
-    <div className="overflow-hidden rounded-3xl border border-rose-100 bg-white shadow-sm dark:border-slate-800">
-      <Image
-        src={BASE64_IMAGES.cangHocCangGioi}
-        alt="Càng học càng giỏi, càng gần ước mơ!"
-        width={1720}
-        height={914}
-        sizes="(min-width: 1280px) 440px, 380px"
-        className="h-auto w-full"
-      />
-    </div>
-  );
-}
 
 function ProgressCard({
   vocab,
@@ -1016,6 +1194,7 @@ export function VocabKanjiClient({
   const [viewMode, setViewMode] = useState<ViewMode>("LIST");
   const [sortMode, setSortMode] = useState<SortMode>("DEFAULT");
   const [posFilter, setPosFilter] = useState("ALL");
+  const [scriptFilter, setScriptFilter] = useState<"ALL" | JapaneseScriptType>("ALL");
   const [tagFilter, setTagFilter] = useState("ALL");
   const [srsOnlyFilter, setSrsOnlyFilter] = useState(false);
   const [advancedOpen, setAdvancedOpen] = useState(false);
@@ -1037,6 +1216,7 @@ export function VocabKanjiClient({
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
   const [showAllExamples, setShowAllExamples] = useState(false);
+  const [showRomaji, setShowRomaji] = useState(true);
 
   const [flashcardIndex, setFlashcardIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
@@ -1044,6 +1224,15 @@ export function VocabKanjiClient({
 
   const isDesktop = useIsDesktop();
   const { playClick, playCorrect, showToast, speak, speakingText } = useSoundAndTheme();
+  const userRank = LEVEL_ORDER[defaultLevel] ?? 0;
+
+  const canonicalVocabMap = useMemo(() => {
+    const map = new Map<string, CanonicalVocabularyItem>();
+    for (const v of vocabulary) {
+      map.set(v.id, toCanonicalVocabularyItem(v));
+    }
+    return map;
+  }, [vocabulary]);
 
   /* ---------- effects ---------- */
 
@@ -1073,7 +1262,7 @@ export function VocabKanjiClient({
     setFlashcardIndex(0);
     setIsFlipped(false);
     setSelectedId(null);
-  }, [levelFilter, tab, posFilter, tagFilter, srsOnlyFilter, query, viewMode, sortMode]);
+  }, [levelFilter, tab, posFilter, scriptFilter, tagFilter, srsOnlyFilter, query, viewMode, sortMode]);
 
   useEffect(() => {
     setShowAllExamples(false);
@@ -1176,6 +1365,7 @@ export function VocabKanjiClient({
     setQuery("");
     setLevelFilter("ALL");
     setPosFilter("ALL");
+    setScriptFilter("ALL");
     setTagFilter("ALL");
     setSrsOnlyFilter(false);
   };
@@ -1185,6 +1375,9 @@ export function VocabKanjiClient({
   const filteredVocab = useMemo(() => {
     let result = levelFilter === "ALL" ? vocabulary : vocabulary.filter((v) => v.jlptLevel === levelFilter);
     if (posFilter !== "ALL") result = result.filter((v) => v.partOfSpeech === posFilter);
+    if (scriptFilter !== "ALL") {
+      result = result.filter((v) => canonicalVocabMap.get(v.id)?.scriptType === scriptFilter);
+    }
     if (tagFilter !== "ALL") result = result.filter((v) => v.tags && v.tags.includes(tagFilter));
     if (srsOnlyFilter) result = result.filter((v) => savedSet.has(v.id));
     if (debouncedQuery.trim()) {
@@ -1199,7 +1392,7 @@ export function VocabKanjiClient({
       );
     }
     return sortItems(result, sortMode, savedSet, (v) => v.kana);
-  }, [vocabulary, debouncedQuery, levelFilter, posFilter, tagFilter, srsOnlyFilter, savedSet, sortMode]);
+  }, [vocabulary, canonicalVocabMap, debouncedQuery, levelFilter, posFilter, scriptFilter, tagFilter, srsOnlyFilter, savedSet, sortMode]);
 
   const filteredKanji = useMemo(() => {
     let result = levelFilter === "ALL" ? kanji : kanji.filter((k) => k.jlptLevel === levelFilter);
@@ -1293,12 +1486,18 @@ export function VocabKanjiClient({
   const activeKanji = tab === "KANJI" ? (kanjiSlice.find((k) => k.id === selectedId) ?? kanjiSlice[0] ?? null) : null;
 
   const sliceCards = useMemo<CardData[]>(
-    () => (tab === "VOCAB" ? vocabSlice.map(vocabToCard) : kanjiSlice.map(kanjiToCard)),
-    [tab, vocabSlice, kanjiSlice]
+    () =>
+      tab === "VOCAB"
+        ? vocabSlice.map((v) => vocabToCard(v, canonicalVocabMap.get(v.id)!))
+        : kanjiSlice.map(kanjiToCard),
+    [tab, vocabSlice, kanjiSlice, canonicalVocabMap]
   );
   const flashcards = useMemo<CardData[]>(
-    () => (tab === "VOCAB" ? filteredVocab.map(vocabToCard) : filteredKanji.map(kanjiToCard)),
-    [tab, filteredVocab, filteredKanji]
+    () =>
+      tab === "VOCAB"
+        ? filteredVocab.map((v) => vocabToCard(v, canonicalVocabMap.get(v.id)!))
+        : filteredKanji.map(kanjiToCard),
+    [tab, filteredVocab, filteredKanji, canonicalVocabMap]
   );
   const flashcard = flashcards.length > 0 ? flashcards[Math.min(flashcardIndex, flashcards.length - 1)] : null;
 
@@ -1319,12 +1518,14 @@ export function VocabKanjiClient({
   const detail = activeVocab ? (
     <VocabDetail
       v={activeVocab}
+      canon={canonicalVocabMap.get(activeVocab.id)!}
       saved={savedSet.has(activeVocab.id)}
+      showRomaji={showRomaji}
       speakingText={speakingText}
       showAllExamples={showAllExamples}
       onToggleExamples={() => setShowAllExamples((s) => !s)}
       onSpeak={speak}
-      onSave={() => handleAddToSrs("VOCAB", activeVocab.id, activeVocab.word)}
+      onSave={() => handleAddToSrs("VOCAB", activeVocab.id, canonicalVocabMap.get(activeVocab.id)?.writtenForm || activeVocab.word)}
     />
   ) : activeKanji ? (
     <KanjiDetail
@@ -1371,7 +1572,7 @@ export function VocabKanjiClient({
   return (
     <div id="dictionary">
       <div className="rounded-t-[40px] rounded-b-[28px] border border-white/80 bg-white p-4 shadow-[0_24px_70px_rgba(15,23,42,0.10)] dark:border-slate-800 dark:bg-sumi-900 sm:p-6">
-        {/* ---------- Tabs + linh vật ---------- */}
+        {/* ---------- Tabs + Chuẩn hiển thị ---------- */}
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div className="flex flex-wrap gap-2.5">
             <button
@@ -1380,7 +1581,7 @@ export function VocabKanjiClient({
               aria-pressed={tab === "VOCAB"}
               className={`${tabBase} ${tab === "VOCAB" ? tabActive : tabIdle}`}
             >
-              <Icon name="book" className="h-[18px] w-[18px]" /> Từ vựng
+              <Icon name="book" className="h-[18px] w-[18px]" /> Từ vựng ({vocabulary.length})
             </button>
             <button
               type="button"
@@ -1388,26 +1589,20 @@ export function VocabKanjiClient({
               aria-pressed={tab === "KANJI"}
               className={`${tabBase} ${tab === "KANJI" ? tabActive : tabIdle}`}
             >
-              <span className="jp-text text-lg leading-none">漢</span> Hán tự
+              <span className="jp-text text-lg leading-none">漢</span> Hán tự ({kanji.length})
             </button>
             <Link href="/app/grammar" onClick={playClick} className={`${tabBase} ${tabIdle}`}>
               <Icon name="star" className="h-[18px] w-[18px]" /> Ngữ pháp
             </Link>
           </div>
 
-          <div className="hidden items-center gap-2 md:flex">
-            <p className="max-w-[170px] -rotate-3 text-right text-[17px] font-semibold italic leading-tight text-red-600 [font-family:'Segoe_Script','Brush_Script_MT','Comic_Sans_MS',cursive]">
-              Học mỗi ngày,
-              <br />
-              tiến bộ từng chút!
-            </p>
-            <Image
-              src={BASE64_IMAGES.catKanji}
-              alt="Mèo may mắn"
-              width={96}
-              height={96}
-              className="-mb-2 -mt-6 h-24 w-auto shrink-0 object-contain"
-            />
+          <div className="hidden items-center gap-2 rounded-2xl border border-slate-100 bg-slate-50/80 px-3.5 py-2 text-xs font-bold text-slate-600 dark:border-slate-800 dark:bg-sumi-800/80 dark:text-slate-300 md:flex">
+            <span className="text-red-600 dark:text-red-400">Chuẩn trình bày:</span>
+            <span>Phát âm / Romaji</span>
+            <span className="text-slate-300 dark:text-slate-600">|</span>
+            <span className="jp-text">Chữ Nhật（かな）</span>
+            <span className="text-slate-300 dark:text-slate-600">|</span>
+            <span>Nghĩa tiếng Việt</span>
           </div>
         </div>
 
@@ -1422,8 +1617,8 @@ export function VocabKanjiClient({
               aria-label={tab === "VOCAB" ? "Tìm từ vựng" : "Tìm Hán tự"}
               placeholder={
                 tab === "VOCAB"
-                  ? "Tìm từ vựng, nghĩa, cách đọc... (ví dụ: 学校, がっこう, trường học)"
-                  : "Tìm Hán tự, nghĩa, âm đọc... (ví dụ: 学, gaku, học)"
+                  ? "Tìm theo Romaji, Chữ Nhật, Kana, nghĩa Việt... (ví dụ: gakkou, 学校, がっこう, trường học)"
+                  : "Tìm Hán tự, nghĩa Việt, âm On/Kun... (ví dụ: 学, gaku, học)"
               }
               className="h-11 w-full rounded-2xl border border-slate-200 bg-white pl-11 pr-10 text-sm text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-red-400 focus:ring-4 focus:ring-red-500/10 dark:border-slate-700 dark:bg-sumi-900 dark:text-white [&::-webkit-search-cancel-button]:hidden"
             />
@@ -1443,8 +1638,32 @@ export function VocabKanjiClient({
             <SelectField label="JLPT" value={levelFilter} options={LEVEL_OPTIONS} onChange={setLevelFilter} />
             {tab === "VOCAB" && (
               <>
+                <SelectField
+                  label="Hệ chữ"
+                  value={scriptFilter}
+                  options={SCRIPT_FILTER_OPTIONS}
+                  onChange={(v) => setScriptFilter(v as "ALL" | JapaneseScriptType)}
+                />
                 <SelectField label="Chủ đề" value={tagFilter} options={topicOptions} onChange={setTagFilter} />
                 <SelectField label="Loại từ" value={posFilter} options={POS_OPTIONS} onChange={setPosFilter} />
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={showRomaji}
+                  onClick={() => {
+                    playClick();
+                    setShowRomaji((r) => !r);
+                  }}
+                  title="Bật/tắt hiển thị Romaji ở cột phát âm"
+                  className={`inline-flex h-11 items-center gap-1.5 rounded-2xl border px-3.5 text-xs font-bold shadow-sm transition ${
+                    showRomaji
+                      ? "border-red-300 bg-red-50 text-red-700 dark:border-red-900/70 dark:bg-red-950/40 dark:text-red-300"
+                      : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 dark:border-slate-700 dark:bg-sumi-900 dark:text-slate-300"
+                  }`}
+                >
+                  <span>あ/A</span>
+                  <span>Romaji: {showRomaji ? "Bật" : "Tắt"}</span>
+                </button>
               </>
             )}
             <button
@@ -1627,37 +1846,47 @@ export function VocabKanjiClient({
               {totalItems === 0 ? (
                 emptyState
               ) : (
-                <ul className="space-y-0.5">
-                  {tab === "VOCAB"
-                    ? vocabSlice.map((v) => (
-                        <VocabRow
-                          key={v.id}
-                          v={v}
-                          selected={isDesktop && activeVocab?.id === v.id}
-                          starred={starredSet.has(v.id)}
-                          saved={savedSet.has(v.id)}
-                          speakingText={speakingText}
-                          onSelect={() => selectItem(v.id)}
-                          onToggleStar={() => toggleStar(v.id)}
-                          onSpeak={speak}
-                          onSave={() => handleAddToSrs("VOCAB", v.id, v.word)}
-                        />
-                      ))
-                    : kanjiSlice.map((k) => (
-                        <KanjiRow
-                          key={k.id}
-                          k={k}
-                          selected={isDesktop && activeKanji?.id === k.id}
-                          starred={starredSet.has(k.id)}
-                          saved={savedSet.has(k.id)}
-                          speakingText={speakingText}
-                          onSelect={() => selectItem(k.id)}
-                          onToggleStar={() => toggleStar(k.id)}
-                          onSpeak={speak}
-                          onSave={() => handleAddToSrs("KANJI", k.id, k.character)}
-                        />
-                      ))}
-                </ul>
+                <>
+                  <ListColumnsHeader tab={tab} />
+                  <ul className="space-y-0.5">
+                    {tab === "VOCAB"
+                      ? vocabSlice.map((v) => {
+                          const canon = canonicalVocabMap.get(v.id)!;
+                          return (
+                            <VocabRow
+                              key={v.id}
+                              v={v}
+                              canon={canon}
+                              showRomaji={showRomaji}
+                              selected={isDesktop && activeVocab?.id === v.id}
+                              starred={starredSet.has(v.id)}
+                              saved={savedSet.has(v.id)}
+                              isHigherLevel={(LEVEL_ORDER[v.jlptLevel] ?? 0) > userRank}
+                              speakingText={speakingText}
+                              onSelect={() => selectItem(v.id)}
+                              onToggleStar={() => toggleStar(v.id)}
+                              onSpeak={speak}
+                              onSave={() => handleAddToSrs("VOCAB", v.id, canon.writtenForm)}
+                            />
+                          );
+                        })
+                      : kanjiSlice.map((k) => (
+                          <KanjiRow
+                            key={k.id}
+                            k={k}
+                            selected={isDesktop && activeKanji?.id === k.id}
+                            starred={starredSet.has(k.id)}
+                            saved={savedSet.has(k.id)}
+                            isHigherLevel={(LEVEL_ORDER[k.jlptLevel] ?? 0) > userRank}
+                            speakingText={speakingText}
+                            onSelect={() => selectItem(k.id)}
+                            onToggleStar={() => toggleStar(k.id)}
+                            onSpeak={speak}
+                            onSave={() => handleAddToSrs("KANJI", k.id, k.character)}
+                          />
+                        ))}
+                  </ul>
+                </>
               )}
               <Pagination page={currentPage} totalPages={totalPages} onPage={goToPage} />
             </div>
@@ -1674,7 +1903,6 @@ export function VocabKanjiClient({
                   {detail ?? <p className="py-10 text-center text-sm text-slate-500">Chọn một mục để xem chi tiết.</p>}
                 </div>
               </div>
-              <PromoBanner />
               <ProgressCard vocab={progress.vocab} kanji={progress.kanji} grammar={{ done: grammarProgress.done, total: grammarProgress.total }} />
               <QuoteCard />
             </aside>
@@ -1704,6 +1932,7 @@ export function VocabKanjiClient({
                     c={c}
                     saved={savedSet.has(c.id)}
                     mastered={masteredSet.has(c.id)}
+                    showRomaji={showRomaji}
                     speakingText={speakingText}
                     onSpeak={speak}
                     onSave={() => handleAddToSrs(c.type, c.id, c.front)}
@@ -1755,15 +1984,22 @@ export function VocabKanjiClient({
                 >
                   {!isFlipped ? (
                     <div className="my-auto flex flex-col items-center space-y-3 text-center">
-                      <span className="text-xs font-bold text-slate-400">Mặt trước – chạm để lật thẻ</span>
-                      <h2 className="jp-text text-6xl font-black text-slate-900 dark:text-white">{flashcard.front}</h2>
-                      <p className="jp-text text-lg font-bold text-red-600 dark:text-red-400">{flashcard.reading}</p>
-                      {flashcard.romaji && <p className="text-xs text-slate-500 dark:text-slate-400">{flashcard.romaji}</p>}
+                      <span className="text-xs font-bold text-slate-400">Mặt trước – Phát âm / Romaji | Chữ viết</span>
+                      {/* 1. Phát âm / Romaji -> 2. Chữ Nhật */}
+                      <p className="text-base font-extrabold text-red-600 dark:text-red-400">
+                        {showRomaji && flashcard.displayRomaji ? flashcard.displayRomaji : flashcard.reading}
+                      </p>
+                      {showRomaji && flashcard.displayRomaji && flashcard.reading && (
+                        <p className="jp-text text-xs font-medium text-slate-500 dark:text-slate-400">{flashcard.reading}</p>
+                      )}
+                      <h2 className="jp-text text-4xl font-black text-slate-900 dark:text-white sm:text-5xl">
+                        {flashcard.frontWithReading}
+                      </h2>
                       <button
                         type="button"
                         onClick={(e) => {
                           e.stopPropagation();
-                          speak(flashcard.front);
+                          speak(flashcard.reading || flashcard.front);
                         }}
                         className="mt-2 inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-700 shadow-sm hover:bg-red-50 dark:border-slate-700 dark:bg-sumi-800 dark:text-slate-300"
                       >
@@ -1772,9 +2008,29 @@ export function VocabKanjiClient({
                     </div>
                   ) : (
                     <div className="my-auto flex flex-col items-center space-y-3 text-center">
-                      <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">Mặt sau – nghĩa & ví dụ</span>
+                      <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">
+                        Mặt sau – Phát âm / Romaji | Chữ viết | Nghĩa tiếng Việt
+                      </span>
+                      <p className="text-sm font-extrabold text-red-600 dark:text-red-400">
+                        {showRomaji && flashcard.displayRomaji ? flashcard.displayRomaji : flashcard.reading}
+                      </p>
+                      <p className="jp-text text-2xl font-black text-slate-700 dark:text-slate-200">
+                        {flashcard.frontWithReading}
+                      </p>
                       <h3 className="text-3xl font-black text-slate-900 dark:text-white">{flashcard.meaning}</h3>
-                      <Badge variant="sky">{flashcard.label}</Badge>
+                      {flashcard.hanVietNote && (
+                        <p className="text-xs font-bold text-slate-500 dark:text-slate-400">
+                          Hán Việt: {flashcard.hanVietNote}
+                        </p>
+                      )}
+                      <div className="flex flex-wrap items-center justify-center gap-1.5">
+                        <Badge variant="sky">{flashcard.label}</Badge>
+                        {flashcard.scriptBadge && (
+                          <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-0.5 text-xs font-bold text-slate-700 dark:border-slate-700 dark:bg-sumi-800 dark:text-slate-200">
+                            {flashcard.scriptBadge}
+                          </span>
+                        )}
+                      </div>
                       {flashcard.example && (
                         <div className="mt-3 w-full max-w-md rounded-2xl border border-slate-200 bg-white/80 p-4 text-left dark:border-slate-800 dark:bg-sumi-950/80">
                           <p className="jp-text text-base font-semibold leading-[2] text-slate-800 dark:text-slate-100">
@@ -1785,7 +2041,7 @@ export function VocabKanjiClient({
                       )}
                     </div>
                   )}
-                  <div className="flex items-center justify-between border-t border-slate-200/60 pt-4 text-xs font-bold text-slate-500 dark:text-slate-400 dark:border-slate-800">
+                  <div className="flex items-center justify-between border-t border-slate-200/60 pt-4 text-xs font-bold text-slate-500 dark:border-slate-800 dark:text-slate-400">
                     <span>{isFlipped ? "Chạm để xem lại mặt trước" : "Chạm để xem nghĩa"}</span>
                     <span>Chủ đề: {flashcard.topic}</span>
                   </div>
@@ -1862,29 +2118,49 @@ export function VocabKanjiClient({
                   </div>
 
                   <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                    {visible.map((v) => (
-                      <div
-                        key={v.id}
-                        className="flex items-start justify-between gap-2 rounded-2xl border border-slate-100 bg-slate-50 p-3.5 transition hover:border-red-300 dark:border-slate-800 dark:bg-sumi-950"
-                      >
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-1.5">
-                            <span className="jp-text text-lg font-black text-slate-900 dark:text-white">{v.word}</span>
-                            <button
-                              type="button"
-                              aria-label={`Nghe phát âm ${v.word}`}
-                              onClick={() => speak(v.word)}
-                              className="text-slate-500 hover:text-red-600 dark:text-slate-400"
-                            >
-                              <Icon name="speaker" className="h-4 w-4" />
-                            </button>
+                    {visible.map((v) => {
+                      const canon = canonicalVocabMap.get(v.id)!;
+                      return (
+                        <div
+                          key={v.id}
+                          className="flex items-start justify-between gap-2 rounded-2xl border border-slate-100 bg-slate-50 p-3.5 transition hover:border-red-300 dark:border-slate-800 dark:bg-sumi-950"
+                        >
+                          <div className="min-w-0">
+                            {/* 1. Phát âm / Romaji -> 2. Chữ Nhật -> 3. Nghĩa tiếng Việt */}
+                            <p className="text-xs font-extrabold text-red-600 dark:text-red-400">
+                              {showRomaji ? canon.displayRomaji : canon.kanaReading}
+                              {showRomaji && canon.kanaReading && (
+                                <span className="jp-text ml-1.5 font-normal text-slate-500">({canon.kanaReading})</span>
+                              )}
+                            </p>
+                            <div className="mt-0.5 flex items-center gap-1.5">
+                              <span className="jp-text text-lg font-black text-slate-900 dark:text-white">
+                                {canon.displayWrittenWithReading}
+                              </span>
+                              <button
+                                type="button"
+                                aria-label={`Nghe phát âm ${canon.writtenForm}`}
+                                onClick={() => speak(canon.kanaReading || canon.writtenForm)}
+                                className="text-slate-500 hover:text-red-600 dark:text-slate-400"
+                              >
+                                <Icon name="speaker" className="h-4 w-4" />
+                              </button>
+                            </div>
+                            <p className="mt-1 text-xs font-bold text-slate-800 dark:text-slate-200">{canon.meaningVi}</p>
+                            {canon.hanVietNote && (
+                              <p className="mt-0.5 text-[11px] font-medium text-slate-500 dark:text-slate-400">
+                                Hán Việt: {canon.hanVietNote}
+                              </p>
+                            )}
                           </div>
-                          <p className="jp-text text-sm font-bold text-red-600 dark:text-red-400">{v.kana}</p>
-                          <p className="mt-1 text-xs font-bold text-slate-800 dark:text-slate-200">{v.meaning}</p>
+                          <SaveButton
+                            saved={savedSet.has(v.id)}
+                            onSave={() => handleAddToSrs("VOCAB", v.id, canon.writtenForm)}
+                            className="h-8 shrink-0 px-2.5"
+                          />
                         </div>
-                        <SaveButton saved={savedSet.has(v.id)} onSave={() => handleAddToSrs("VOCAB", v.id, v.word)} className="h-8 shrink-0 px-2.5" />
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </section>
               );

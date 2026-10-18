@@ -5,6 +5,7 @@ import Image from "next/image";
 import { BASE64_IMAGES } from "@/lib/assets/base64Images";
 import "./dashboard.css";
 import { authOptions } from "@/lib/auth-options";
+import { resolveCanonicalUserLevel, resolvePersonalizationTrack } from "@/lib/learning-level";
 import { prisma } from "@/lib/prisma";
 import { calculateLevel } from "@/lib/level";
 import { localDateKey } from "@/lib/streak";
@@ -16,6 +17,7 @@ import {
 } from "@/components/DashboardArt";
 import { ActivityButton } from "./ActivityButton";
 import { buildLearningPath, sanitizeAnswers } from "@/lib/personalization";
+import { getLessonCurriculumMetadata } from "@/lib/curriculum-tracks";
 
 export const metadata = { title: "Dashboard — Nihon Quest" };
 
@@ -55,7 +57,7 @@ export default async function AppHome() {
   if (!user.onboardingCompleted) redirect("/onboarding");
 
   const level = calculateLevel(user.totalXP);
-  const userLevel = user.learningLevel ?? "N5";
+  const userLevel = resolveCanonicalUserLevel(user);
 
   const allLessons = await prisma.lesson.findMany({
     where: { isPublished: true, level: userLevel },
@@ -64,6 +66,7 @@ export default async function AppHome() {
   });
   const completed = allLessons.filter((l) => l.progress[0]?.status === "COMPLETED").length;
   const currentLesson = allLessons.find((l) => l.progress[0]?.status !== "COMPLETED") || allLessons[0];
+  const currentCurriculum = currentLesson ? getLessonCurriculumMetadata(currentLesson) : null;
   const lessonPercent = Math.round((completed / Math.max(1, allLessons.length)) * 100);
 
   const allJourneyLocations = await prisma.journeyLocation.findMany({
@@ -101,6 +104,16 @@ export default async function AppHome() {
     missions = await prisma.userDailyMission.findMany({ where: { userId: uid, date: today }, include: { mission: true } });
   }
 
+  for (const m of missions) {
+    if (m.status !== "COMPLETED" && m.progress >= m.targetCount) {
+      await prisma.userDailyMission.update({
+        where: { id: m.id },
+        data: { status: "COMPLETED", completedAt: new Date() },
+      });
+      m.status = "COMPLETED";
+    }
+  }
+
   const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
   const txSums = await prisma.xpTransaction.groupBy({
     by: ["userId"],
@@ -133,7 +146,7 @@ export default async function AppHome() {
   // Personalized learning path (lộ trình cá nhân hóa) from the 5
   // onboarding answers, with per-module completion resolved from lessons.
   const pathAnswers = sanitizeAnswers({
-    level: user.levelChoice || user.learningLevel,
+    level: resolvePersonalizationTrack(user),
     goal: user.learningGoal,
     dailyGoalMinutes: user.dailyGoalMinutes,
     focusSkill: user.focusSkill,
@@ -271,6 +284,11 @@ export default async function AppHome() {
                   <div className="nqd-focus-top">
                     {isNewLesson && <span className="nqd-new">New</span>}
                     <span className="nqd-pill">BÀI HỌC HÔM NAY</span>
+                    {currentCurriculum && (
+                      <span className="rounded-lg bg-red-100 px-2 py-0.5 text-xs font-black text-red-700 dark:bg-red-950/60 dark:text-red-300">
+                        {currentCurriculum.shortTrackLabel}
+                      </span>
+                    )}
                     <span>
                       {allLessons.length
                         ? `Bài ${Math.min(completed + 1, allLessons.length)} / ${allLessons.length}`
@@ -307,6 +325,7 @@ export default async function AppHome() {
                           <Link href={m.href}>{m.cta} →</Link>
                         </div>
                         {m.href === "/app/review" && dueReviewCount === 0 && <span className="nqd-tag">Đã ôn hết hôm nay</span>}
+                        {m.href === "/app/review" && dueReviewCount > 0 && <span className="nqd-tag font-bold text-red-600 dark:text-red-400">🔥 {dueReviewCount} thẻ cần ôn</span>}
                       </article>
                     ))}
                   </div>
@@ -385,14 +404,19 @@ export default async function AppHome() {
                         </span>
                         <b>
                           <span className="nqd-rank-name">{label}</span>
+                          {row.isBot && (
+                            <span className="ml-1.5 inline-flex items-center rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-bold text-slate-500 dark:bg-sumi-800 dark:text-slate-400">
+                              🤖 AI
+                            </span>
+                          )}
                         </b>
                         <em>{row.xp.toLocaleString("vi-VN")} XP</em>
                       </div>
                     );
                   })}
-                  {/*weeklyList.some((row) => row.isBot) && (
-                    <p className="nqd-bot-note">Học viên ảo (BOT) do hệ thống tạo để luyện cạnh tranh — không phải người dùng thật.</p>
-                  )*/}
+                  {weeklyList.some((row) => row.isBot) && (
+                    <p className="nqd-bot-note">💡 Nhân vật có nhãn 🤖 AI là đối thủ mô phỏng để duy trì nhịp độ luyện tập.</p>
+                  )}
                 </section>
 
                 <section className="nqd-card nqd-side-card">

@@ -1,7 +1,12 @@
 "use client";
 
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { RubyWord } from "@/components/JapaneseTerm";
 import { useSoundAndTheme } from "@/components/SoundAndThemeContext";
+import {
+  toCanonicalVocabularyItem,
+  type ContentProvenanceType,
+} from "@/lib/canonical-vocab";
 import {
   IconBook,
   IconChat,
@@ -19,6 +24,8 @@ export interface VocabView {
   kana: string;
   romaji: string;
   meaning: string;
+  partOfSpeech?: string;
+  jlptLevel?: string;
   kanji?: string;
   tags?: string;
   imageUrl?: string;
@@ -54,6 +61,12 @@ export interface LessonObjectiveNoteView {
   unitLabel: string;
   title: string;
   description: string;
+  trackTitleVi?: string;
+  chapterLabel?: string;
+  provenanceStatus?: ContentProvenanceType;
+  provenanceLabelVi?: string;
+  sourceReference?: string;
+  whyItMatters?: string;
   objectives: string[];
   registerComparison: {
     standard: string;
@@ -158,7 +171,6 @@ export function LessonStepsBar() {
       const isWide = window.matchMedia("(min-width: 1024px)").matches;
       let idx = 0;
       STEPS.forEach((step, i) => {
-        // Trên desktop quiz nằm cạnh nội dung nên không tính theo vị trí cuộn
         if (i === 3 && isWide) return;
         const el = document.getElementById(step.id);
         if (el && el.getBoundingClientRect().top <= line) idx = i;
@@ -215,8 +227,6 @@ export function LessonStepsBar() {
                 >
                   {i + 1}
                 </span>
-                {/* Ở 360px chỉ còn 4 vòng tròn trần nếu ẩn nhãn, nên hiện dạng
-                    viết tắt thay vì bỏ trống. */}
                 <span
                   className={`text-xs font-bold sm:text-sm ${
                     isActive ? "inline text-red-700 dark:text-red-300" : "hidden text-slate-500 dark:text-slate-400 sm:inline"
@@ -248,43 +258,66 @@ export function LessonStepsBar() {
 }
 
 // ─────────────────────────── 1. Từ vựng ───────────────────────────
-const VOCAB_LIMIT = 6;
-
-function VocabArt({ word }: { word: VocabView }) {
-  if (word.imageUrl) {
-    // eslint-disable-next-line @next/next/no-img-element
-    return <img src={word.imageUrl} alt="" className="h-16 w-16 shrink-0 rounded-xl object-cover" loading="lazy" />;
-  }
-  return (
-    <div className="jp-text grid h-16 w-16 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-rose-50 to-amber-50 text-2xl font-black text-red-700/80 dark:from-sumi-800 dark:to-sumi-900 dark:text-red-300/80">
-      {word.kanji || word.word.slice(0, 1)}
-    </div>
-  );
-}
+const VOCAB_LIMIT = 8;
 
 export function VocabSection({ words }: { words: VocabView[] }) {
   const { speak, speakAll } = useSoundAndTheme();
   const [expanded, setExpanded] = useState(false);
+  const [showRomaji, setShowRomaji] = useState(true);
 
-  const visible = expanded ? words : words.slice(0, VOCAB_LIMIT);
-  const remaining = words.length - VOCAB_LIMIT;
+  const canonicalWords = useMemo(
+    () =>
+      words.map((w) => ({
+        raw: w,
+        canon: toCanonicalVocabularyItem({
+          id: w.id,
+          word: w.word,
+          kana: w.kana,
+          romaji: w.romaji,
+          meaning: w.meaning,
+          partOfSpeech: w.partOfSpeech || "noun",
+          jlptLevel: w.jlptLevel || "N5",
+          tags: w.tags || "",
+        }),
+      })),
+    [words]
+  );
+
+  const visible = expanded ? canonicalWords : canonicalWords.slice(0, VOCAB_LIMIT);
+  const remaining = canonicalWords.length - VOCAB_LIMIT;
 
   return (
     <SectionShell
       id="lesson-vocab"
       icon={<IconCube />}
-      title="1. Từ vựng chủ đề"
-      subtitle="Nghe, lặp lại và ghi nhớ các từ thường gặp trong bài."
+      title="1. Từ vựng trọng tâm (Phát âm / Romaji | Chữ viết | Nghĩa)"
+      subtitle="Trình bày nhất quán theo một đơn vị từ vựng chuẩn: Phát âm / Romaji → Chữ viết tiếng Nhật (kèm cách đọc Kana) → Nghĩa tiếng Việt."
       action={
         words.length > 0 ? (
-          <button
-            type="button"
-            onClick={() => speakAll(words.map((w) => w.kana || w.word))}
-            className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-4 py-2.5 text-sm font-bold text-red-600 transition-colors hover:bg-rose-100 active:scale-[0.98] focus-visible:outline focus-visible:outline-2 focus-visible:outline-red-500 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-300 dark:hover:bg-red-950/70"
-          >
-            <IconPlay width={14} height={14} />
-            Nghe tất cả
-          </button>
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              role="switch"
+              aria-checked={showRomaji}
+              onClick={() => setShowRomaji((v) => !v)}
+              className={`inline-flex min-h-11 items-center gap-1.5 rounded-xl border px-3 py-2 text-xs font-bold transition ${
+                showRomaji
+                  ? "border-red-300 bg-red-50 text-red-700 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-300"
+                  : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:bg-sumi-900 dark:text-slate-300"
+              }`}
+            >
+              <span>あ/A</span>
+              <span>Romaji: {showRomaji ? "Bật" : "Tắt"}</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => speakAll(canonicalWords.map((item) => item.canon.kanaReading || item.canon.writtenForm))}
+              className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-4 py-2.5 text-sm font-bold text-red-600 transition-colors hover:bg-rose-100 active:scale-[0.98] focus-visible:outline focus-visible:outline-2 focus-visible:outline-red-500 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-300 dark:hover:bg-red-950/70"
+            >
+              <IconPlay width={14} height={14} />
+              Nghe tất cả
+            </button>
+          </div>
         ) : null
       }
     >
@@ -294,25 +327,78 @@ export function VocabSection({ words }: { words: VocabView[] }) {
         </p>
       ) : (
         <>
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-            {visible.map((w) => (
-              <article
-                key={w.id}
-                className="flex items-center gap-3 rounded-2xl border border-slate-200/80 bg-white p-3 dark:border-slate-800 dark:bg-sumi-900"
-              >
-                <VocabArt word={w} />
-                <div className="min-w-0 flex-1">
-                  <b className="jp-text block truncate text-[15px] font-black text-slate-900 dark:text-white">{w.word}</b>
-                  {w.kana && w.kana !== w.word && (
-                    <span className="jp-text block truncate text-xs text-slate-400">{w.kana}</span>
-                  )}
-                  <span className="block truncate text-xs text-slate-600 dark:text-slate-300" title={w.romaji}>
-                    {w.meaning}
-                  </span>
-                </div>
-                <SpeakButton onClick={() => speak(w.kana || w.word)} label={`Nghe từ ${w.word}`} />
-              </article>
-            ))}
+          <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white dark:border-slate-800 dark:bg-sumi-900">
+            <div className="hidden grid-cols-[minmax(130px,1.1fr)_minmax(160px,1.35fr)_minmax(170px,1.55fr)_52px] items-center gap-3 border-b border-slate-200/80 bg-slate-50/90 px-4 py-2.5 text-[11px] font-extrabold uppercase tracking-wider text-slate-500 dark:border-slate-800 dark:bg-sumi-950/80 dark:text-slate-400 sm:grid">
+              <span>Phát âm / Romaji</span>
+              <span>Chữ viết tiếng Nhật</span>
+              <span>Nghĩa tiếng Việt</span>
+              <span className="text-center">Nghe</span>
+            </div>
+
+            <div className="divide-y divide-slate-100 dark:divide-slate-800">
+              {visible.map(({ raw: w, canon }) => (
+                <article
+                  key={w.id}
+                  className="grid grid-cols-[1fr_auto] items-center gap-3 p-3.5 transition hover:bg-rose-50/30 dark:hover:bg-sumi-800/40 sm:grid-cols-[minmax(130px,1.1fr)_minmax(160px,1.35fr)_minmax(170px,1.55fr)_52px] sm:px-4"
+                >
+                  <div className="min-w-0 space-y-1.5 sm:contents">
+                    {/* Cột 1: Phát âm / Romaji */}
+                    <div className="min-w-0">
+                      <span className="block break-words text-sm font-extrabold text-red-600 dark:text-red-400">
+                        {showRomaji ? canon.displayRomaji : canon.kanaReading}
+                      </span>
+                      {showRomaji && canon.kanaReading && (
+                        <span className="jp-text block break-words text-xs font-medium text-slate-500 dark:text-slate-400">
+                          {canon.kanaReading}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Cột 2: Chữ viết tiếng Nhật */}
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <b className="jp-text break-words text-lg font-black text-slate-900 dark:text-white sm:text-xl">
+                          {canon.displayWrittenWithReading}
+                        </b>
+                      </div>
+                      <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                        <span className="rounded-md border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10px] font-bold text-slate-600 dark:border-slate-700 dark:bg-sumi-800 dark:text-slate-300">
+                          {canon.scriptType}
+                        </span>
+                        <span className="text-[11px] font-medium text-slate-400 dark:text-slate-500">
+                          {canon.partOfSpeechVi}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Cột 3: Nghĩa tiếng Việt & Hán Việt tách biệt */}
+                    <div className="min-w-0">
+                      <span className="block break-words text-sm font-bold text-slate-800 dark:text-slate-100">
+                        {canon.meaningVi}
+                      </span>
+                      {canon.hanVietNote && (
+                        <span className="mt-0.5 block text-[11px] font-semibold text-slate-500 dark:text-slate-400">
+                          Hán Việt: {canon.hanVietNote}
+                        </span>
+                      )}
+                      {canon.usageNote && (
+                        <span className="mt-0.5 block text-[11px] text-amber-700 dark:text-amber-300">
+                          {canon.usageNote}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end sm:justify-center">
+                    <SpeakButton
+                      onClick={() => speak(canon.kanaReading || canon.writtenForm)}
+                      label={`Nghe từ ${canon.writtenForm}`}
+                      size="sm"
+                    />
+                  </div>
+                </article>
+              ))}
+            </div>
           </div>
 
           {remaining > 0 && (
@@ -382,14 +468,31 @@ export function LessonObjectivesSection({ info }: { info: LessonObjectiveNoteVie
         className="grid gap-4 rounded-3xl border border-slate-200/80 bg-white/95 p-5 shadow-sm dark:border-slate-800 dark:bg-sumi-900/85 md:grid-cols-2"
       >
         <div className="space-y-2.5">
-          <div className="flex items-center gap-2">
-            <span className="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-rose-100 text-sm font-black text-red-600 dark:bg-red-950/60 dark:text-red-300">
-              🎯
-            </span>
-            <h2 className="text-sm font-extrabold uppercase tracking-wider text-slate-800 dark:text-slate-100">
-              Mục tiêu bài học (Unit {info.unitLabel})
-            </h2>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <span className="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-rose-100 text-sm font-black text-red-600 dark:bg-red-950/60 dark:text-red-300">
+                🎯
+              </span>
+              <h2 className="text-sm font-extrabold uppercase tracking-wider text-slate-800 dark:text-slate-100">
+                Mục tiêu & Nguồn giáo trình ({info.chapterLabel || `Unit ${info.unitLabel}`})
+              </h2>
+            </div>
+            {info.provenanceLabelVi && (
+              <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 text-[11px] font-bold text-emerald-700 dark:border-emerald-900/60 dark:bg-emerald-950/40 dark:text-emerald-300">
+                ✓ {info.provenanceLabelVi}
+              </span>
+            )}
           </div>
+          {info.sourceReference && (
+            <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+              📚 Nguồn tham chiếu: <span className="text-slate-700 dark:text-slate-200">{info.sourceReference}</span>
+            </p>
+          )}
+          {info.whyItMatters && (
+            <p className="rounded-xl bg-rose-50/70 px-3 py-2 text-xs font-medium text-slate-700 dark:bg-sumi-800/70 dark:text-slate-200">
+              <b>Tại sao bài này quan trọng:</b> {info.whyItMatters}
+            </p>
+          )}
           <ul className="space-y-1.5 text-xs leading-relaxed text-slate-600 dark:text-slate-300 sm:text-sm">
             {info.objectives.map((obj, idx) => (
               <li key={idx} className="flex items-start gap-2">
@@ -406,7 +509,7 @@ export function LessonObjectivesSection({ info }: { info: LessonObjectiveNoteVie
               💡 Lưu ý Ngữ vực: Chuẩn (標準語) vs. Thực tế
             </span>
             <span className="rounded-full bg-white px-2.5 py-0.5 text-[11px] font-bold text-indigo-700 shadow-sm dark:bg-sumi-900 dark:text-indigo-300">
-              JLPT {info.level}
+              Định hướng JLPT {info.level}
             </span>
           </div>
           <div className="mt-2.5 space-y-1.5 text-xs leading-relaxed text-slate-700 dark:text-slate-200">

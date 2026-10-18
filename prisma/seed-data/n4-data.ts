@@ -1,81 +1,9 @@
 import { SeedKanji, SeedVocab, SeedGrammar } from "./kanji-vocab";
 
 // ─────────────────────────────────────────────────────────────────────────────
-// JLPT N4 KANJI SEED DATA (58 items)
+// JLPT N4 KANJI SEED DATA
 // ─────────────────────────────────────────────────────────────────────────────
 export const KANJI_N4: SeedKanji[] = [
-  {
-    "character": "会",
-    "meaning": "Gặp gỡ, Hội (Hội)",
-    "strokeCount": 6,
-    "jlptLevel": "N4",
-    "readings": [
-      {
-        "reading": "カイ",
-        "type": "ONYOMI"
-      },
-      {
-        "reading": "あ・う",
-        "type": "KUNYOMI"
-      }
-    ]
-  },
-  {
-    "character": "社",
-    "meaning": "Công ty, Đền thờ (Xã)",
-    "strokeCount": 7,
-    "jlptLevel": "N4",
-    "readings": [
-      {
-        "reading": "シャ",
-        "type": "ONYOMI"
-      },
-      {
-        "reading": "やしろ",
-        "type": "KUNYOMI"
-      }
-    ]
-  },
-  {
-    "character": "店",
-    "meaning": "Cửa hàng, Tiệm (Điếm)",
-    "strokeCount": 8,
-    "jlptLevel": "N4",
-    "readings": [
-      {
-        "reading": "テン",
-        "type": "ONYOMI"
-      },
-      {
-        "reading": "みせ",
-        "type": "KUNYOMI"
-      }
-    ]
-  },
-  {
-    "character": "駅",
-    "meaning": "Nhà ga (Dịch)",
-    "strokeCount": 14,
-    "jlptLevel": "N4",
-    "readings": [
-      {
-        "reading": "エキ",
-        "type": "ONYOMI"
-      }
-    ]
-  },
-  {
-    "character": "校",
-    "meaning": "Trường học (Hiệu)",
-    "strokeCount": 10,
-    "jlptLevel": "N4",
-    "readings": [
-      {
-        "reading": "コウ",
-        "type": "ONYOMI"
-      }
-    ]
-  },
   {
     "character": "勉",
     "meaning": "Cố gắng, Nỗ lực (Miễn)",
@@ -104,34 +32,6 @@ export const KANJI_N4: SeedKanji[] = [
       },
       {
         "reading": "つよ・い",
-        "type": "KUNYOMI"
-      }
-    ]
-  },
-  {
-    "character": "電",
-    "meaning": "Điện (Điện)",
-    "strokeCount": 13,
-    "jlptLevel": "N4",
-    "readings": [
-      {
-        "reading": "デン",
-        "type": "ONYOMI"
-      }
-    ]
-  },
-  {
-    "character": "車",
-    "meaning": "Xe hơi, Xe cộ (Xa)",
-    "strokeCount": 7,
-    "jlptLevel": "N4",
-    "readings": [
-      {
-        "reading": "シャ",
-        "type": "ONYOMI"
-      },
-      {
-        "reading": "くるま",
         "type": "KUNYOMI"
       }
     ]

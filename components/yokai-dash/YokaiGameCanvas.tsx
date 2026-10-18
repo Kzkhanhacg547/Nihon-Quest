@@ -1920,7 +1920,7 @@ export function YokaiGameCanvas({
       }
       renderer.dispose();
     };
-  }, [zone, beast, questions, isPractice, safeSetTimeout, triggerFlash, showQuickActionPopup]);
+  }, [zone, beast, questions, isPractice, safeSetTimeout, triggerFlash, showQuickActionPopup, customSpeed, isFlyingBeast, speedDifficulty]);
 
   return (
     <div

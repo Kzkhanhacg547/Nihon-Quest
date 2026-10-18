@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { resolveCanonicalUserLevel, resolvePersonalizationTrack } from "@/lib/learning-level";
 import { calculateLevel } from "@/lib/level";
 import { updateStreak, localDateKey } from "@/lib/streak";
 import { canUnlockJourney, resolveJourneyStatus } from "@/lib/journey";
@@ -13,7 +14,7 @@ export interface CanonicalUserProgress {
   avatar: string | null;
   bio: string | null;
   timezone: string;
-  learningLevel: string; // N5, N4, N3, etc.
+  learningLevel: string; // N5, N4, N3
   learningGoal: string;
   dailyGoalMinutes: number;
   focusSkill: string;
@@ -94,16 +95,27 @@ export async function getUserProgress(userId: string): Promise<CanonicalUserProg
 
   if (!user) return null;
 
-  const userLevel = user.learningLevel || "N5";
+  const userLevel = resolveCanonicalUserLevel(user);
+  const expectedChoice = resolvePersonalizationTrack(user);
   const levelInfo = calculateLevel(user.totalXP);
 
-  // Self-heal DB level if out of sync with calculateLevel(totalXP)
-  if (user.level !== levelInfo.level) {
+  // Self-heal DB level or drifted learningLevel/levelChoice if out of sync
+  if (
+    user.level !== levelInfo.level ||
+    user.learningLevel !== userLevel ||
+    user.levelChoice !== expectedChoice
+  ) {
     await prisma.user.update({
       where: { id: userId },
-      data: { level: levelInfo.level },
+      data: {
+        level: levelInfo.level,
+        learningLevel: userLevel,
+        levelChoice: expectedChoice,
+      },
     });
     user.level = levelInfo.level;
+    user.learningLevel = userLevel;
+    user.levelChoice = expectedChoice;
   }
 
   const now = new Date();
@@ -213,7 +225,7 @@ export async function getUserProgress(userId: string): Promise<CanonicalUserProg
     avatar,
     bio: user.profile?.bio || null,
     timezone: user.timezone || "UTC",
-    learningLevel: user.learningLevel || "N5",
+    learningLevel: userLevel,
     learningGoal: user.learningGoal || "TRAVEL",
     dailyGoalMinutes: user.dailyGoalMinutes || 15,
     focusSkill: user.focusSkill || "BALANCED",

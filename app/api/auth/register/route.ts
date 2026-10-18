@@ -1,13 +1,14 @@
 import bcrypt from "bcryptjs";
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { synchronizeLevelFields } from "@/lib/learning-level";
 import { prisma } from "@/lib/prisma";
 import { verifyAndConsumeOtp } from "@/lib/otp";
-import { enforceRateLimit } from "@/lib/rateLimit";
+import { enforceRateLimitAsync } from "@/lib/rateLimit";
 
 const schema = z.object({
   email: z.string().email("Địa chỉ email không hợp lệ."),
-  password: z.string().min(8, "Mật khẩu phải có ít nhất 8 ký tự."),
+  password: z.string().min(8, "Mật khẩu phải có ít nhất 8 ký tự.").max(128),
   displayName: z.string().min(1, "Tên hiển thị không được để trống.").max(50),
   otpCode: z.string().min(6, "Mã xác thực OTP gồm 6 chữ số."),
   learningLevel: z.string().optional().default("N5"),
@@ -19,7 +20,7 @@ const schema = z.object({
 });
 
 export async function POST(req: Request) {
-  const limited = enforceRateLimit(req, "register", 5, 15 * 60_000);
+  const limited = await enforceRateLimitAsync(req, "register", 5, 15 * 60_000);
   if (limited) return limited;
 
   const body = await req.json().catch(() => null);
@@ -44,20 +45,25 @@ export async function POST(req: Request) {
     );
   }
 
+  const syncedLevel = synchronizeLevelFields({
+    learningLevel: parsed.data.learningLevel,
+    levelChoice: parsed.data.levelChoice,
+  });
+
   const passwordHash = await bcrypt.hash(parsed.data.password, 12);
   const user = await prisma.user.create({
     data: {
       email,
       passwordHash,
-      name: parsed.data.displayName,
+      name: parsed.data.displayName.trim(),
       emailVerified: new Date(),
-      learningLevel: parsed.data.learningLevel,
+      learningLevel: syncedLevel.learningLevel,
       learningGoal: parsed.data.learningGoal,
-      levelChoice: parsed.data.levelChoice,
+      levelChoice: syncedLevel.levelChoice,
       focusSkill: parsed.data.focusSkill,
       learningStyle: parsed.data.learningStyle,
       dailyGoalMinutes: parsed.data.dailyGoalMinutes,
-      profile: { create: { displayName: parsed.data.displayName } },
+      profile: { create: { displayName: parsed.data.displayName.trim() } },
     },
   });
   return NextResponse.json({ id: user.id, email: user.email }, { status: 201 });

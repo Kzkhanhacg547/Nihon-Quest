@@ -1,3 +1,13 @@
+import {
+  classifyJapaneseScript,
+  extractHanVietFromMeaning,
+  formatDisplayRomaji,
+  formatJapaneseWithReading,
+  normalizeJapaneseWord,
+  parseKanjiMeaningAndHanViet,
+  type JapaneseScriptType,
+} from "@/lib/canonical-vocab";
+
 export interface EnrichedReviewItem {
   id: string;
   contentType: string;
@@ -5,8 +15,16 @@ export interface EnrichedReviewItem {
   title: string;
   subtitle: string;
   reading: string;
-  /** Romaji bridge for the Japanese text. Previously never populated. */
+  /** Romaji bridge for the Japanese text. */
   romaji: string;
+  /** Sentence-cased Romaji for primary column display */
+  displayRomaji?: string;
+  /** Japanese writing with reading when Kanji is present (e.g. 学校（がっこう）) */
+  japaneseWithReading?: string;
+  /** Primary script classification for VOCAB / KANJI / KANA */
+  scriptType?: JapaneseScriptType;
+  /** Separated Sino-Vietnamese (Hán Việt) note */
+  hanVietNote?: string | null;
   extra: string;
   /** Actual JLPT level of the underlying content, e.g. "N3". */
   level: string;
@@ -204,6 +222,10 @@ export function resolveReviewItems(items: RawReviewItem[], maps: ContentMaps): E
     let subtitle = item.contentType;
     let reading = "";
     let romaji = "";
+    let displayRomaji: string | undefined = undefined;
+    let japaneseWithReading: string | undefined = undefined;
+    let scriptType: JapaneseScriptType | undefined = undefined;
+    let hanVietNote: string | null = null;
     let extra = "";
     let level = "";
     let isValid = false;
@@ -217,6 +239,8 @@ export function resolveReviewItems(items: RawReviewItem[], maps: ContentMaps): E
         subtitle = kanaDetail.script;
         reading = kanaDetail.romaji;
         romaji = kanaDetail.romaji;
+        displayRomaji = formatDisplayRomaji(kanaDetail.romaji);
+        scriptType = (kanaDetail.script.toUpperCase() as JapaneseScriptType) || "HIRAGANA";
         extra = kanaDetail.ipa ? `/${kanaDetail.ipa}/` : "";
         isValid = true;
       }
@@ -225,11 +249,18 @@ export function resolveReviewItems(items: RawReviewItem[], maps: ContentMaps): E
         vocabMap.get(rawContentId) ??
         (normalizedId ? vocabMap.get(normalizedId) : undefined);
       if (vocabDetail) {
-        title = vocabDetail.word;
-        subtitle = `Từ Vựng · ${vocabDetail.partOfSpeech}`;
+        const { japanese } = normalizeJapaneseWord(vocabDetail.word);
+        const { meaningVi, hanVietNote: extractedHanViet } = extractHanVietFromMeaning(vocabDetail.meaning);
+        const scriptInfo = classifyJapaneseScript(japanese);
+        title = japanese;
         reading = vocabDetail.kana;
         romaji = vocabDetail.romaji;
-        extra = vocabDetail.meaning;
+        displayRomaji = formatDisplayRomaji(vocabDetail.romaji);
+        japaneseWithReading = formatJapaneseWithReading(japanese, vocabDetail.kana);
+        scriptType = scriptInfo.primaryScript;
+        hanVietNote = extractedHanViet;
+        subtitle = `Từ Vựng · ${vocabDetail.partOfSpeech}`;
+        extra = meaningVi;
         level = vocabDetail.jlptLevel;
         isValid = true;
       }
@@ -242,7 +273,11 @@ export function resolveReviewItems(items: RawReviewItem[], maps: ContentMaps): E
         subtitle = "Hán Tự";
         reading = kanjiDetail.readings.map((r) => r.reading).join(" · ");
         romaji = kanjiDetail.readings[0]?.reading ?? "";
-        extra = kanjiDetail.meaning;
+        displayRomaji = formatDisplayRomaji(romaji);
+        scriptType = "KANJI";
+        const parsed = parseKanjiMeaningAndHanViet(kanjiDetail.meaning);
+        extra = parsed.meaningVi;
+        hanVietNote = parsed.hanViet;
         level = kanjiDetail.jlptLevel;
         isValid = true;
       }
@@ -282,6 +317,10 @@ export function resolveReviewItems(items: RawReviewItem[], maps: ContentMaps): E
         subtitle,
         reading,
         romaji,
+        displayRomaji,
+        japaneseWithReading,
+        scriptType,
+        hanVietNote,
         extra,
         level,
         interval: item.interval,

@@ -397,20 +397,20 @@ export function TestClient({
       const res = await fetch("/api/activity", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type: "REVIEW_COMPLETE", dayKey }),
+        body: JSON.stringify({ type: "EXAM_COMPLETE", dayKey, examId: selectedMode }),
       });
       const data = await res.json();
-      if (res.ok) {
+      if (res.ok && data.xpAwarded > 0) {
         setXpClaimed(true);
-        setXpState((prev) => prev + 100);
+        setXpState((prev) => prev + data.xpAwarded);
         notifyProgressUpdated();
         playCorrect();
         showToast({
-          title: "🎉 Bạn nhận được +100 XP Thưởng Hoàn Thành Bài Đánh Giá 4 Kỹ Năng!",
+          title: `🎉 Bạn nhận được +${data.xpAwarded} XP Thưởng Hoàn Thành Bài Đánh Giá 4 Kỹ Năng!`,
           type: "success",
         });
       } else {
-        showToast({ title: data.error || "Đã nhận thưởng trước đó hôm nay.", type: "info" });
+        showToast({ title: data.error || "Đã nhận thưởng bài thi này trước đó.", type: "info" });
         setXpClaimed(true);
       }
     } catch {

@@ -17,8 +17,8 @@ type Grade = "AGAIN" | "HARD" | "GOOD" | "EASY";
  * decoration. Previously these were hardcoded to values the scheduler never
  * produced, so the UI contradicted the schedule it actually ran.
  */
-function describeInterval(grade: Grade, ease: number): string {
-  const next = updateSrs({ ease, interval: 0, repetitions: 0 }, grade);
+function describeInterval(grade: Grade, ease: number, interval = 0, repetitions = 0): string {
+  const next = updateSrs({ ease, interval, repetitions }, grade);
   if (next.dueInDays <= 0) return "Ôn lại ngay";
   if (next.dueInDays < 1) return "Trong 1 ngày nữa";
   if (next.dueInDays < 7) return `~${Math.round(next.dueInDays)} ngày nữa`;
@@ -386,18 +386,38 @@ export function ReviewClient({ initial, backgrounds = [] }: { initial: EnrichedR
             <span className={`rv-type-tag ${back ? "is-answer" : ""}`}>
               {back ? `Đáp án · ${currentItem.subtitle}` : currentItem.subtitle}
             </span>
-            <p className={`rv-term-text rv-fs-${back ? backSize : frontSize} jp-text`}>
-              {back ? currentItem.title : frontPrompt}
-            </p>
-            {back && showReading && (
-              <p className={`rv-reading jp-text ${isLongReading ? "is-long" : ""}`}>{currentItem.reading}</p>
+            {back ? (
+              <>
+                {/* 1. Phát âm / Romaji + Kana reading */}
+                <div className="rv-pronunciation-block">
+                  {(currentItem.displayRomaji || romaji) && (
+                    <p className="rv-romaji">{currentItem.displayRomaji || romaji}</p>
+                  )}
+                  {showReading && (
+                    <p className={`rv-reading jp-text ${isLongReading ? "is-long" : ""}`}>{currentItem.reading}</p>
+                  )}
+                </div>
+
+                {/* 2. Chữ viết tiếng Nhật */}
+                <p className={`rv-term-text rv-fs-${backSize} jp-text`}>
+                  {currentItem.japaneseWithReading || currentItem.title}
+                </p>
+
+                {/* 3. Nghĩa tiếng Việt & Hán Việt tách biệt */}
+                {meaning && <p className="rv-meaning">{meaning}</p>}
+                {currentItem.hanVietNote && (
+                  <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mt-1">
+                    Hán Việt: {currentItem.hanVietNote}
+                  </p>
+                )}
+              </>
+            ) : (
+              <p className={`rv-term-text rv-fs-${frontSize} jp-text`}>{frontPrompt}</p>
             )}
-            {back && showRomaji && <p className="rv-romaji">{romaji}</p>}
-            {back && meaning && <p className="rv-meaning">{meaning}</p>}
           </div>
           <div className="rv-paper-bottom">
             {isJapaneseText ? (
-              <SpeakButton text={back ? currentItem.title : frontPrompt} className="rv-speak" size={20} />
+              <SpeakButton text={back ? (currentItem.reading || currentItem.title) : frontPrompt} className="rv-speak" size={20} />
             ) : (
               <span />
             )}
@@ -485,7 +505,7 @@ export function ReviewClient({ initial, backgrounds = [] }: { initial: EnrichedR
           >
             <Icon name={g.icon} size={26} strokeWidth={2.1} />
             <b>{g.label}</b>
-            <small>{describeInterval(g.grade, currentItem.ease)}</small>
+            <small>{describeInterval(g.grade, currentItem.ease, currentItem.interval, currentItem.repetitions)}</small>
           </button>
         ))}
       </div>

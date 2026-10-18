@@ -4,10 +4,12 @@ import Image from "next/image";
 import { BASE64_IMAGES } from "@/lib/assets/base64Images";
 import Link from "next/link";
 import { authOptions } from "@/lib/auth-options";
+import { resolveCanonicalUserLevel } from "@/lib/learning-level";
 import { prisma } from "@/lib/prisma";
 import { AppNav } from "@/components/AppNav";
 import { JapanBackdrop } from "@/components/JapanIllustration";
 import { PracticeClient, type UnitInfo, type PracticeLessonItem } from "./PracticeClient";
+import { getLessonCurriculumMetadata } from "@/lib/curriculum-tracks";
 
 function cleanLessonTitle(title: string): string {
   if (!title) return "";
@@ -25,7 +27,7 @@ const UNITS_BY_LEVEL: Record<string, UnitInfo[]> = {
     { number: 3, title: "Unit 03: Tồn Tại, So Sánh & Thể Te", description: "Tồn tại Arimasu/Imasu, số đếm, so sánh hơn nhất, nguyện vọng & bí quyết chia Thể Te", icon: "🏪", startIndex: 20, endIndex: 30 },
     { number: 4, title: "Unit 04: Thể Nai, Ta, Thể Thường & Định Ngữ", description: "Mẫu câu cấm đoán, bắt buộc làm, thể từ điển, kinh nghiệm từng trải & mệnh đề bổ ngữ danh từ", icon: "⛩️", startIndex: 30, endIndex: 40 },
     { number: 5, title: "Unit 05: Kanji Master & Mock Test JLPT N5", description: "100+ Kanji cốt lõi, 10 trợ từ then chốt, phản xạ 5 thể động từ, đọc hiểu & đề thi thử toàn diện", icon: "🏆", startIndex: 40, endIndex: 50 },
-    { number: 6, title: "Unit 06: Giáo Trình FPT (JPD113・123・133 — Part 1–9)", description: "9 Chuyên đề từ vựng, ngữ pháp và bài tập chuẩn chương trình tiếng Nhật Đại học FPT (Dekiru Nihongo)", icon: "🎓", startIndex: 50, endIndex: 60 },
+    { number: 6, title: "Unit 06: Chuyên Đề Bổ Trợ Giao Tiếp Sơ Cấp (Part 1–9)", description: "9 chuyên đề thực hành từ vựng, ngữ pháp và hội thoại giao tiếp sơ cấp mở rộng", icon: "🎓", startIndex: 50, endIndex: 60 },
   ],
   N4: [
     { number: 1, title: "Unit 01: Biến Thể Động Từ & Thể Trạng Thái", description: "Thể てしまう, やすい/にくい, すぎる và các biến thể động từ sơ trung cấp", icon: "🗂️", startIndex: 0, endIndex: 5 },
@@ -54,8 +56,11 @@ export default async function PracticePage() {
   const uid = (session?.user as { id?: string } | undefined)?.id;
   if (!uid) redirect("/login");
 
-  const user = await prisma.user.findUnique({ where: { id: uid }, select: { learningLevel: true } });
-  const userLevel = user?.learningLevel ?? "N5";
+  const user = await prisma.user.findUnique({
+    where: { id: uid },
+    select: { learningLevel: true, levelChoice: true },
+  });
+  const userLevel = resolveCanonicalUserLevel(user);
 
   const allLessons = await prisma.lesson.findMany({
     where: { isPublished: true },
@@ -65,7 +70,8 @@ export default async function PracticePage() {
 
   const lessons = allLessons.filter((l) => l.level === userLevel);
   const completedCount = lessons.filter((l) => l.progress[0]?.status === "COMPLETED").length;
-  const progressPercent = Math.round((completedCount / Math.max(1, lessons.length)) * 100);
+  const completionRatio = lessons.length > 0 ? completedCount / lessons.length : 0;
+  const progressPercent = Math.round(completionRatio * 100);
   const nextLesson = lessons.find((l) => l.progress[0]?.status !== "COMPLETED") || lessons[0];
   const units = UNITS_BY_LEVEL[userLevel] ?? UNITS_BY_LEVEL["N5"];
 
@@ -80,6 +86,7 @@ export default async function PracticePage() {
     exercisesCount: l._count.exercises,
     progressStatus: l.progress[0]?.status as "COMPLETED" | "IN_PROGRESS" | undefined,
     score: l.progress[0]?.score,
+    curriculum: getLessonCurriculumMetadata(l),
   });
 
   const serializedLessons: PracticeLessonItem[] = lessons.map(serializeLesson);
@@ -225,6 +232,7 @@ export default async function PracticePage() {
           units={units}
           unitsByLevel={UNITS_BY_LEVEL}
           userLevel={userLevel}
+          currentLevelCompletionRatio={completionRatio}
         />
       </div>
     </div>

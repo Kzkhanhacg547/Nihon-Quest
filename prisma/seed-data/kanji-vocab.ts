@@ -836,18 +836,6 @@ export const KANJI_N5: SeedKanji[] = [
     ]
   },
   {
-    "character": "族",
-    "meaning": "Gia tộc, Bộ tộc (Tộc)",
-    "strokeCount": 11,
-    "jlptLevel": "N5",
-    "readings": [
-      {
-        "reading": "ゾク",
-        "type": "ONYOMI"
-      }
-    ]
-  },
-  {
     "character": "口",
     "meaning": "Miệng, Cổng (Khẩu)",
     "strokeCount": 3,
@@ -1988,34 +1976,6 @@ export const KANJI_N5: SeedKanji[] = [
     ]
   },
   {
-    "character": "勉",
-    "meaning": "Cố gắng (Miễn)",
-    "strokeCount": 10,
-    "jlptLevel": "N5",
-    "readings": [
-      {
-        "reading": "ベン",
-        "type": "ONYOMI"
-      }
-    ]
-  },
-  {
-    "character": "強",
-    "meaning": "Mạnh mẽ (Cường)",
-    "strokeCount": 11,
-    "jlptLevel": "N5",
-    "readings": [
-      {
-        "reading": "キョウ",
-        "type": "ONYOMI"
-      },
-      {
-        "reading": "つよ・い",
-        "type": "KUNYOMI"
-      }
-    ]
-  },
-  {
     "character": "大",
     "meaning": "To lớn (Đại)",
     "strokeCount": 3,
@@ -2239,22 +2199,6 @@ export const KANJI_N5: SeedKanji[] = [
       },
       {
         "reading": "はや・い",
-        "type": "KUNYOMI"
-      }
-    ]
-  },
-  {
-    "character": "明",
-    "meaning": "Sáng sủa (Minh)",
-    "strokeCount": 8,
-    "jlptLevel": "N5",
-    "readings": [
-      {
-        "reading": "メイ",
-        "type": "ONYOMI"
-      },
-      {
-        "reading": "あか・るい",
         "type": "KUNYOMI"
       }
     ]

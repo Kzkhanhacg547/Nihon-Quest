@@ -1,11 +1,19 @@
 import path from "node:path";
 import { NextResponse } from "next/server";
+import { requireUserId } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { serveCatalogedFile } from "@/lib/document-file-server";
+import { enforceRateLimit } from "@/lib/rateLimit";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(req: Request) {
+  const userId = await requireUserId();
+  if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const limited = enforceRateLimit(req, "documents-by-path", 60, 60_000);
+  if (limited) return limited;
+
   try {
     const { searchParams } = new URL(req.url);
     const rawPath = (searchParams.get("path") || "").trim();
@@ -43,4 +51,3 @@ export async function GET(req: Request) {
     );
   }
 }
-

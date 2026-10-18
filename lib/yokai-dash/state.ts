@@ -18,12 +18,10 @@ export async function getYokaiPlayerState(userId: string): Promise<YokaiPlayerPr
   });
 
   const now = new Date();
+  const userTimezone = user?.timezone || "UTC";
+  const todayKey = localDateKey(now, userTimezone);
 
-  // Calculate start of day
-  const startOfDay = new Date(now);
-  startOfDay.setHours(0, 0, 0, 0);
-
-  // End of day (Midnight reset time)
+  // End of day (Midnight reset time based on user date)
   const endOfDay = new Date(now);
   endOfDay.setHours(23, 59, 59, 999);
 
@@ -52,22 +50,24 @@ export async function getYokaiPlayerState(userId: string): Promise<YokaiPlayerPr
   // Count runs today that consumed stamina (non-practice)
   const staminaRunsToday = allRunTxs.filter(
     (tx) =>
-      tx.createdAt >= startOfDay &&
+      localDateKey(tx.createdAt, userTimezone) === todayKey &&
       (tx.reason === "YOKAI_DASH_STAGE_CLEAR" ||
         tx.reason === "YOKAI_DASH_FAILED_RUN" ||
         tx.reason === "YOKAI_DASH_STAMINA_CONSUMED")
   ).length;
 
-  const allRunsToday = allRunTxs.filter((tx) => tx.createdAt >= startOfDay);
+  const allRunsToday = allRunTxs.filter(
+    (tx) => localDateKey(tx.createdAt, userTimezone) === todayKey
+  );
   const stamina = Math.max(0, MAX_DAILY_STAMINA - staminaRunsToday);
   const totalRuns = allRunTxs.length;
 
   // Parse historical high score, best combo, cleared zones, and today's quest metrics
-  let highScore = 1250;
-  let bestCombo = 8;
+  let highScore = 0;
+  let bestCombo = 0;
   let maxComboToday = 0;
   let correctGatesToday = 0;
-  const clearedZonesSet = new Set<string>(["torii_path", "sakura_grove"]);
+  const clearedZonesSet = new Set<string>();
 
   for (const tx of allRunTxs) {
     const ref = tx.referenceId || "";
@@ -83,7 +83,7 @@ export async function getYokaiPlayerState(userId: string): Promise<YokaiPlayerPr
       if (tx.reason === "YOKAI_DASH_STAGE_CLEAR" && zonePart) {
         clearedZonesSet.add(zonePart);
       }
-      if (tx.createdAt >= startOfDay) {
+      if (localDateKey(tx.createdAt, userTimezone) === todayKey) {
         if (!Number.isNaN(cVal) && cVal > maxComboToday) maxComboToday = cVal;
         if (!Number.isNaN(qVal)) correctGatesToday += qVal;
       }
@@ -93,7 +93,7 @@ export async function getYokaiPlayerState(userId: string): Promise<YokaiPlayerPr
       if (legacyMatch && tx.reason === "YOKAI_DASH_STAGE_CLEAR") {
         clearedZonesSet.add(legacyMatch[1]);
       }
-      if (tx.createdAt >= startOfDay) {
+      if (localDateKey(tx.createdAt, userTimezone) === todayKey) {
         maxComboToday = Math.max(maxComboToday, 5);
         correctGatesToday += 5;
       }

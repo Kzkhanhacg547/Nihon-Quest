@@ -74,7 +74,7 @@ const QUICK_LINKS = [
   { label: "Từ vựng nhanh", href: "/app/vocabulary#vocabulary", icon: "📘", color: "from-blue-500 to-blue-600" },
   { label: "Hán tự tra cứu", href: "/app/vocabulary#kanji", icon: "名", color: "from-violet-500 to-purple-600" },
   { label: "Ngữ pháp tổng hợp", href: "/app/grammar", icon: "📝", color: "from-emerald-500 to-green-600" },
-  { label: "Lộ trình học của bạn", href: "/app", icon: "⛩️", color: "from-red-500 to-rose-500" },
+  { label: "Lộ trình học của bạn", href: "/app/path", icon: "⛩️", color: "from-red-500 to-rose-500" },
   { label: "Bài kiểm tra năng lực", href: "/app/test", icon: "★", color: "from-amber-400 to-orange-500" },
 ];
 
@@ -191,7 +191,7 @@ export function GrammarClient({ grammar, defaultLevel = "N5", displayName = "b�
           </div>
           <div className="min-w-0">
             <p className="truncate text-base font-extrabold">Xin chào, {displayName}!</p>
-            <p className="text-xs text-white/70">Cùng Nihonguest chinh phục tiếng Nhật nhé!</p>
+            <p className="text-xs text-white/70">Cùng Nihon Quest chinh phục tiếng Nhật nhé!</p>
           </div>
         </div>
         <dl className="grid grid-cols-3 gap-4 md:flex-[2] md:border-l md:border-white/10 md:pl-6">

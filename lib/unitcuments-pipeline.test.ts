@@ -1,9 +1,59 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import fs from "fs";
 import path from "path";
 import { resolveSafeUnitcumentsPath } from "./document-file-server";
 
+const UNITCUMENTS_DIR = path.join(process.cwd(), "unitcuments");
+const FIXTURE_FILES = [
+  "JPD113-123-133-116 -126-GRAMMAR_PART 1-9.pdf",
+  "JPD113-123-133-116 -126-VOCABULARY_PART 1-8.pdf",
+  path.join("Đề thi N5_2017", "N5Q1.mp3"),
+];
+
 describe("Nihon Quest Document Vault, Multi-Level Deduplication & Dynamic Exam System", () => {
+  const createdPaths: string[] = [];
+  let createdRoot = false;
+
+  beforeAll(() => {
+    // `unitcuments/` is gitignored; create minimal fixture files when absent so
+    // NFC/NFD resolution and path-traversal security tests run reliably in clean checkouts.
+    if (!fs.existsSync(UNITCUMENTS_DIR)) {
+      fs.mkdirSync(UNITCUMENTS_DIR, { recursive: true });
+      createdRoot = true;
+    }
+    for (const rel of FIXTURE_FILES) {
+      const full = path.join(UNITCUMENTS_DIR, rel);
+      const dir = path.dirname(full);
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+        createdPaths.push(dir);
+      }
+      if (!fs.existsSync(full)) {
+        fs.writeFileSync(full, "fixture");
+        createdPaths.push(full);
+      }
+    }
+  });
+
+  afterAll(() => {
+    for (const p of createdPaths.reverse()) {
+      try {
+        const stat = fs.statSync(p);
+        if (stat.isFile()) fs.unlinkSync(p);
+        else if (stat.isDirectory()) fs.rmdirSync(p);
+      } catch {
+        // ignore cleanup errors
+      }
+    }
+    if (createdRoot) {
+      try {
+        fs.rmdirSync(UNITCUMENTS_DIR);
+      } catch {
+        // ignore if non-empty
+      }
+    }
+  });
+
   it("blocks path traversal and safely resolves NFC/NFD files inside unitcuments/", () => {
     expect(resolveSafeUnitcumentsPath("../package.json")).toBeNull();
     expect(resolveSafeUnitcumentsPath("../../Windows/win.ini")).toBeNull();
@@ -62,4 +112,3 @@ describe("Nihon Quest Document Vault, Multi-Level Deduplication & Dynamic Exam S
     expect(payload.reviewRequired.length).toBeGreaterThanOrEqual(5);
   });
 });
-

@@ -155,6 +155,7 @@ model Vocabulary {
   examples     VocabularyExample[]
   @@index([jlptLevel])
   @@index([kana])
+  @@index([word, jlptLevel])
 }
 
 model VocabularyExample {
@@ -277,6 +278,8 @@ model ExerciseAttempt {
   exercise   Exercise @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
   @@index([userId])
   @@index([exerciseId])
+  @@index([userId, createdAt])
+  @@index([userId, lessonId])
 }
 
 model XpTransaction {
@@ -289,6 +292,8 @@ model XpTransaction {
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   @@index([userId])
   @@index([reason])
+  @@index([userId, createdAt])
+  @@index([userId, reason, referenceId])
 }
 
 model ReviewItem {
@@ -321,6 +326,8 @@ model ReviewHistory {
   reviewItem   ReviewItem? @relation(fields: [reviewItemId], references: [id], onDelete: SetNull)
   @@index([userId])
   @@index([reviewItemId])
+  @@index([userId, createdAt])
+  @@index([userId, grade])
 }
 
 model DailyMission {

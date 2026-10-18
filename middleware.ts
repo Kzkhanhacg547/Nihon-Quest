@@ -1,13 +1,28 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
-
-function getSecret(): string {
-  return process.env.NEXTAUTH_SECRET || "dev-only-change-me-min-32-chars-long-secret";
-}
+import { getAuthSecret } from "@/lib/auth-secret";
 
 export async function middleware(req: NextRequest) {
-  const secret = getSecret();
+  // Dọn dẹp cookie phân mảnh cũ (ví dụ .session-token.0, .1) nếu còn sót lại từ sự cố trước đó
+  const cleanupStaleChunks = (response: NextResponse) => {
+    for (const cookie of req.cookies.getAll()) {
+      if (/\.(session-token)\.\d+$/.test(cookie.name)) {
+        response.cookies.delete(cookie.name);
+      }
+    }
+    return response;
+  };
+
+  let secret: string;
+  try {
+    secret = getAuthSecret();
+  } catch (err) {
+    console.error((err as Error).message);
+    const signInUrl = new URL("/login", req.url);
+    signInUrl.searchParams.set("error", "Configuration");
+    return cleanupStaleChunks(NextResponse.redirect(signInUrl));
+  }
 
   // Kiểm tra cookie: Hỗ trợ cả HTTPS (__Secure-) và HTTP/Proxy chuẩn của Netlify / Vercel
   const isSecure = Boolean(
@@ -37,16 +52,6 @@ export async function middleware(req: NextRequest) {
     });
   }
 
-  // Dọn dẹp cookie phân mảnh cũ (ví dụ .session-token.0, .1) nếu còn sót lại từ sự cố trước đó
-  const cleanupStaleChunks = (response: NextResponse) => {
-    for (const cookie of req.cookies.getAll()) {
-      if (/\.(session-token)\.\d+$/.test(cookie.name)) {
-        response.cookies.delete(cookie.name);
-      }
-    }
-    return response;
-  };
-
   if (!token) {
     const signInUrl = new URL("/login", req.url);
     signInUrl.searchParams.set("callbackUrl", req.nextUrl.pathname);
@@ -58,4 +63,4 @@ export async function middleware(req: NextRequest) {
 
 export const config = {
   matcher: ["/app/:path*", "/onboarding"],
-};
+};

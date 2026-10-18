@@ -2,6 +2,8 @@ import Link from "next/link";
 import { getServerSession } from "next-auth";
 import { notFound, redirect } from "next/navigation";
 import { authOptions } from "@/lib/auth-options";
+import { getLessonCurriculumMetadata } from "@/lib/curriculum-tracks";
+import { evaluateLessonAccess, resolveCanonicalUserLevel } from "@/lib/learning-level";
 import { prisma } from "@/lib/prisma";
 import { AppNav } from "@/components/AppNav";
 import { JapanBackdrop, JapanScenicPanel } from "@/components/JapanIllustration";
@@ -82,17 +84,32 @@ export default async function LessonRunnerPage({ params }: { params: { slug: str
   const uid = (session?.user as { id?: string } | undefined)?.id;
   if (!uid) redirect("/login");
 
-  const lesson = await prisma.lesson.findUnique({
-    where: { slug: params.slug },
-    include: {
-      items: { orderBy: { order: "asc" } },
-      exercises: { orderBy: { order: "asc" }, include: { options: { orderBy: { order: "asc" } } } },
-    },
-  });
+  const [user, lesson] = await Promise.all([
+    prisma.user.findUnique({
+      where: { id: uid },
+      select: { learningLevel: true, levelChoice: true },
+    }),
+    prisma.lesson.findUnique({
+      where: { slug: params.slug },
+      include: {
+        items: { orderBy: { order: "asc" } },
+        exercises: { orderBy: { order: "asc" }, include: { options: { orderBy: { order: "asc" } } } },
+      },
+    }),
+  ]);
   if (!lesson) notFound();
 
+  const userLevel = resolveCanonicalUserLevel(user);
+
   // Bài kế tiếp, bài tiên quyết ngay trước đó cùng cấp độ + số thứ tự "Unit"
-  const [nextLesson, prevLesson, lessonsBefore] = await Promise.all([
+  const [
+    nextLesson,
+    prevLesson,
+    lessonsBefore,
+    currentLessonProgress,
+    userLevelTotalLessons,
+    userLevelCompletedLessons,
+  ] = await Promise.all([
     prisma.lesson.findFirst({
       where: { isPublished: true, level: lesson.level, order: { gt: lesson.order } },
       orderBy: { order: "asc" },
@@ -104,6 +121,14 @@ export default async function LessonRunnerPage({ params }: { params: { slug: str
       select: { id: true, slug: true, title: true },
     }),
     prisma.lesson.count({ where: { isPublished: true, level: lesson.level, order: { lt: lesson.order } } }),
+    prisma.userLessonProgress.findUnique({
+      where: { userId_lessonId: { userId: uid, lessonId: lesson.id } },
+      select: { status: true },
+    }),
+    prisma.lesson.count({ where: { isPublished: true, level: userLevel } }),
+    prisma.userLessonProgress.count({
+      where: { userId: uid, status: "COMPLETED", lesson: { level: userLevel, isPublished: true } },
+    }),
   ]);
 
   const prevProgress = prevLesson
@@ -112,6 +137,60 @@ export default async function LessonRunnerPage({ params }: { params: { slug: str
         select: { status: true },
       })
     : null;
+
+  const completionRatio =
+    userLevelTotalLessons > 0 ? userLevelCompletedLessons / userLevelTotalLessons : 0;
+
+  const access = evaluateLessonAccess({
+    userLevel,
+    lessonLevel: lesson.level,
+    lessonIndexInLevel: lessonsBefore,
+    isCompleted: currentLessonProgress?.status === "COMPLETED",
+    isInProgress: currentLessonProgress?.status === "IN_PROGRESS",
+    prevLessonCompleted: !prevLesson || prevProgress?.status === "COMPLETED",
+    isFirstInUnit: lessonsBefore % 5 === 0,
+    isFptSupplementary: lesson.slug.startsWith("fpt-jpd"),
+    currentLevelCompletionRatio: completionRatio,
+  });
+
+  if (!access.unlocked && access.lockReason === "HIGHER_LEVEL") {
+    return (
+      <div className="nq-workspace">
+        <JapanBackdrop />
+        <AppNav />
+        <main className="mx-auto max-w-2xl px-4 py-12 sm:px-6">
+          <div className="rounded-3xl border border-amber-300 bg-white p-6 text-center shadow-lg dark:border-amber-800/70 dark:bg-sumi-900 sm:p-8">
+            <span className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-amber-100 text-3xl dark:bg-amber-950/60" aria-hidden>
+              🔒
+            </span>
+            <p className="mt-4 text-xs font-black uppercase tracking-widest text-amber-700 dark:text-amber-300">
+              Nội dung vượt cấp · JLPT {lesson.level}
+            </p>
+            <h1 className="mt-2 text-2xl font-black text-slate-900 dark:text-white">
+              {cleanLessonTitle(lesson.title)}
+            </h1>
+            <p className="mt-3 text-sm leading-relaxed text-slate-600 dark:text-slate-300">
+              {access.lockMessage}
+            </p>
+            <div className="mt-6 flex flex-col justify-center gap-3 sm:flex-row">
+              <Link
+                href="/app/test"
+                className="inline-flex min-h-11 items-center justify-center rounded-xl bg-red-600 px-5 py-2.5 text-sm font-black text-white shadow-md shadow-red-600/25 transition hover:bg-red-700"
+              >
+                Thi xếp lớp mở khóa {lesson.level} →
+              </Link>
+              <Link
+                href="/app/practice"
+                className="inline-flex min-h-11 items-center justify-center rounded-xl border border-slate-300 bg-white px-5 py-2.5 text-sm font-bold text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:bg-sumi-800 dark:text-slate-200"
+              >
+                Về lộ trình {userLevel} hiện tại
+              </Link>
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   const unitLabel = String(lessonsBefore + 1).padStart(2, "0");
 
@@ -142,6 +221,8 @@ export default async function LessonRunnerPage({ params }: { params: { slug: str
     kana: w.kana,
     romaji: w.romaji,
     meaning: w.meaning,
+    partOfSpeech: w.partOfSpeech,
+    jlptLevel: w.jlptLevel,
     kanji: w.kanji || undefined,
     tags: w.tags || undefined,
     imageUrl: pick(w, ["imageUrl", "image", "imagePath"]),
@@ -191,18 +272,25 @@ export default async function LessonRunnerPage({ params }: { params: { slug: str
   const heroLine = dialogue.find((line) => HAS_JAPANESE.test(line.japanese));
   const title = cleanLessonTitle(lesson.title);
   const levelLabel = LEVEL_LABEL[lesson.level] ?? lesson.level;
+  const curriculumMeta = getLessonCurriculumMetadata(lesson);
 
   const objectiveInfo: LessonObjectiveNoteView = {
     level: lesson.level,
     unitLabel,
     title,
     description: lesson.description,
+    trackTitleVi: curriculumMeta.textbookTitle,
+    chapterLabel: curriculumMeta.chapterLabel,
+    provenanceStatus: curriculumMeta.provenance,
+    provenanceLabelVi: curriculumMeta.provenanceLabelVi,
+    sourceReference: curriculumMeta.sourceFile,
+    whyItMatters: curriculumMeta.whyItMattersVi,
     objectives: [
-      `Nắm vững cách đọc, nghĩa và ngữ cảnh của ${vocab.length} từ vựng trọng tâm chủ đề「${title}」.`,
+      curriculumMeta.learningObjectiveVi,
+      `Nắm vững Phát âm / Romaji | Chữ viết | Nghĩa của ${vocab.length} từ vựng trọng tâm chủ đề「${title}」.`,
       grammar.length > 0
         ? `Vận dụng chính xác mẫu ngữ pháp ${grammar.map((g) => g.title).join(", ")} và phân biệt sắc thái sử dụng.`
-        : `Hiểu và phản xạ tự nhiên với các mẫu câu giao tiếp trong bài.`,
-      `Đạt tối thiểu 60% điểm bài luyện tập (${lesson.exercises.length} câu hỏi) để mở khóa bài tiếp theo và đồng bộ SRS.`,
+        : `Đạt tối thiểu 60% điểm bài luyện tập (${lesson.exercises.length} câu hỏi) để mở khóa bài tiếp theo và đồng bộ SRS.`,
     ],
     registerComparison: buildRegisterComparison(lesson.level, title),
     prerequisiteLesson: prevLesson
@@ -229,25 +317,28 @@ export default async function LessonRunnerPage({ params }: { params: { slug: str
               </Link>
               <span aria-hidden>›</span>
               <Link href="/app/practice" className="hover:text-slate-900 dark:hover:text-white">
-                Bài Học
+                Giáo trình & Bài học
               </Link>
               <span aria-hidden>›</span>
               <span className="font-semibold text-slate-800 dark:text-slate-100">
-                Unit {unitLabel}: {title}
+                {curriculumMeta.chapterLabel}: {title}
               </span>
             </nav>
 
             <div className="mt-4 flex flex-wrap gap-2">
               <span className="rounded-full border border-rose-200 bg-rose-50 px-3 py-1 text-xs font-bold text-red-600 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-300">
-                JLPT {lesson.level}
+                Định hướng JLPT {lesson.level}
               </span>
-              <span className="rounded-full border border-rose-200 bg-rose-50 px-3 py-1 text-xs font-bold text-red-600 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-300">
-                Unit {unitLabel}
+              <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-bold text-slate-700 dark:border-slate-700 dark:bg-sumi-800 dark:text-slate-200">
+                📚 {curriculumMeta.shortTrackLabel}
+              </span>
+              <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700 dark:border-emerald-900/60 dark:bg-emerald-950/40 dark:text-emerald-300">
+                ✓ {curriculumMeta.provenanceLabelVi}
               </span>
             </div>
 
             <h1 className="mt-3 font-black leading-[1.1] tracking-tight text-slate-900 dark:text-white">
-              <span className="text-4xl sm:text-5xl">Unit {unitLabel}:</span>{" "}
+              <span className="text-3xl text-red-600 dark:text-red-400 sm:text-4xl">{curriculumMeta.chapterLabel}:</span>{" "}
               <span className="text-3xl sm:text-4xl">{title}</span>
             </h1>
             <p className="mt-3 max-w-xl text-base leading-relaxed text-slate-600 dark:text-slate-300">{lesson.description}</p>

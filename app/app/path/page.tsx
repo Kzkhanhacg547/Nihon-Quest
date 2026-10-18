@@ -5,6 +5,7 @@ import Image from "next/image";
 import { BASE64_IMAGES } from "@/lib/assets/base64Images";
 import "./path.css";
 import { authOptions } from "@/lib/auth-options";
+import { resolvePersonalizationTrack } from "@/lib/learning-level";
 import { prisma } from "@/lib/prisma";
 import { AppNav } from "@/components/AppNav";
 import { JapanBackdrop } from "@/components/JapanIllustration";
@@ -99,7 +100,7 @@ export default async function LearningPathPage() {
   if (!user.onboardingCompleted) redirect("/onboarding");
 
   const answers = sanitizeAnswers({
-    level: user.levelChoice || user.learningLevel,
+    level: resolvePersonalizationTrack(user),
     goal: user.learningGoal,
     dailyGoalMinutes: user.dailyGoalMinutes,
     focusSkill: user.focusSkill,

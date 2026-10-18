@@ -3,8 +3,8 @@ import { z } from "zod";
 import { requireUserId } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { nextDueDate, updateSrs, type Grade } from "@/lib/srs";
-import { todayKeyForUser } from "@/lib/missionDay";
-import { touchUserActivity } from "@/lib/progress-service";
+import { incrementDailyMission, todayKeyForUser } from "@/lib/missionDay";
+import { awardUserXP, touchUserActivity } from "@/lib/progress-service";
 
 const schema = z.object({
   reviewItemId: z.string(),
@@ -43,14 +43,22 @@ export async function POST(req: Request) {
     data: { userId, reviewItemId: item.id, contentType: item.contentType, contentId: item.contentId, grade, createdAt: now },
   });
 
-  await touchUserActivity(userId, now);
-
   const today = await todayKeyForUser(userId, now);
-  await prisma.userDailyMission.updateMany({
-    where: { userId, date: today, mission: { type: "REVIEW" }, status: "IN_PROGRESS" },
-    data: { progress: { increment: 1 } },
-  });
+  if (grade === "GOOD" || grade === "EASY") {
+    await awardUserXP({
+      userId,
+      amount: 5,
+      reason: "SRS_REVIEW",
+      referenceId: `${item.id}_${today}`,
+      now,
+    });
+  } else {
+    await touchUserActivity(userId, now);
+  }
+
+  await incrementDailyMission(userId, "REVIEW", 1, now);
 
   return NextResponse.json(updated);
 }
+
 

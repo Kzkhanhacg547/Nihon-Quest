@@ -3,6 +3,7 @@ import { z } from "zod";
 import { requireUserId } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { localDateKey } from "@/lib/streak";
+import { incrementDailyMission } from "@/lib/missionDay";
 import { awardUserXP, touchUserActivity } from "@/lib/progress-service";
 
 const schema = z.object({
@@ -42,12 +43,7 @@ export async function POST(req: Request) {
     await touchUserActivity(userId, now);
   }
 
-  const user = await prisma.user.findUnique({ where: { id: userId }, select: { timezone: true } });
-  const dateKey = localDateKey(now, user?.timezone || "UTC");
-  await prisma.userDailyMission.updateMany({
-    where: { userId, date: dateKey, mission: { type: "KANA" } },
-    data: { progress: { increment: 1 } },
-  });
+  await incrementDailyMission(userId, "KANA", 1, now);
 
   return NextResponse.json({
     ok: true,

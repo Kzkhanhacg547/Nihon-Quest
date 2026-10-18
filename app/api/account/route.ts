@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireUserId } from "@/lib/auth";
+import { synchronizeLevelFields } from "@/lib/learning-level";
 import { prisma } from "@/lib/prisma";
+import { rateLimit, rateLimited } from "@/lib/rateLimit";
 
 const updateSchema = z.object({
   displayName: z.string().trim().max(50).optional(),
@@ -22,21 +24,40 @@ export async function PATCH(req: Request) {
   const userId = await requireUserId();
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+  const limit = rateLimit(`account-update:${userId}`, 30, 60_000);
+  if (!limit.ok) return rateLimited(limit.retryAfterSeconds);
+
   const body = await req.json().catch(() => null);
   const parsed = updateSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json({ error: "Dữ liệu không hợp lệ.", details: parsed.error.issues }, { status: 400 });
   }
 
-  const { displayName, bio, timezone, learningLevel, levelChoice, learningGoal, dailyGoalMinutes, focusSkill, learningStyle, theme, soundEnabled, onboardingCompleted } = parsed.data;
+  const {
+    displayName,
+    bio,
+    timezone,
+    learningLevel,
+    levelChoice,
+    learningGoal,
+    dailyGoalMinutes,
+    focusSkill,
+    learningStyle,
+    theme,
+    soundEnabled,
+    onboardingCompleted,
+  } = parsed.data;
 
   const userUpdateData: Record<string, unknown> = {};
-  if (learningLevel !== undefined) {
-    userUpdateData.learningLevel = learningLevel;
+
+  // Synchronize both learningLevel and levelChoice whenever either is modified
+  // so Settings, Onboarding, Placement Test, Dashboard, and Learning Path always agree.
+  if (learningLevel !== undefined || levelChoice !== undefined) {
+    const synced = synchronizeLevelFields({ learningLevel, levelChoice });
+    userUpdateData.learningLevel = synced.learningLevel;
+    userUpdateData.levelChoice = synced.levelChoice;
   }
-  if (levelChoice !== undefined) {
-    userUpdateData.levelChoice = levelChoice;
-  }
+
   if (learningGoal !== undefined) userUpdateData.learningGoal = learningGoal;
   if (dailyGoalMinutes !== undefined) userUpdateData.dailyGoalMinutes = dailyGoalMinutes;
   if (focusSkill !== undefined) userUpdateData.focusSkill = focusSkill;
@@ -76,6 +97,9 @@ export async function PATCH(req: Request) {
 export async function DELETE() {
   const userId = await requireUserId();
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const limit = rateLimit(`account-delete:${userId}`, 3, 15 * 60_000);
+  if (!limit.ok) return rateLimited(limit.retryAfterSeconds);
 
   await prisma.user.delete({
     where: { id: userId },

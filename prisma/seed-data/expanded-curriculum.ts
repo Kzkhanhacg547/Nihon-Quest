@@ -24,14 +24,7 @@ export const EXPANDED_KANJI: SeedKanji[] = [
     ],
   },
   {
-    character: "払",
-    meaning: "Chi trả, Thanh toán (Phất)",
-    strokeCount: 5,
-    jlptLevel: "N4",
-    readings: [{ reading: "はら・う", type: "KUNYOMI" }],
-  },
-  {
-    character: "予約"[0], // 予
+    character: "予",
     meaning: "Dự định, Trước (Dự)",
     strokeCount: 4,
     jlptLevel: "N4",
@@ -39,13 +32,6 @@ export const EXPANDED_KANJI: SeedKanji[] = [
       { reading: "ヨ", type: "ONYOMI" },
       { reading: "あらかじ・め", type: "KUNYOMI" },
     ],
-  },
-  {
-    character: "約",
-    meaning: "Lời hứa, Ước chừng (Ước)",
-    strokeCount: 9,
-    jlptLevel: "N4",
-    readings: [{ reading: "ヤク", type: "ONYOMI" }],
   },
   {
     character: "礼",

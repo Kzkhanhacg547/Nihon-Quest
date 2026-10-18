@@ -1,12 +1,12 @@
-import Image from "next/image";
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { authOptions } from "@/lib/auth-options";
 import { prisma } from "@/lib/prisma";
 import { AppNav } from "@/components/AppNav";
 import { JapanBackdrop } from "@/components/JapanIllustration";
+import { resolveCanonicalUserLevel } from "@/lib/learning-level";
 import { VocabKanjiClient } from "./VocabKanjiClient";
-import { Sakura } from "./Sakura";
 
 export default async function VocabularyPage() {
   const session = await getServerSession(authOptions);
@@ -14,8 +14,11 @@ export default async function VocabularyPage() {
   const uid = sessionUser?.id;
   if (!uid) redirect("/login");
 
-  const user = await prisma.user.findUnique({ where: { id: uid }, select: { learningLevel: true } });
-  const userLevel = user?.learningLevel ?? "N5";
+  const user = await prisma.user.findUnique({
+    where: { id: uid },
+    select: { learningLevel: true, levelChoice: true },
+  });
+  const userLevel = resolveCanonicalUserLevel(user);
   const vocabulary = await prisma.vocabulary.findMany({ orderBy: { word: "asc" }, include: { examples: true } });
   const kanji = await prisma.kanji.findMany({ orderBy: { strokeCount: "asc" }, include: { readings: true } });
   const userReviews = await prisma.reviewItem.findMany({
@@ -29,57 +32,42 @@ export default async function VocabularyPage() {
       <JapanBackdrop />
       <AppNav userName={sessionUser?.name} userImage={sessionUser?.image} />
 
-      {/* HERO – banner bo góc nằm trong khung nội dung, cùng bề rộng với thẻ bên dưới */}
-      <section className="relative z-0 mx-auto mt-2 max-w-[1320px] px-3 sm:px-5">
-        <div className="relative isolate overflow-hidden rounded-[32px] shadow-[0_20px_60px_rgba(15,23,42,0.10)]">
-          <Image
-            src="/images/footer-japan.webp"
-            alt=""
-            fill
-            priority
-            sizes="(min-width: 1320px) 1320px, 100vw"
-            className="-z-20 object-cover object-[center_40%] brightness-110 saturate-[1.05]"
-          />
-          {/* Mờ dần từ trái (vùng chữ) sang phải, không phủ trắng toàn ảnh */}
-          <div
-            aria-hidden="true"
-            className="absolute inset-0 -z-10 bg-[linear-gradient(to_right,rgba(255,255,255,0.94)_0%,rgba(255,255,255,0.72)_36%,rgba(255,255,255,0)_72%)] dark:bg-[linear-gradient(to_right,rgba(10,14,30,0.92)_0%,rgba(10,14,30,0.65)_36%,rgba(10,14,30,0)_72%)]"
-          />
-          {/* Mờ nhẹ phía dưới để hòa vào thẻ nội dung */}
-          <div
-            aria-hidden="true"
-            className="absolute inset-x-0 bottom-0 -z-10 h-24 bg-gradient-to-t from-white/70 to-transparent dark:from-sumi-950/60"
-          />
-
-          <div className="px-6 pb-28 pt-9 sm:px-10 lg:pb-32 lg:pt-11" data-intro>
-            <span className="jp-text inline-flex items-center rounded-full bg-red-600 px-4 py-1.5 text-sm font-bold text-white shadow-md shadow-red-600/30">
-              日本語を学ぼう！
-            </span>
-
-            <h1 className="mt-4 max-w-xl text-[clamp(2.1rem,7vw,3.5rem)] font-black leading-[1.08] tracking-tight text-[#0f1b4c] dark:text-white">
-              Từ vựng, Hán tự,
-              <br />
-              <span className="text-red-600">Ngữ pháp.</span>
-            </h1>
-
-            <p className="mt-4 max-w-md text-[15px] leading-relaxed text-slate-700 dark:text-slate-300">
-              Khám phá và luyện tập từ vựng, Hán tự, ngữ pháp tiếng Nhật một cách khoa học, dễ hiểu và hiệu quả. Bước nhỏ
-              hôm nay, chinh phục tiếng Nhật ngày mai!
-            </p>
-
-            {/* Nhãn "nét cọ" */}
-            <div className="relative mt-6 inline-flex">
-              <span className="jp-text inline-flex items-center bg-[#14224f] py-3 pl-7 pr-12 text-lg font-bold tracking-wide text-white [clip-path:polygon(0_14%,5%_0,38%_9%,76%_0,100%_20%,95%_55%,100%_88%,70%_100%,30%_91%,4%_100%,2%_58%)]">
-                がんばりましょう！
+      <header className="relative z-10 mx-auto mt-3 max-w-[1320px] px-3 sm:px-5">
+        <div className="flex flex-col justify-between gap-4 rounded-3xl border border-slate-200/80 bg-white/95 px-5 py-4 shadow-sm backdrop-blur dark:border-slate-800 dark:bg-sumi-900/95 sm:flex-row sm:items-center sm:px-7">
+          <div>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="inline-flex items-center rounded-full bg-red-600 px-3 py-0.5 text-xs font-extrabold text-white">
+                Kho Từ Vựng & Hán Tự Chuẩn Hóa
               </span>
-              <Sakura className="absolute -right-2 top-1/2 h-8 w-8 -translate-y-1/2" />
+              <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-0.5 text-[11px] font-bold text-slate-600 dark:border-slate-700 dark:bg-sumi-800 dark:text-slate-300">
+                Pronunciation / Romaji | Chữ viết Nhật | Nghĩa tiếng Việt
+              </span>
             </div>
+            <h1 className="mt-1.5 text-xl font-black tracking-tight text-slate-900 dark:text-white sm:text-2xl">
+              Từ vựng ({vocabulary.length.toLocaleString("vi-VN")}) &amp; Hán tự ({kanji.length.toLocaleString("vi-VN")})
+            </h1>
+            <p className="mt-0.5 text-xs text-slate-600 dark:text-slate-300 sm:text-sm">
+              Mỗi mục từ là một đơn vị học tập thống nhất kèm phân loại hệ chữ (Hiragana, Katakana, Kanji, Kết hợp) và tách biệt âm Hán Việt.
+            </p>
+          </div>
+          <div className="flex shrink-0 items-center gap-2.5">
+            <Link
+              href="/app/review"
+              className="inline-flex items-center gap-2 rounded-2xl bg-red-600 px-4 py-2.5 text-xs font-extrabold text-white shadow-sm transition hover:bg-red-700"
+            >
+              <span>🎴 Ôn tập sổ SRS ({savedItemIds.length})</span>
+            </Link>
+            <Link
+              href="/app/practice"
+              className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-xs font-bold text-slate-700 transition hover:border-red-300 hover:text-red-600 dark:border-slate-700 dark:bg-sumi-800 dark:text-slate-200"
+            >
+              <span>📖 Giáo trình</span>
+            </Link>
           </div>
         </div>
-      </section>
+      </header>
 
-      {/* Thẻ nội dung chính đè lên mép dưới của hero (bo góc lớn như mẫu) */}
-      <div className="relative z-10 mx-auto -mt-10 max-w-[1320px] px-3 pb-28 sm:pb-20">
+      <div className="relative z-10 mx-auto mt-3 max-w-[1320px] px-3 pb-28 sm:px-5 sm:pb-20">
         <VocabKanjiClient
           vocabulary={JSON.parse(JSON.stringify(vocabulary))}
           kanji={JSON.parse(JSON.stringify(kanji))}

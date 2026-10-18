@@ -3,14 +3,18 @@ import { z } from "zod";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { verifyAndConsumeOtp } from "@/lib/otp";
+import { enforceRateLimitAsync } from "@/lib/rateLimit";
 
 const schema = z.object({
   email: z.string().email("Địa chỉ email không hợp lệ."),
   otpCode: z.string().min(6, "Mã OTP gồm 6 chữ số."),
-  newPassword: z.string().min(8, "Mật khẩu mới phải có ít nhất 8 ký tự."),
+  newPassword: z.string().min(8, "Mật khẩu mới phải có ít nhất 8 ký tự.").max(128),
 });
 
 export async function POST(req: Request) {
+  const limited = await enforceRateLimitAsync(req, "forgot-password-reset", 5, 15 * 60_000);
+  if (limited) return limited;
+
   const body = await req.json().catch(() => null);
   const parsed = schema.safeParse(body);
   if (!parsed.success) {
@@ -23,20 +27,21 @@ export async function POST(req: Request) {
   const { email, otpCode, newPassword } = parsed.data;
   const normalizedEmail = email.trim().toLowerCase();
 
+  // Verify OTP first and use a uniform error message to prevent account enumeration
+  const otpCheck = await verifyAndConsumeOtp(normalizedEmail, "RESET_PASSWORD", otpCode);
+  if (!otpCheck.valid) {
+    return NextResponse.json({ error: otpCheck.error || "Mã OTP không hợp lệ." }, { status: 400 });
+  }
+
   const user = await prisma.user.findUnique({
     where: { email: normalizedEmail },
   });
 
   if (!user) {
     return NextResponse.json(
-      { error: "Không tìm thấy tài khoản tương ứng với email này." },
-      { status: 404 }
+      { error: "Mã xác thực OTP không đúng hoặc đã hết hạn." },
+      { status: 400 }
     );
-  }
-
-  const otpCheck = await verifyAndConsumeOtp(normalizedEmail, "RESET_PASSWORD", otpCode);
-  if (!otpCheck.valid) {
-    return NextResponse.json({ error: otpCheck.error || "Mã OTP không hợp lệ." }, { status: 400 });
   }
 
   const passwordHash = await bcrypt.hash(newPassword, 12);

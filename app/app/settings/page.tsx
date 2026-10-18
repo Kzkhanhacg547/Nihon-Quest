@@ -2,6 +2,7 @@ import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 import { authOptions } from "@/lib/auth-options";
 import { prisma } from "@/lib/prisma";
+import { resolveCanonicalUserLevel } from "@/lib/learning-level";
 import { AppNav } from "@/components/AppNav";
 import { SettingsClient } from "./SettingsClient";
 
@@ -20,6 +21,7 @@ export default async function SettingsPage() {
   if (!user.onboardingCompleted) redirect("/onboarding");
 
   const displayName = user.profile?.displayName || user.name || user.email.split("@")[0];
+  const canonicalLevel = resolveCanonicalUserLevel(user);
   const registeredDate = `${user.createdAt.getDate().toString().padStart(2, "0")}/${(
     user.createdAt.getMonth() + 1
   )
@@ -45,7 +47,7 @@ export default async function SettingsPage() {
             avatar: user.profile?.avatar ?? user.image ?? null,
             bio: user.profile?.bio || "",
             timezone: user.timezone || "Asia/Ho_Chi_Minh",
-            learningLevel: user.learningLevel || "N5",
+            learningLevel: canonicalLevel,
             learningGoal: user.learningGoal || "TRAVEL",
             dailyGoalMinutes: user.dailyGoalMinutes || 15,
             focusSkill: user.focusSkill || "BALANCED",
