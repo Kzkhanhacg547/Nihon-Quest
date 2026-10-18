@@ -1,17 +1,75 @@
-// Natural Japanese Conversational Dialogue Engine (Context-Aware Kaiwa Simulator)
-// Speaks authentic, warm Japanese with natural follow-ups and Vietnamese translations.
+// Natural Japanese Conversational Dialogue Engine (Context-Aware Kaiwa Simulator & Learning Assistant)
+// Speaks authentic, warm Japanese with personalized learning recommendations and multi-language translations.
 
 export interface DialogueContext {
   scenarioId?: string;
   userMessage: string;
+  userProgress?: {
+    userLevel?: string;
+    level?: number;
+    totalXP?: number;
+    currentStreak?: number;
+    completedLessonsCount?: number;
+    totalLessonsInLevel?: number;
+    dueReviewCount?: number;
+    accuracyPercent?: number;
+  } | null;
+  nativeLanguage?: "vi" | "en";
 }
 
 export function generateNaturalJapaneseResponse({
   scenarioId = "free_kaiwa",
   userMessage,
+  userProgress,
+  nativeLanguage = "vi",
 }: DialogueContext): string {
   const msg = userMessage.trim();
   const lower = msg.toLowerCase();
+  const isEn = nativeLanguage === "en";
+
+  // 0. PROGRESS, STUDY ADVICE & TUTOR ASSISTANCE (Trợ lý học tập & tiến trình)
+  if (
+    /(?:hôm nay học gì|học gì|tiến độ|tiến trình|srs|thẻ ôn|lời khuyên|gợi ý|thống kê|kế hoạch|what should i study|study advice|my progress|review cards)/i.test(msg) ||
+    scenarioId === "assistant_guide"
+  ) {
+    const level = userProgress?.userLevel || "N5";
+    const pLevel = userProgress?.level || 1;
+    const xp = userProgress?.totalXP ?? 0;
+    const streak = userProgress?.currentStreak ?? 0;
+    const due = userProgress?.dueReviewCount ?? 0;
+    const completed = userProgress?.completedLessonsCount ?? 0;
+    const totalLessons = userProgress?.totalLessonsInLevel ?? 50;
+
+    if (isEn) {
+      return `Konnichiwa! Sensei has reviewed your Nihon Quest learning profile: 🌸✨
+- **Current JLPT:** Level ${level} (Tier ${pLevel})
+- **Total XP:** ${xp} XP | **Daily Streak:** 🔥 ${streak} days
+- **Curriculum Lessons:** ${completed}/${totalLessons} completed
+- **SRS Flashcards:** ${due > 0 ? `⏰ **${due} cards** due for review today!` : "✨ All caught up for today!"}
+
+**Sensei's Personal Recommendation:**
+${
+  due > 0
+    ? `1. First, spend 5-10 minutes on [Spaced Repetition Review](/app/review) to clear your ${due} due cards so they lock into long-term memory!\n2. Next, tackle the next lesson on your [Learning Path](/app/path)!\n3. Ask me if you want me to explain any grammar point or test your Japanese.`
+    : `1. You have zero review backlog—fantastic discipline! Keep up the momentum with a new lesson in your [Learning Path](/app/path).\n2. Practice conversational fluency with me right here by replying in Japanese!`
+}
+*(Hãy tiếp tục cố gắng nhé! Ganbatte kudasai! 🎌)*`;
+    }
+
+    return `Konnichiwa! Sensei đã kiểm tra hồ sơ học tập của bạn rồi nè: 🌸✨
+- **Cấp độ JLPT:** Trình độ ${level} (Level ${pLevel})
+- **Điểm tích lũy:** ${xp.toLocaleString("vi-VN")} XP | **Chuỗi Streak:** 🔥 ${streak} ngày
+- **Bài học giáo trình:** Đã hoàn thành ${completed}/${totalLessons} bài
+- **Ôn tập SRS:** ${due > 0 ? `⏰ Đang có **${due} thẻ từ vựng** đến hạn ôn tập hôm nay!` : "✨ Bạn đã ôn tập sạch sẽ các thẻ hôm nay rồi!"}
+
+**Lời khuyên học tập từ Sensei hôm nay:**
+${
+  due > 0
+    ? `1. Dành ngay 5-10 phút vào mục [Ôn tập Flashcard SRS](/app/review) để giải quyết ${due} thẻ đến hạn, giúp từ vựng ghi nhớ sâu vào tiềm thức!\n2. Học tiếp 1 bài học mới trong [Lộ trình](/app/path).\n3. Nếu có mẫu câu nào chưa hiểu, hãy gõ câu hỏi tại đây để Sensei giải thích cặn kẽ cho bạn nhé!`
+    : `1. Không có thẻ từ vựng nào bị nợ—tinh thần học của bạn quá tuyệt vời! Hãy duy trì chuỗi Streak bằng cách học 1 bài mới trong [Lộ trình](/app/path).\n2. Luyện phản xạ đối thoại tiếng Nhật ngay tại đây cùng Sensei nhé!`
+}
+*(一緒に頑張りましょう！ Hãy cùng nhau cố gắng nhé! 🎌)*`;
+  }
 
   // 1. GREETINGS & TIME OF DAY (Chào hỏi thời gian)
   if (/^(?:こんばんは|こんばんわ|konbanwa|chào buổi tối)/i.test(msg)) {

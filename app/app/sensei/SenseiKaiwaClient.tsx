@@ -460,6 +460,8 @@ export function SenseiKaiwaClient({ recentLessons = [] }: SenseiKaiwaClientProps
           scenarioId: selectedScenario.id,
           apiKey: activeKey,
           model: selectedModel || "gemini-3.6-flash",
+          nativeLanguage:
+            (typeof window !== "undefined" ? localStorage.getItem("nq_native_language") : "vi") || "vi",
         }),
       });
 

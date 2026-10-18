@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { signOut } from "next-auth/react";
 import { useSoundAndTheme, SPEECH_RATES } from "@/components/SoundAndThemeContext";
 import { notifyProgressUpdated } from "@/components/UserProgressContext";
+import { useNativeLanguage } from "@/components/LanguageContext";
 import { guessVoiceGender, voiceGenderLabel } from "@/lib/voiceGender";
 import { AvatarEditor } from "../profile/AvatarEditor";
 
@@ -57,11 +58,13 @@ export function SettingsClient({ initial }: { initial: SettingsInitialData }) {
   const [focusSkill, setFocusSkill] = useState(initial.focusSkill);
   const [learningStyle, setLearningStyle] = useState(initial.learningStyle);
 
-  // Notification preferences (persisted locally)
+  const { nativeLanguage, setNativeLanguage } = useNativeLanguage();
   const [notifDaily, setNotifDaily] = useState(true);
   const [notifReview, setNotifReview] = useState(true);
   const [notifAchievement, setNotifAchievement] = useState(true);
   const [notifLevelUp, setNotifLevelUp] = useState(true);
+  const [notifEmail, setNotifEmail] = useState(true);
+  const [isSendingEmail, setIsSendingEmail] = useState(false);
 
   // Privacy toggles
   const [privacyPublicLeaderboard, setPrivacyPublicLeaderboard] = useState(true);
@@ -474,6 +477,54 @@ export function SettingsClient({ initial }: { initial: SettingsInitialData }) {
                   </p>
                 </div>
 
+                {/* Native Language / Ngôn ngữ mẹ đẻ */}
+                <div className="rounded-2xl border border-slate-200/80 bg-slate-50/70 p-4 dark:border-slate-800 dark:bg-sumi-950/60">
+                  <div className="flex items-center justify-between mb-3">
+                    <div>
+                      <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+                        🌐 Ngôn ngữ mẹ đẻ (Native Language)
+                      </h3>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">
+                        Học tiếng Nhật nhưng giải thích ngữ pháp, từ vựng và câu thoại từ AI Sensei sẽ hiển thị theo ngôn ngữ này để bạn tiếp thu tự nhiên nhất.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap gap-2.5">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        playClick();
+                        setNativeLanguage("vi");
+                        showToast({ title: "Ngôn ngữ mẹ đẻ: Tiếng Việt 🇻🇳", type: "info" });
+                      }}
+                      className={`min-h-11 rounded-xl px-4 text-xs font-black transition flex items-center gap-2 ${
+                        nativeLanguage === "vi"
+                          ? "bg-rose-600 text-white shadow-sm"
+                          : "border border-slate-200 bg-white text-slate-700 hover:border-rose-300 dark:border-slate-700 dark:bg-sumi-950 dark:text-slate-300"
+                      }`}
+                    >
+                      <span className="text-base">🇻🇳</span>
+                      <span>Tiếng Việt (Mặc định)</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        playClick();
+                        setNativeLanguage("en");
+                        showToast({ title: "Native Language: English 🇬🇧", type: "info" });
+                      }}
+                      className={`min-h-11 rounded-xl px-4 text-xs font-black transition flex items-center gap-2 ${
+                        nativeLanguage === "en"
+                          ? "bg-rose-600 text-white shadow-sm"
+                          : "border border-slate-200 bg-white text-slate-700 hover:border-rose-300 dark:border-slate-700 dark:bg-sumi-950 dark:text-slate-300"
+                      }`}
+                    >
+                      <span className="text-base">🇬🇧</span>
+                      <span>English (Tiếng Anh)</span>
+                    </button>
+                  </div>
+                </div>
+
                 {/* JLPT Level */}
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div>
@@ -714,6 +765,52 @@ export function SettingsClient({ initial }: { initial: SettingsInitialData }) {
                     onChange={(e) => setNotifLevelUp(e.target.checked)}
                     className="h-5 w-5 rounded border-slate-300 text-rose-600 focus:ring-rose-500"
                   />
+                </div>
+
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 py-4">
+                  <div>
+                    <p className="text-sm font-bold text-slate-900 dark:text-white">📧 Nhắc nhở học tập qua Email</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                      Gửi thư thông báo duy trì Streak, số thẻ SRS đến hạn và lời khuyên từ Sensei vào hộp thư của bạn
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-3 self-end sm:self-auto">
+                    <button
+                      type="button"
+                      disabled={isSendingEmail}
+                      onClick={async () => {
+                        playClick();
+                        setIsSendingEmail(true);
+                        showToast({ title: "Đang gửi email nhắc nhở học tập...", type: "info" });
+                        try {
+                          const res = await fetch("/api/user/study-reminder", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ nativeLanguage }),
+                          });
+                          const d = await res.json();
+                          if (res.ok) {
+                            showToast({ title: "Đã gửi email nhắc nhở thành công! 🌸", type: "success" });
+                          } else {
+                            showToast({ title: d.error || "Lỗi gửi email", type: "error" });
+                          }
+                        } catch {
+                          showToast({ title: "Lỗi kết nối", type: "error" });
+                        } finally {
+                          setIsSendingEmail(false);
+                        }
+                      }}
+                      className="px-3.5 py-1.5 rounded-xl border border-rose-300 bg-rose-50 text-rose-700 hover:bg-rose-100 dark:border-rose-800 dark:bg-rose-950/40 dark:text-rose-300 text-xs font-bold transition disabled:opacity-50 shadow-sm"
+                    >
+                      {isSendingEmail ? "Đang gửi..." : "Gửi thử email ngay ✉️"}
+                    </button>
+                    <input
+                      type="checkbox"
+                      checked={notifEmail}
+                      onChange={(e) => setNotifEmail(e.target.checked)}
+                      className="h-5 w-5 rounded border-slate-300 text-rose-600 focus:ring-rose-500"
+                    />
+                  </div>
                 </div>
               </div>
             </div>

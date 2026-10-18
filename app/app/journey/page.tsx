@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 import { authOptions } from "@/lib/auth-options";
@@ -83,8 +84,16 @@ export default async function JourneyPage() {
   return (
     <div className="nq-workspace jy-page">
       <JapanBackdrop />
-      <AppNav streak={streak} />
-      <JourneyClient rows={rows} totalXP={user.totalXP} achievements={JSON.parse(JSON.stringify(achievements))} />
+      <AppNav
+        userName={user.name}
+        userImage={user.image}
+        userLevel={user.level}
+        userXP={user.totalXP}
+        streak={streak}
+      />
+      <Suspense fallback={<div className="min-h-[60vh] flex items-center justify-center text-slate-400 font-bold">Đang tải bản đồ hành trình...</div>}>
+        <JourneyClient rows={rows} totalXP={user.totalXP} achievements={JSON.parse(JSON.stringify(achievements))} />
+      </Suspense>
     </div>
   );
 }

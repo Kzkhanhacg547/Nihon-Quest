@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Be_Vietnam_Pro, Noto_Serif_JP } from "next/font/google";
+import { Be_Vietnam_Pro } from "next/font/google";
 import { Providers } from "@/components/Providers";
 import "./globals.css";
 import "./fonts.css";
@@ -13,13 +13,6 @@ const sans = Be_Vietnam_Pro({
   weight: ["400", "500", "600", "700", "800"],
   variable: "--font-be-vietnam",
   display: "swap",
-});
-const serifJp = Noto_Serif_JP({
-  subsets: ["latin"],
-  weight: ["500", "700"],
-  variable: "--font-noto-serif-jp",
-  display: "swap",
-  preload: false,
 });
 
 export const metadata: Metadata = {
@@ -48,7 +41,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html
       lang="vi"
       suppressHydrationWarning
-      className={`${sans.variable} ${serifJp.variable} max-w-full overflow-x-clip`}
+      className={`${sans.variable} max-w-full overflow-x-clip`}
     >
       <head>
         <script

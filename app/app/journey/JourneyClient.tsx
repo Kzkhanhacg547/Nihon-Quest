@@ -119,9 +119,11 @@ const ACHIEVEMENTS_HREF = "/app/achievements"; // đổi nếu route huy hiệu 
 
 /** Ảnh minh hoạ: /images/journey/<slug>.png -> fallback landmarkImage -> nền gradient */
 function CityImage({ slug, fallback, className }: { slug: string; fallback?: string; className?: string }) {
-  const [src, setSrc] = useState<string | null>(getJourneyImage(slug) || `${IMG_BASE}/${slug}.png`);
-  const [triedFallback, setTriedFallback] = useState(false);
-  if (!src) return <div className={`jy-img-fallback ${className ?? ""}`} />;
+  const initialSrc = getJourneyImage(slug) || (fallback || `${IMG_BASE}/${slug}.png`);
+  const [src, setSrc] = useState<string | null>(initialSrc);
+  const [hasError, setHasError] = useState(false);
+
+  if (hasError || !src) return <div className={`jy-img-fallback ${className ?? ""}`} />;
   return (
     // eslint-disable-next-line @next/next/no-img-element
     <img
@@ -130,20 +132,28 @@ function CityImage({ slug, fallback, className }: { slug: string; fallback?: str
       loading="lazy"
       className={className}
       onError={() => {
-        if (!triedFallback && fallback) {
-          setTriedFallback(true);
+        if (fallback && src !== fallback) {
           setSrc(fallback);
-        } else setSrc(null);
+        } else {
+          setHasError(true);
+        }
       }}
     />
   );
 }
 
 function PinThumb({ slug, tone }: { slug: string; tone: MapTone }) {
-  if (tone === "locked") return <span>🔒</span>;
+  const [failed, setFailed] = useState(false);
+  if (tone === "locked" || failed) return <span>🔒</span>;
   const b64 = getJourneyImage(slug);
-  // eslint-disable-next-line @next/next/no-img-element
-  return <img src={b64 || `${IMG_BASE}/${slug}.png`} alt="" onError={(e) => ((e.currentTarget.style.display = "none"))} />;
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={b64 || `${IMG_BASE}/${slug}.png`}
+      alt=""
+      onError={() => setFailed(true)}
+    />
+  );
 }
 
 function ShinkansenArt() {

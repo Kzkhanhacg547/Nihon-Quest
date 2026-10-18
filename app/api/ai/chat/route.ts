@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { authOptions } from "@/lib/auth-options";
 import { prisma } from "@/lib/prisma";
 import { generateNaturalJapaneseResponse } from "@/lib/naturalSenseiEngine";
+import { getUserProgress } from "@/lib/progress-service";
 import { rateLimitAsync, rateLimited } from "@/lib/rateLimit";
 
 const VALID_KEY_PATTERN = /^(gsk_[A-Za-z0-9_-]{16,128}|sk-or-[A-Za-z0-9_-]{16,128}|AIza[A-Za-z0-9_-]{20,80})$/;
@@ -43,13 +44,17 @@ export async function POST(req: NextRequest) {
   if (!limit.ok) return rateLimited(limit.retryAfterSeconds);
 
   const body = await req.json().catch(() => ({}));
-  const { message, conversationId, apiKey, scenarioId, history: clientHistory } = body as {
+  const { message, conversationId, apiKey, scenarioId, history: clientHistory, nativeLanguage: clientLang } = body as {
     message?: string;
     conversationId?: string;
     apiKey?: string;
     scenarioId?: string;
     history?: { role: "user" | "assistant"; content: string }[];
+    nativeLanguage?: "vi" | "en";
   };
+
+  const nativeLanguage = clientLang === "en" ? "en" : "vi";
+  const userProgress = await getUserProgress(uid).catch(() => null);
 
   if (!message || typeof message !== "string" || message.trim().length === 0) {
     return NextResponse.json({ error: "Message is required" }, { status: 400 });
@@ -129,16 +134,36 @@ export async function POST(req: NextRequest) {
               { role: "user", content: message.trim() },
             ];
 
+      const nativeLangName = nativeLanguage === "en" ? "English" : "Tiếng Việt";
+      const progressSnippet = userProgress
+        ? `\nTHÔNG TIN TIẾN TRÌNH HỌC TẬP THỰC TẾ CỦA HỌC VIÊN:
+- Trình độ JLPT hiện tại: ${userProgress.learningLevel} (Cấp độ Level ${userProgress.level})
+- Tổng tích lũy XP: ${userProgress.totalXP} XP
+- Chuỗi Streak học tập: ${userProgress.currentStreak} ngày liên tiếp
+- Bài học đã hoàn thành: ${userProgress.stats.completedLessonsCount}/${userProgress.stats.totalLessonsInLevel} bài học
+- Thẻ từ vựng SRS cần ôn tập hôm nay: ${userProgress.stats.dueReviewCount} thẻ
+- Tỷ lệ làm bài chính xác: ${userProgress.stats.reviewAccuracy ?? 100}%
+- Ngôn ngữ mẹ đẻ (Native Language) của học viên: ${nativeLangName}.`
+        : `\nNgôn ngữ mẹ đẻ của học viên: ${nativeLangName}.`;
+
       const baseInstruction =
         scenarioId === "business_horenso"
-          ? "Bạn là Tanaka Senpai (hoặc Aoi Sensei) tại công ty Nhật Bản. Hãy trò chuyện trực tiếp bằng tiếng Nhật lịch sự công sở N3 (Keigo/Desu/Masu). Luôn trả lời tự nhiên như người thật (2-3 câu), kèm dịch nghĩa tiếng Việt súc tích bên dưới và một câu hỏi dẫn dắt."
+          ? `Bạn là Tanaka Senpai (hoặc Aoi Sensei) tại công ty Nhật Bản. Hãy trò chuyện trực tiếp bằng tiếng Nhật lịch sự công sở N3 (Keigo/Desu/Masu). Luôn trả lời tự nhiên như người thật (2-3 câu), kèm giải thích và dịch nghĩa bằng ${nativeLangName} súc tích bên dưới.`
           : scenarioId === "casual_friends"
-            ? "Bạn là Aoi-chan, bạn thân người Nhật. Hãy trò chuyện như người thật bằng tiếng Nhật thể ngắn (タメ口), dùng thán từ tự nhiên (マジで？, そうなんだ, やばい, めっちゃ). Trả lời ngắn gọn 2-3 câu kèm dịch nghĩa tiếng Việt bên dưới."
+            ? `Bạn là Aoi-chan, bạn thân người Nhật. Hãy trò chuyện như người thật bằng tiếng Nhật thể ngắn (タメ口), dùng thán từ tự nhiên (マジで？, そうなんだ, やばい, めっちゃ). Kèm dịch nghĩa bằng ${nativeLangName} bên dưới.`
             : scenarioId === "travel_restaurant"
-              ? "Bạn là nhân viên nhà hàng / hướng dẫn viên du lịch Nhật Bản. Hãy trò chuyện nhã nhặn, tự nhiên như người thật kèm dịch nghĩa tiếng Việt."
-              : "Bạn là Aoi Sensei (葵先生), giáo viên tiếng Nhật AI thân thiện tại Nihon Quest. Hãy trò chuyện như một người bản xứ thực thụ, đối thoại tự nhiên bằng tiếng Nhật kèm dịch nghĩa tiếng Việt và khuyến khích học viên.";
+              ? `Bạn là nhân viên nhà hàng / hướng dẫn viên du lịch Nhật Bản. Hãy trò chuyện nhã nhặn, tự nhiên kèm dịch nghĩa bằng ${nativeLangName}.`
+              : `Bạn là Kawaii AI Sensei (Aoi Sensei 🌸 / Ren Sensei 🦊) - trợ lý học tập cá nhân tận tâm và thông minh tại Nihon Quest.`;
 
-      const systemPrompt = `${baseInstruction}\nLƯU Ý QUAN TRỌNG: Hãy đối thoại tự nhiên như người thật đang trò chuyện (khi chào thì chào lại, khi hỏi thì trả lời và hỏi tiếp). KHÔNG trả lời theo khuôn mẫu bài giảng hay cẩm nang giáo trình trừ khi được hỏi trực tiếp về ngữ pháp.`;
+      const systemPrompt = `${baseInstruction}${progressSnippet}
+VAI TRÒ VÀ NGUYÊN TẮC CỦA TRỢ LÝ HỌC TẬP (AI SENSEI):
+1. Bạn là TRỢ LÝ ĐỒNG HÀNH THÔNG MINH, KHÔNG PHẢI chatbot vô hồn:
+   - Hãy quan tâm đến tiến trình học tập của học viên: khen ngợi khi có streak tốt, nhắc nhở nhẹ nhàng nếu có thẻ SRS đang đến hạn ôn tập (${userProgress?.stats.dueReviewCount ?? 0} thẻ).
+   - Khi học viên hỏi "hôm nay học gì", "gợi ý học", "tiến độ thế nào", hãy đưa ra lời khuyên cụ thể, thực tế theo đúng dữ liệu học tập bên trên.
+   - Giải thích từ vựng, ngữ pháp, trợ từ cặn kẽ và dịch nghĩa rõ ràng bằng ngôn ngữ mẹ đẻ của học viên (${nativeLangName}).
+2. Phong cách:
+   - Thân thiện, đáng yêu, ấm áp (Kawaii Sensei), dùng emoji phù hợp 🌸✨🎌.
+   - Luôn kèm câu thoại tiếng Nhật tự nhiên (có Kanji + Hiragana) và bản dịch ${nativeLangName} bên dưới.`;
 
       let aiSuccess = false;
 
@@ -302,14 +327,29 @@ export async function POST(req: NextRequest) {
       }
 
       if (!aiSuccess) {
-        aiResponse = generateNaturalJapaneseResponse({ scenarioId, userMessage: message });
+        aiResponse = generateNaturalJapaneseResponse({
+          scenarioId,
+          userMessage: message,
+          userProgress,
+          nativeLanguage,
+        });
       }
     } catch (err) {
       console.error("[AI Chat Route Error]:", (err as Error)?.message || err);
-      aiResponse = generateNaturalJapaneseResponse({ scenarioId, userMessage: message });
+      aiResponse = generateNaturalJapaneseResponse({
+        scenarioId,
+        userMessage: message,
+        userProgress,
+        nativeLanguage,
+      });
     }
   } else {
-    aiResponse = generateNaturalJapaneseResponse({ scenarioId, userMessage: message });
+    aiResponse = generateNaturalJapaneseResponse({
+      scenarioId,
+      userMessage: message,
+      userProgress,
+      nativeLanguage,
+    });
   }
 
   const aiMsg = await prisma.aiMessage.create({

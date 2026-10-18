@@ -45,7 +45,8 @@ export const JOURNEY_LANDMARKS: Record<string, string> = {
   "hokkaido": "/images/generated/asset_35.webp",
   "okinawa": "/images/generated/asset_36.webp",
   "hiroshima": "/images/generated/asset_37.webp",
-  "nagoya": "/images/generated/asset_38.webp"
+  "nagoya": "/images/generated/asset_38.webp",
+  "fuji": "/images/journey/fuji.png"
 };
 
 export const SURVIVAL_LESSONS: Record<string, string> = {

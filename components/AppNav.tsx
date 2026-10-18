@@ -6,6 +6,8 @@ import { useEffect, useRef, useState } from "react";
 import { NihonQuestLogo } from "./NihonQuestLogo";
 import { SPEECH_RATES, useSoundAndTheme } from "./SoundAndThemeContext";
 import { useUserProgress } from "./UserProgressContext";
+import { useNativeLanguage } from "./LanguageContext";
+import { NotificationDropdown } from "./NotificationDropdown";
 import { UserAvatar } from "./UserAvatar";
 import { guessVoiceGender, voiceGenderLabel } from "@/lib/voiceGender";
 import { Icon, IconButton, type IconName } from "./ui";
@@ -123,6 +125,7 @@ export function AppNav({
   unreadCount?: number;
 }) {
   const { progress } = useUserProgress();
+  const { nativeLanguage, setNativeLanguage } = useNativeLanguage();
   const effectiveName = progress?.displayName || userName;
   const effectiveAvatar = progress?.avatar || avatar || userImage;
   const effectiveLevel = progress?.level ?? userLevel;
@@ -367,6 +370,34 @@ export function AppNav({
               )}
             </div>
 
+            {/* Native Language Toggle */}
+            <button
+              type="button"
+              onClick={() => {
+                playClick();
+                const nextLang = nativeLanguage === "vi" ? "en" : "vi";
+                setNativeLanguage(nextLang);
+                showToast({
+                  title: nextLang === "en" ? "Native Language: English 🇬🇧" : "Ngôn ngữ mẹ đẻ: Tiếng Việt 🇻🇳",
+                  description:
+                    nextLang === "en"
+                      ? "AI Sensei will explain Japanese in English."
+                      : "AI Sensei sẽ hướng dẫn và giải thích bằng Tiếng Việt.",
+                  type: "info",
+                });
+              }}
+              className="inline-flex h-9 sm:h-10 items-center gap-1 rounded-full border border-slate-200 bg-white px-2.5 sm:px-3 text-xs font-black text-slate-700 shadow-sm transition hover:border-slate-300 active:scale-95 dark:border-slate-700 dark:bg-sumi-900 dark:text-slate-200"
+              title={
+                nativeLanguage === "vi"
+                  ? "Ngôn ngữ mẹ đẻ: Tiếng Việt (Bấm để chuyển sang English)"
+                  : "Native Language: English (Click to switch to Tiếng Việt)"
+              }
+              aria-label="Đổi ngôn ngữ mẹ đẻ"
+            >
+              <span>{nativeLanguage === "vi" ? "🇻🇳" : "🇬🇧"}</span>
+              <span className="hidden sm:inline font-bold">{nativeLanguage.toUpperCase()}</span>
+            </button>
+
             <IconButton
               label={resolvedTheme === "dark" ? "Chuyển sang giao diện sáng" : "Chuyển sang giao diện tối"}
               className="h-10 w-10 sm:h-10 sm:w-10"
@@ -378,19 +409,7 @@ export function AppNav({
               <Icon name={resolvedTheme === "dark" ? "moon" : "sun"} className="h-[18px] w-[18px]" />
             </IconButton>
 
-            <IconButton
-              label="Thông báo"
-              className="relative h-10 w-10 sm:h-10 sm:w-10 max-[420px]:hidden"
-              onClick={() => {
-                playClick();
-                showToast({ title: unreadCount > 0 ? `Bạn có ${unreadCount} thông báo mới` : "Chưa có thông báo mới", type: "info" });
-              }}
-            >
-              <Icon name="bell" className="h-[18px] w-[18px]" />
-              {unreadCount > 0 && (
-                <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-red-500 ring-2 ring-white dark:ring-sumi-900" />
-              )}
-            </IconButton>
+            <NotificationDropdown />
 
             {/* Unified Account & Settings Popover (Desktop & Tablet) */}
             <div className="relative hidden sm:block" ref={accountRef}>
@@ -578,6 +597,26 @@ export function AppNav({
                   <span>⚙️</span>
                   <span>Cài đặt</span>
                 </Link>
+                <button
+                  type="button"
+                  onClick={() => {
+                    playClick();
+                    const nextLang = nativeLanguage === "vi" ? "en" : "vi";
+                    setNativeLanguage(nextLang);
+                    showToast({
+                      title: nextLang === "en" ? "Native Language: English 🇬🇧" : "Ngôn ngữ mẹ đẻ: Tiếng Việt 🇻🇳",
+                      description:
+                        nextLang === "en"
+                          ? "AI Sensei will explain in English."
+                          : "AI Sensei sẽ hướng dẫn bằng Tiếng Việt.",
+                      type: "info",
+                    });
+                  }}
+                  className="flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 dark:border-slate-700 dark:bg-sumi-900 dark:text-slate-200"
+                >
+                  <span>{nativeLanguage === "vi" ? "🇻🇳" : "🇬🇧"}</span>
+                  <span>{nativeLanguage === "vi" ? "Tiếng Việt" : "English"}</span>
+                </button>
               </div>
             </div>
 
