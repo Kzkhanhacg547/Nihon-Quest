@@ -87,3 +87,4 @@ describe("Learning Mistakes & Pedagogical AI Guidance", () => {
     expect(getLanguageName("fr")).toBe("Français");
   });
 });
+

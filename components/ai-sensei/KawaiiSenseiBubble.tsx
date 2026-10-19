@@ -16,6 +16,26 @@ interface ChatMessage {
   timestamp: Date;
 }
 
+interface SpeechRecognitionResultItem {
+  transcript: string;
+}
+
+interface SpeechRecognitionEvent {
+  results: ArrayLike<ArrayLike<SpeechRecognitionResultItem>>;
+}
+
+interface SpeechRecognitionInstance {
+  lang: string;
+  continuous: boolean;
+  interimResults: boolean;
+  onresult: (event: SpeechRecognitionEvent) => void;
+  onerror: () => void;
+  onend: () => void;
+  start: () => void;
+  stop: () => void;
+  abort: () => void;
+}
+
 export function KawaiiSenseiBubble() {
   const pathname = usePathname();
   const { progress } = useUserProgress();
@@ -36,8 +56,7 @@ export function KawaiiSenseiBubble() {
   const [showLangMenu, setShowLangMenu] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const recognitionRef = useRef<any>(null);
+  const recognitionRef = useRef<SpeechRecognitionInstance | null>(null);
 
   // Auto-scroll messages
   const scrollToBottom = () => {
@@ -113,8 +132,12 @@ export function KawaiiSenseiBubble() {
 
   // Voice Input (Speech-to-Text / STT)
   const startListening = () => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const SpeechRec = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    const win = typeof window !== "undefined" ? (window as unknown as Record<string, unknown>) : null;
+    const SpeechRec = win
+      ? (win.SpeechRecognition as (new () => SpeechRecognitionInstance) | undefined) ||
+        (win.webkitSpeechRecognition as (new () => SpeechRecognitionInstance) | undefined)
+      : undefined;
+
     if (!SpeechRec) {
       showToast({
         title: "Trình duyệt không hỗ trợ nhận diện giọng nói",
@@ -134,11 +157,9 @@ export function KawaiiSenseiBubble() {
       recognition.continuous = false;
       recognition.interimResults = true;
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      recognition.onresult = (event: any) => {
+      recognition.onresult = (event: SpeechRecognitionEvent) => {
         const transcript = Array.from(event.results)
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          .map((res: any) => res[0]?.transcript)
+          .map((res) => res[0]?.transcript || "")
           .join("");
         setInput(transcript);
       };

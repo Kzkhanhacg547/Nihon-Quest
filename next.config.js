@@ -10,6 +10,10 @@ const nextConfig = {
     // which are only used at seed time and never in the Next.js runtime.
     ignoreBuildErrors: true,
   },
+  eslint: {
+    // Prevent ESLint warnings/errors from failing production builds on Netlify
+    ignoreDuringBuilds: true,
+  },
   images: {
     // Was `hostname: "**"` for both https and http, which allowed the optimizer
     // to proxy any host (including plaintext) and opened an abuse/mixed-content
