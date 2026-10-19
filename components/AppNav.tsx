@@ -375,9 +375,10 @@ export function AppNav({
             </div>
 
             {/* Native Language Dropdown Selector */}
-            <div className="relative" ref={langRef}>
+            <div className="relative" ref={langRef} suppressHydrationWarning>
               <button
                 type="button"
+                suppressHydrationWarning
                 onClick={() => {
                   playClick();
                   setLangOpen(!langOpen);
@@ -387,8 +388,8 @@ export function AppNav({
                 aria-label="Chọn ngôn ngữ mẹ đẻ"
                 aria-expanded={langOpen}
               >
-                <span>{SUPPORTED_LANGUAGES.find((l) => l.code === nativeLanguage)?.flag || "🇻🇳"}</span>
-                <span className="hidden sm:inline font-bold">
+                <span suppressHydrationWarning>{SUPPORTED_LANGUAGES.find((l) => l.code === nativeLanguage)?.flag || "🇻🇳"}</span>
+                <span suppressHydrationWarning className="hidden sm:inline font-bold">
                   {SUPPORTED_LANGUAGES.find((l) => l.code === nativeLanguage)?.short || nativeLanguage.toUpperCase()}
                 </span>
                 <Icon name="chevron" className="hidden h-3 w-3 text-slate-400 sm:block" />

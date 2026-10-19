@@ -24,7 +24,6 @@ export function NotificationDropdown() {
 
   const [isOpen, setIsOpen] = useState(false);
   const [readIds, setReadIds] = useState<Set<string>>(new Set());
-  const [isSendingEmail, setIsSendingEmail] = useState(false);
   const dropdownRef = useRef<HTMLDivElement | null>(null);
 
   const isEn = nativeLanguage === "en";
@@ -112,42 +111,6 @@ export function NotificationDropdown() {
     setReadIds(new Set(notifications.map((n) => n.id)));
   };
 
-  const handleSendReminderEmail = async () => {
-    try {
-      playClick();
-      setIsSendingEmail(true);
-      showToast({
-        title: isEn ? "Sending study reminder email..." : "Đang gửi email nhắc nhở học tập...",
-        type: "info",
-      });
-
-      const res = await fetch("/api/user/study-reminder", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ nativeLanguage }),
-      });
-
-      const data = await res.json();
-      if (res.ok) {
-        showToast({
-          title: isEn ? "Reminder Email Sent! 🌸" : "Đã gửi email nhắc nhở thành công! 🌸",
-          description: data.message || "Hãy kiểm tra hòm thư của bạn.",
-          type: "success",
-        });
-      } else {
-        showToast({
-          title: "Lỗi gửi email",
-          description: data.error || "Chưa thể gửi email lúc này",
-          type: "error",
-        });
-      }
-    } catch {
-      showToast({ title: "Lỗi kết nối máy chủ", type: "error" });
-    } finally {
-      setIsSendingEmail(false);
-    }
-  };
-
   return (
     <div className="relative" ref={dropdownRef}>
       <IconButton
@@ -196,24 +159,14 @@ export function NotificationDropdown() {
             )}
           </div>
 
-          {/* Quick Email Reminder Action Card */}
-          <div className="mb-2.5 p-2.5 rounded-xl bg-gradient-to-r from-red-50 to-rose-50 dark:from-red-950/40 dark:to-rose-950/30 border border-red-200/70 dark:border-red-900/40 flex items-center justify-between gap-2">
-            <div>
-              <p className="text-xs font-bold text-red-900 dark:text-red-300">
-                {isEn ? "Email Study Reminder" : "Nhắc nhở học qua Email"}
-              </p>
-              <p className="text-[11px] text-red-700/80 dark:text-red-400/80">
-                {isEn ? "Get daily study brief in your inbox" : "Nhận tổng hợp bài học & Streak vào hòm thư"}
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={handleSendReminderEmail}
-              disabled={isSendingEmail}
-              className="shrink-0 px-3 py-1.5 rounded-lg bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white font-extrabold text-xs shadow-sm transition active:scale-95"
-            >
-              {isSendingEmail ? (isEn ? "Sending..." : "Đang gửi...") : (isEn ? "Send now ✉️" : "Gửi ngay ✉️")}
-            </button>
+          {/* Automated daily study reminder notice */}
+          <div className="mb-2 p-2 rounded-xl bg-slate-50 dark:bg-sumi-950/60 border border-slate-200/60 dark:border-slate-800 text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+            <span>⏰</span>
+            <span>
+              {isEn
+                ? "Daily study reminders are automatically sent at 8:00 AM."
+                : "Hệ thống tự động gửi email nhắc học hàng ngày lúc 8:00 AM."}
+            </span>
           </div>
 
           {/* Notification List */}

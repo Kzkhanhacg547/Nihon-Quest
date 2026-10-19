@@ -64,7 +64,6 @@ export function SettingsClient({ initial }: { initial: SettingsInitialData }) {
   const [notifAchievement, setNotifAchievement] = useState(true);
   const [notifLevelUp, setNotifLevelUp] = useState(true);
   const [notifEmail, setNotifEmail] = useState(true);
-  const [isSendingEmail, setIsSendingEmail] = useState(false);
 
   // Privacy toggles
   const [privacyPublicLeaderboard, setPrivacyPublicLeaderboard] = useState(true);
@@ -774,35 +773,6 @@ export function SettingsClient({ initial }: { initial: SettingsInitialData }) {
                     </p>
                   </div>
                   <div className="flex items-center gap-3 self-end sm:self-auto">
-                    <button
-                      type="button"
-                      disabled={isSendingEmail}
-                      onClick={async () => {
-                        playClick();
-                        setIsSendingEmail(true);
-                        showToast({ title: "Đang gửi email nhắc nhở học tập...", type: "info" });
-                        try {
-                          const res = await fetch("/api/user/study-reminder", {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({ nativeLanguage }),
-                          });
-                          const d = await res.json();
-                          if (res.ok) {
-                            showToast({ title: "Đã gửi email nhắc nhở thành công! 🌸", type: "success" });
-                          } else {
-                            showToast({ title: d.error || "Lỗi gửi email", type: "error" });
-                          }
-                        } catch {
-                          showToast({ title: "Lỗi kết nối", type: "error" });
-                        } finally {
-                          setIsSendingEmail(false);
-                        }
-                      }}
-                      className="px-3.5 py-1.5 rounded-xl border border-rose-300 bg-rose-50 text-rose-700 hover:bg-rose-100 dark:border-rose-800 dark:bg-rose-950/40 dark:text-rose-300 text-xs font-bold transition disabled:opacity-50 shadow-sm"
-                    >
-                      {isSendingEmail ? "Đang gửi..." : "Gửi thử email ngay ✉️"}
-                    </button>
                     <input
                       type="checkbox"
                       checked={notifEmail}

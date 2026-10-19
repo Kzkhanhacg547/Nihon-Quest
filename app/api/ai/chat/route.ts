@@ -39,58 +39,84 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const session = await getServerSession(authOptions);
-  const uid = (session?.user as { id?: string } | undefined)?.id;
-  if (!uid) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  try {
+    const session = await getServerSession(authOptions).catch(() => null);
+    const uid = (session?.user as { id?: string } | undefined)?.id;
 
-  const limit = await rateLimitAsync(`ai-chat:${uid}`, 20, 60_000);
-  if (!limit.ok) return rateLimited(limit.retryAfterSeconds);
+    const body = await req.json().catch(() => ({}));
+    const { message, conversationId, apiKey, scenarioId, history: clientHistory, nativeLanguage: clientLang } = body as {
+      message?: string;
+      conversationId?: string;
+      apiKey?: string;
+      scenarioId?: string;
+      history?: { role: "user" | "assistant"; content: string }[];
+      nativeLanguage?: NativeLanguage;
+    };
 
-  const body = await req.json().catch(() => ({}));
-  const { message, conversationId, apiKey, scenarioId, history: clientHistory, nativeLanguage: clientLang } = body as {
-    message?: string;
-    conversationId?: string;
-    apiKey?: string;
-    scenarioId?: string;
-    history?: { role: "user" | "assistant"; content: string }[];
-    nativeLanguage?: NativeLanguage;
-  };
+    const isSupportedLang = clientLang && SUPPORTED_LANGUAGES.some((l) => l.code === clientLang);
+    const nativeLanguage: NativeLanguage = isSupportedLang ? (clientLang as NativeLanguage) : "vi";
 
-  const isSupportedLang = clientLang && SUPPORTED_LANGUAGES.some((l) => l.code === clientLang);
-  const nativeLanguage: NativeLanguage = isSupportedLang ? (clientLang as NativeLanguage) : "vi";
-  const [userProgress, userMistakes] = await Promise.all([
-    getUserProgress(uid).catch(() => null),
-    getUserLearningMistakes(uid).catch(() => null),
-  ]);
+    if (!message || typeof message !== "string" || message.trim().length === 0) {
+      return NextResponse.json({ error: "Message is required" }, { status: 400 });
+    }
 
-  if (!message || typeof message !== "string" || message.trim().length === 0) {
-    return NextResponse.json({ error: "Message is required" }, { status: 400 });
-  }
+    if (message.length > 4000) {
+      return NextResponse.json({ error: "Message quá dài (tối đa 4000 ký tự)." }, { status: 400 });
+    }
 
-  if (message.length > 4000) {
-    return NextResponse.json({ error: "Message quá dài (tối đa 4000 ký tự)." }, { status: 400 });
-  }
+    // Guest / unauthenticated fallback
+    if (!uid) {
+      const guestResponse = generateNaturalJapaneseResponse({
+        scenarioId: scenarioId || "free_kaiwa",
+        userMessage: message,
+        nativeLanguage,
+      });
+      return NextResponse.json({
+        conversationId: "guest-" + Date.now(),
+        message: {
+          id: "guest-msg-" + Date.now(),
+          role: "assistant",
+          content: guestResponse,
+          createdAt: new Date().toISOString(),
+        },
+        isGuest: true,
+      });
+    }
 
-  let conv = conversationId
-    ? await prisma.aiConversation.findFirst({ where: { id: conversationId, userId: uid } })
-    : null;
+    const limit = await rateLimitAsync(`ai-chat:${uid}`, 30, 60_000).catch(() => ({ ok: true as const, remaining: 30 }));
+    if (!limit.ok) return rateLimited(limit.retryAfterSeconds);
 
-  if (!conv) {
-    conv = await prisma.aiConversation.create({
-      data: {
-        userId: uid,
-        title: message.slice(0, 60),
-        provider: "NATURAL_KAIWA_ENGINE",
-        model: "aoi-sensei-n3",
-      },
-    });
-  }
+    const [userProgress, userMistakes] = await Promise.all([
+      getUserProgress(uid).catch(() => null),
+      getUserLearningMistakes(uid).catch(() => null),
+    ]);
 
-  await prisma.aiMessage.create({
-    data: { conversationId: conv.id, role: "user", content: message.trim() },
-  });
+    let convId: string = conversationId || "conv-" + Date.now();
+    try {
+      let conv = conversationId
+        ? await prisma.aiConversation.findFirst({ where: { id: conversationId, userId: uid } })
+        : null;
 
-  let aiResponse = "";
+      if (!conv) {
+        conv = await prisma.aiConversation.create({
+          data: {
+            userId: uid,
+            title: message.slice(0, 60),
+            provider: "NATURAL_KAIWA_ENGINE",
+            model: "aoi-sensei-n3",
+          },
+        });
+      }
+      convId = conv.id;
+
+      await prisma.aiMessage.create({
+        data: { conversationId: conv.id, role: "user", content: message.trim() },
+      });
+    } catch (dbErr) {
+      console.warn("[AI Chat DB Warning - Continuing with AI response]:", dbErr);
+    }
+
+    let aiResponse = "";
 
   // Only accept client-supplied API keys when explicitly enabled or in dev/test,
   // and never mix unvalidated strings into server key pools.
@@ -120,11 +146,13 @@ export async function POST(req: NextRequest) {
 
   if (keyList.length > 0) {
     try {
-      const dbHistory = await prisma.aiMessage.findMany({
-        where: { conversationId: conv.id },
-        orderBy: { createdAt: "desc" },
-        take: 20,
-      });
+      const dbHistory = await prisma.aiMessage
+        .findMany({
+          where: { conversationId: convId },
+          orderBy: { createdAt: "desc" },
+          take: 20,
+        })
+        .catch(() => []);
       dbHistory.reverse();
 
       const trustedClientHistory = Array.isArray(clientHistory)
@@ -217,10 +245,12 @@ VAI TRÒ VÀ NGUYÊN TẮC CỦA TRỢ LÝ HỌC TẬP (AI SENSEI):
                 if (textResult && textResult.trim().length > 0) {
                   aiResponse = textResult.trim();
                   aiSuccess = true;
-                  await prisma.aiConversation.update({
-                    where: { id: conv.id },
-                    data: { provider: "GROQ", model: gModel },
-                  });
+                  await prisma.aiConversation
+                    .update({
+                      where: { id: convId },
+                      data: { provider: "GROQ", model: gModel },
+                    })
+                    .catch(() => {});
                   break;
                 }
               }
@@ -259,10 +289,12 @@ VAI TRÒ VÀ NGUYÊN TẮC CỦA TRỢ LÝ HỌC TẬP (AI SENSEI):
               if (textResult && textResult.trim().length > 0) {
                 aiResponse = textResult.trim();
                 aiSuccess = true;
-                await prisma.aiConversation.update({
-                  where: { id: conv.id },
-                  data: { provider: "OPENROUTER", model: "deepseek/deepseek-chat" },
-                });
+                await prisma.aiConversation
+                  .update({
+                    where: { id: convId },
+                    data: { provider: "OPENROUTER", model: "deepseek/deepseek-chat" },
+                  })
+                  .catch(() => {});
                 break;
               }
             }
@@ -324,10 +356,12 @@ VAI TRÒ VÀ NGUYÊN TẮC CỦA TRỢ LÝ HỌC TẬP (AI SENSEI):
                 if (textResult && textResult.trim().length > 0) {
                   aiResponse = textResult.trim();
                   aiSuccess = true;
-                  await prisma.aiConversation.update({
-                    where: { id: conv.id },
-                    data: { provider: "GOOGLE_GEMINI", model: modelName },
-                  });
+                  await prisma.aiConversation
+                    .update({
+                      where: { id: convId },
+                      data: { provider: "GOOGLE_GEMINI", model: modelName },
+                    })
+                    .catch(() => {});
                   break;
                 }
               }
@@ -367,18 +401,47 @@ VAI TRÒ VÀ NGUYÊN TẮC CỦA TRỢ LÝ HỌC TẬP (AI SENSEI):
     });
   }
 
-  const aiMsg = await prisma.aiMessage.create({
-    data: { conversationId: conv.id, role: "assistant", content: aiResponse },
-  });
+    let savedMsgId = "msg-" + Date.now();
+    try {
+      const aiMsg = await prisma.aiMessage.create({
+        data: { conversationId: convId, role: "assistant", content: aiResponse },
+      });
+      savedMsgId = aiMsg.id;
 
-  await prisma.aiConversation.update({
-    where: { id: conv.id },
-    data: { updatedAt: new Date() },
-  });
+      await prisma.aiConversation.update({
+        where: { id: convId },
+        data: { updatedAt: new Date() },
+      });
+    } catch (dbSaveErr) {
+      console.warn("[AI Chat DB Save Warning]:", dbSaveErr);
+    }
 
-  return NextResponse.json({
-    conversationId: conv.id,
-    message: aiMsg,
-    aiDisclaimer: "Phản hồi được tạo bởi AI hỗ trợ luyện hội thoại — hãy đối chiếu với bài học chuẩn khi ôn thi JLPT.",
-  });
+    return NextResponse.json({
+      conversationId: convId,
+      message: {
+        id: savedMsgId,
+        role: "assistant",
+        content: aiResponse,
+        createdAt: new Date().toISOString(),
+      },
+      aiDisclaimer: "Phản hồi được tạo bởi AI hỗ trợ luyện hội thoại — hãy đối chiếu với bài học chuẩn khi ôn thi JLPT.",
+    });
+  } catch (globalErr) {
+    console.error("[AI Chat Global Fallback]:", globalErr);
+    const fallbackText = generateNaturalJapaneseResponse({
+      scenarioId: "assistant_guide",
+      userMessage: "Konnichiwa",
+      nativeLanguage: "vi",
+    });
+    return NextResponse.json({
+      conversationId: "fallback-" + Date.now(),
+      message: {
+        id: "msg-" + Date.now(),
+        role: "assistant",
+        content: fallbackText,
+        createdAt: new Date().toISOString(),
+      },
+      aiDisclaimer: "Phản hồi dự phòng từ trợ lý AI Kawaii Sensei.",
+    });
+  }
 }

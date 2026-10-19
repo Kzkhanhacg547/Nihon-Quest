@@ -48,6 +48,11 @@ export function KawaiiSenseiBubble() {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [hasInteracted, setHasInteracted] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Chat Voice State (STT & TTS)
   const [isListening, setIsListening] = useState(false);
@@ -291,6 +296,8 @@ export function KawaiiSenseiBubble() {
     character === "aoi" ? BASE64_IMAGES.aoiPortrait : BASE64_IMAGES.renPortrait;
 
   const isFullSenseiPage = pathname === "/app/sensei";
+
+  if (!mounted) return null;
 
   return (
     <>
