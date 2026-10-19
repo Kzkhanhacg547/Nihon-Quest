@@ -180,19 +180,27 @@ export async function POST(req: NextRequest) {
     process.env.ALLOW_CLIENT_AI_KEYS === "true" || process.env.NODE_ENV !== "production";
 
   const rawKeySources = [
-    process.env.OPENROUTER_API_KEY,
-    process.env.GROQ_API_KEY,
     process.env.GEMINI_API_KEY,
+    process.env.GROQ_API_KEY,
+    process.env.OPENROUTER_API_KEY,
     process.env.GROK_API_KEY,
     process.env.XAI_API_KEY,
     ...(allowClientKeys
-      ? [apiKey, req.headers.get("x-grok-key"), req.headers.get("x-gemini-key"), req.headers.get("x-groq-key")]
+      ? [req.headers.get("x-gemini-key"), req.headers.get("x-groq-key"), apiKey, req.headers.get("x-grok-key")]
       : []),
   ]
     .filter(Boolean)
     .join("\n");
 
-  // Cap at max 4 validated keys to prevent upstream request fan-out
+  const getKeyPriority = (k: string): number => {
+    if (k.startsWith("AIza") || k.startsWith("AQ.")) return 1; // 1. Gemini
+    if (k.startsWith("gsk_")) return 2;                       // 2. Groq
+    if (k.startsWith("sk-or-")) return 3;                     // 3. OpenRouter
+    if (k.startsWith("xai-")) return 4;                       // 4. xAI Grok
+    return 5;
+  };
+
+  // Sort strictly by priority: Gemini (1) -> Groq (2) -> OpenRouter (3) -> Grok (4)
   const keyList = Array.from(
     new Set(
       rawKeySources
@@ -200,7 +208,9 @@ export async function POST(req: NextRequest) {
         .map((k) => k.trim().replace(/^["']|["']$/g, ""))
         .filter((k) => VALID_KEY_PATTERN.test(k)),
     ),
-  ).slice(0, 4);
+  )
+    .sort((a, b) => getKeyPriority(a) - getKeyPriority(b))
+    .slice(0, 6);
 
   if (keyList.length > 0) {
     try {
@@ -471,8 +481,8 @@ VAI TRÒ VÀ NGUYÊN TẮC CỦA TRỢ LÝ HỌC TẬP (AI SENSEI):
           const clientModel = isValidGeminiModel ? requestedModel : undefined;
 
           const modelsToTry = Array.from(
-            new Set([clientModel, "gemini-2.5-flash", "gemini-flash-latest"].filter(Boolean) as string[]),
-          ).slice(0, 2);
+            new Set([clientModel, "gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-flash-8b"].filter(Boolean) as string[]),
+          );
 
           for (const modelName of modelsToTry) {
             if (aiSuccess) break;
