@@ -16,6 +16,7 @@ import { SENSEI_CHARACTERS, DEFAULT_SENSEI_ID, type SenseiCharacterId } from "@/
 import { useSenseiVoice, type VoiceSource } from "@/lib/useSenseiVoice";
 import { voiceGenderLabel } from "@/lib/voiceGender";
 import { useUserProgress } from "@/components/UserProgressContext";
+import { useNativeLanguage } from "@/components/LanguageContext";
 import { FormattedSenseiMessage } from "@/components/ai-sensei/markdownHelper";
 
 interface Message {
@@ -143,6 +144,7 @@ interface SenseiKaiwaClientProps {
 export function SenseiKaiwaClient({ recentLessons = [] }: SenseiKaiwaClientProps) {
   const { playClick, playCorrect, speechVoiceURI } = useSoundAndTheme();
   const { progress } = useUserProgress();
+  const { nativeLanguage, t } = useNativeLanguage();
 
   // Main Tab State (Kaiwa vs Dungeon)
   const [activeSenseiTab, setActiveSenseiTab] = useState<"KAIWA" | "DUNGEON">("KAIWA");
@@ -476,8 +478,7 @@ export function SenseiKaiwaClient({ recentLessons = [] }: SenseiKaiwaClientProps
                 stats: progress.stats,
               }
             : undefined,
-          nativeLanguage:
-            (typeof window !== "undefined" ? localStorage.getItem("nq_native_language") : "vi") || "vi",
+          nativeLanguage: nativeLanguage || "vi",
         }),
       });
 
@@ -508,7 +509,7 @@ export function SenseiKaiwaClient({ recentLessons = [] }: SenseiKaiwaClientProps
         id: `ai_${Date.now()}`,
         role: "assistant",
         content: "ごめんなさい、うまく聞こえませんでした。もう一度言ってもらえますか？",
-        meaning: "Xin lỗi, cô/thầy chưa nghe rõ. Em nói lại giúp được không? (Kiểm tra kết nối hoặc AI Key rồi thử lại nhé.)",
+        meaning: t("senseiError"),
         createdAt: new Date().toISOString(),
       };
       setMessages((prev) => [...prev, fallbackMsg]);
@@ -568,27 +569,28 @@ export function SenseiKaiwaClient({ recentLessons = [] }: SenseiKaiwaClientProps
   // ── Dữ liệu dẫn xuất cho giao diện (không ảnh hưởng logic) ──
   const lastAssistant = [...messages].reverse().find((m) => m.role === "assistant");
 
+  const isVi = nativeLanguage === "vi";
   const statusLabel = loading
-    ? "Đang soạn câu trả lời..."
+    ? (t("senseiThinking") || "Đang soạn câu trả lời...")
     : isSpeaking
-    ? "Đang nói..."
+    ? (isVi ? "Đang nói..." : "Speaking...")
     : isListening
-    ? "Đang lắng nghe..."
-    : "Đang online";
+    ? (t("senseiListening") || "Đang lắng nghe...")
+    : (isVi ? "Đang online" : "Online");
   const statusDot = loading ? "bg-amber-500" : isSpeaking ? "bg-rose-500" : isListening ? "bg-violet-500" : "bg-emerald-500";
 
   // Câu thoại của Sensei trong bong bóng — là text thật, đổi theo trạng thái.
   const bubble = loading
-    ? { ja: "少し考えますね…", vi: `Để ${character.viRef} suy nghĩ một chút nhé…` }
+    ? { ja: "少し考えますね…", vi: isVi ? `Để ${character.viRef} suy nghĩ một chút nhé…` : "Let me think for a moment…" }
     : isListening
-    ? { ja: "どうぞ、聞いていますよ。", vi: `Mời em nói, ${character.viRef} đang nghe đây.` }
+    ? { ja: "どうぞ、聞いていますよ。", vi: isVi ? `Mời em nói, ${character.viRef} đang nghe đây.` : "Please speak, I'm listening." }
     : isSpeaking
-    ? { ja: "よく聞いてくださいね。", vi: "Em nghe kỹ nhé." }
+    ? { ja: "よく聞いてくださいね。", vi: isVi ? "Em nghe kỹ nhé." : "Listen carefully." }
     : emotion === "HAPPY"
-    ? { ja: "いいですね！その調子！", vi: "Rất tốt! Cứ thế phát huy nhé!" }
+    ? { ja: "いいですね！その調子！", vi: isVi ? "Rất tốt! Cứ thế phát huy nhé!" : "Great job! Keep it up!" }
     : emotion === "WORRIED"
-    ? { ja: "もう一度お願いします。", vi: "Em thử lại một lần nữa nhé." }
-    : { ja: "今日は何を話しましょうか？", vi: "Hôm nay chúng ta nói về chủ đề gì nhỉ?" };
+    ? { ja: "もう一度お願いします。", vi: isVi ? "Em thử lại một lần nữa nhé." : "Please try again." }
+    : { ja: "今日は何を話しましょうか？", vi: isVi ? "Hôm nay chúng ta nói về chủ đề gì nhỉ?" : "What shall we talk about today?" };
 
   const focusRing =
     "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-500";

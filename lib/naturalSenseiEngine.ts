@@ -56,7 +56,7 @@ export function generateNaturalJapaneseResponse({
 }: DialogueContext): string {
   const msg = userMessage.trim();
   const lower = msg.toLowerCase();
-  const isEn = nativeLanguage === "en";
+  const isVi = nativeLanguage === "vi";
   const langName = getLanguageName(nativeLanguage);
 
   // 0. MISTAKES & WEAK POINTS REMEDIATION (Kiểm soát lỗi sai & hướng dẫn khắc phục)
@@ -68,15 +68,17 @@ export function generateNaturalJapaneseResponse({
   ) {
     if (mistakes && mistakes.totalMistakesCount > 0) {
       const vocabList = mistakes.weakVocab.slice(0, 3).map(
-        (v) => `• **${v.word}** (${v.kana}) [${v.romaji}]: nghĩa là "${v.meaning}"`
+        (v) => `• **${v.word}** (${v.kana}) [${v.romaji}]: ${isVi ? `nghĩa là "${v.meaning}"` : `means "${v.meaning}"`}`
       ).join("\n");
 
       const failedEx = mistakes.failedExercises[0];
       const exSample = failedEx
-        ? `\n\n📌 **Câu bài tập bạn vừa làm sai gần đây:**\n- *Câu hỏi:* "${failedEx.question}"\n- *Bạn đã chọn:* ~~"${failedEx.userAnswer}"~~ ❌\n- *Đáp án chuẩn xác:* **"${failedEx.correctAnswer}"** ✔️\n*(Sensei giải thích: Hãy chú ý cấu trúc và ngữ cảnh của câu để không bị nhầm lẫn nhé!)*`
+        ? isVi
+          ? `\n\n📌 **Câu bài tập bạn vừa làm sai gần đây:**\n- *Câu hỏi:* "${failedEx.question}"\n- *Bạn đã chọn:* ~~"${failedEx.userAnswer}"~~ ❌\n- *Đáp án chuẩn xác:* **"${failedEx.correctAnswer}"** ✔️\n*(Sensei giải thích: Hãy chú ý cấu trúc và ngữ cảnh của câu để không bị nhầm lẫn nhé!)*`
+          : `\n\n📌 **Recent exercise with a mistake:**\n- *Question:* "${failedEx.question}"\n- *Your answer:* ~~"${failedEx.userAnswer}"~~ ❌\n- *Correct answer:* **"${failedEx.correctAnswer}"** ✔️\n*(Sensei explanation: Pay close attention to sentence structure and context!)*`
         : "";
 
-      if (isEn) {
+      if (!isVi) {
         return `Sensei noticed a few weak spots in your recent reviews: 🌸\n\n${
           vocabList ? `**Words that need reinforcement:**\n${vocabList}\n` : ""
         }${exSample}\n\n**Sensei's Tip:** Repetition right before you forget is the key! Let's try 1 quick practice: What is the meaning or reading of one of these words? Reply right here and I'll grade it for you!`;
@@ -87,7 +89,7 @@ export function generateNaturalJapaneseResponse({
       }${exSample}\n\n**Mẹo khắc phục từ Sensei:**\nKhi gặp từ khó, hãy đặt câu với từ đó trong ngữ cảnh đời thường để nhớ lâu hơn! Bạn có muốn cùng Sensei làm 1 câu đố nhỏ để ôn lại ngay các điểm trên không? Hãy trả lời Sensei nhé! ✨`;
     }
 
-    if (isEn) {
+    if (!isVi) {
       return `Awesome news! Sensei checked your records and found **no recent critical mistakes or weak cards**! ✨ Your accuracy is solid. Keep moving forward on your [Learning Path](/app/path)!`;
     }
     return `Tin vui đây! Sensei đã kiểm tra và thấy **bạn không có lỗi sai nào chưa xử lý**! ✨ Tỷ lệ làm bài của bạn đang rất chuẩn xác. Hãy tiếp tục giữ vững phong độ bằng bài học tiếp theo trên [Lộ trình](/app/path) nhé!`;
@@ -107,7 +109,7 @@ export function generateNaturalJapaneseResponse({
     const completed = userProgress?.completedLessonsCount ?? userProgress?.stats?.completedLessonsCount ?? 0;
     const totalLessons = userProgress?.totalLessonsInLevel ?? userProgress?.stats?.totalLessonsInLevel ?? 50;
 
-    if (isEn) {
+    if (!isVi) {
       return `Konnichiwa! Sensei has reviewed your Nihon Quest learning profile: 🌸✨
 - **Current JLPT:** Level ${level} (Tier ${pLevel})
 - **Total XP:** ${xp} XP | **Daily Streak:** 🔥 ${streak} days
@@ -141,59 +143,89 @@ ${
   // 2. GREETINGS & TIME OF DAY (Chào hỏi thời gian)
   if (/^(?:こんばんは|こんばんわ|konbanwa|chào buổi tối|good evening|晚上好|안녕하세요)/i.test(msg)) {
     if (scenarioId === "business_horenso") {
-      return "こんばんは！遅くまでお疲れ様です。今日の業務の進捗状況はどうですか？何か報告や相談があればいつでもどうぞ！💼\n\n*(Chào buổi tối! Làm việc đến muộn thế này vất vả cho bạn quá. Tiến độ công việc hôm nay thế nào rồi? Nếu có báo cáo hay thảo luận gì bạn cứ nói nhé!)*";
+      return isVi
+        ? "こんばんは！遅くまでお疲れ様です。今日の業務の進捗状況はどうですか？何か報告や相談があればいつでもどうぞ！💼\n\n*(Chào buổi tối! Làm việc đến muộn thế này vất vả cho bạn quá. Tiến độ công việc hôm nay thế nào rồi? Nếu có báo cáo hay thảo luận gì bạn cứ nói nhé!)*"
+        : "こんばんは！遅くまでお疲れ様です。今日の業務の進捗状況はどうですか？何か報告や相談があればいつでもどうぞ！💼\n\n*(Good evening! Thank you for working late. How is today's progress? Feel free to report or consult anytime!)*";
     }
     if (scenarioId === "casual_friends") {
-      return "こんばんは〜！今日も一日お疲れ！夜遅くまで日本語の勉強えらいね〜。今日はどんな一日だった？✨\n\n*(Chào buổi tối nè~! Hôm nay vất vả cả ngày rồi nhỉ! Đêm muộn thế này mà vẫn chăm học tiếng Nhật, đỉnh thật đấy. Hôm nay ngày của cậu thế nào?)*";
+      return isVi
+        ? "こんばんは〜！今日も一日お疲れ！夜遅くまで日本語の勉強えらいね〜。今日はどんな一日だった？✨\n\n*(Chào buổi tối nè~! Hôm nay vất vả cả ngày rồi nhỉ! Đêm muộn thế này mà vẫn chăm học tiếng Nhật, đỉnh thật đấy. Hôm nay ngày của cậu thế nào?)*"
+        : "こんばんは〜！今日も一日お疲れ！夜遅くまで日本語の勉強えらいね〜。今日はどんな一日だった？✨\n\n*(Good evening~! Great job today! Studying Japanese late at night is really impressive. How was your day?)*";
     }
-    return "こんばんは！今日も一日お疲れ様でした。夜の日本語練習、素晴らしいですね！🌙\n今日はどんな一日でしたか？何か楽しいことはありましたか？🌸\n\n*(Chào buổi tối! Hôm nay bạn đã vất vả cả ngày rồi. Luyện tập tiếng Nhật vào buổi tối thật tuyệt vời! Hôm nay ngày của bạn thế nào? Có chuyện gì vui không?)*";
+    return isVi
+      ? "こんばんは！今日も一日お疲れ様でした。夜の日本語練習、素晴らしいですね！🌙\n今日はどんな一日でしたか？何か楽しいことはありましたか？🌸\n\n*(Chào buổi tối! Hôm nay bạn đã vất vả cả ngày rồi. Luyện tập tiếng Nhật vào buổi tối thật tuyệt vời! Hôm nay ngày của bạn thế nào? Có chuyện gì vui không?)*"
+      : "こんばんは！今日も一日お疲れ様でした。夜の日本語練習、素晴らしいですね！🌙\n今日はどんな一日でしたか？何か楽しいことはありましたか？🌸\n\n*(Good evening! Great effort today. Practicing Japanese in the evening is wonderful! How was your day? Anything fun happen?)*";
   }
 
   if (/^(?:こんにちは|こんにちわ|konnichiwa|chào|xin chào|hello|hi|你好|안녕)/i.test(msg)) {
     if (scenarioId === "casual_friends") {
-      return "やっほー！こんにちは！今日も会えて嬉しいよ〜。最近なんか面白いことあった？☕\n\n*(Hé lô! Chào cậu nhé! Hôm nay lại được gặp cậu vui quá. Dạo gần đây có chuyện gì vui hay ho không?)*";
+      return isVi
+        ? "やっほー！こんにちは！今日も会えて嬉しいよ〜。最近なんか面白いことあった？☕\n\n*(Hé lô! Chào cậu nhé! Hôm nay lại được gặp cậu vui quá. Dạo gần đây có chuyện gì vui hay ho không?)*"
+        : "やっほー！こんにちは！今日も会えて嬉しいよ〜。最近なんか面白いことあった？☕\n\n*(Yahoo! Hello! So happy to see you today. Anything interesting lately?)*";
     }
     if (scenarioId === "business_horenso") {
-      return "こんにちは！お疲れ様です。お忙しいところ恐れ入りますが、本日の進捗についてお聞かせいただけますでしょうか？💼\n\n*(Xin chào bạn! Hôm nay bạn vất vả rồi. Xin phép làm phiền lúc bạn đang bận, bạn có thể chia sẻ về tiến độ công việc hôm nay được không ạ?)*";
+      return isVi
+        ? "こんにちは！お疲れ様です。お忙しいところ恐れ入りますが、本日の進捗についてお聞かせいただけますでしょうか？💼\n\n*(Xin chào bạn! Hôm nay bạn vất vả rồi. Xin phép làm phiền lúc bạn đang bận, bạn có thể chia sẻ về tiến độ công việc hôm nay được không ạ?)*"
+        : "こんにちは！お疲れ様です。お忙しいところ恐れ入りますが、本日の進捗についてお聞かせいただけますでしょうか？💼\n\n*(Hello! Thank you for your hard work. May I ask about today's progress when you have a moment?)*";
     }
-    return "こんにちは！お会いできて嬉しいです。今日も一緒に楽しく日本語を話しましょう！🌸\n今、何をしていますか？\n\n*(Xin chào bạn! Rất vui được gặp bạn. Hôm nay chúng ta hãy cùng nhau trò chuyện tiếng Nhật thật vui nhé! Bây giờ bạn đang làm gì đấy?)*";
+    return isVi
+      ? "こんにちは！お会いできて嬉しいです。今日も一緒に楽しく日本語を話しましょう！🌸\n今、何をしていますか？\n\n*(Xin chào bạn! Rất vui được gặp bạn. Hôm nay chúng ta hãy cùng nhau trò chuyện tiếng Nhật thật vui nhé! Bây giờ bạn đang làm gì đấy?)*"
+      : "こんにちは！お会いできて嬉しいです。今日も一緒に楽しく日本語を話しましょう！🌸\n今、何をしていますか？\n\n*(Hello! Glad to see you. Let's enjoy practicing Japanese together today! What are you doing right now?)*";
   }
 
   if (/^(?:おはよう|おはようございます|ohayou|chào buổi sáng|good morning|早上好|좋은 아침)/i.test(msg)) {
-    return "おはようございます！🌅 朝から日本語の練習を始めるなんて、本当に素晴らしい向上心ですね！今日もいい一日にしましょうね。朝ごはんはもう食べましたか？\n\n*(Chào buổi sáng! Bắt đầu luyện tiếng Nhật ngay từ sáng sớm thế này, tinh thần học tập của bạn thật tuyệt vời! Chúc bạn một ngày tốt lành nhé. Bạn đã ăn sáng chưa?)*";
+    return isVi
+      ? "おはようございます！🌅 朝から日本語の練習を始めるなんて、本当に素晴らしい向上心ですね！今日もいい一日にしましょうね。朝ごはんはもう食べましたか？\n\n*(Chào buổi sáng! Bắt đầu luyện tiếng Nhật ngay từ sáng sớm thế này, tinh thần học tập của bạn thật tuyệt vời! Chúc bạn một ngày tốt lành nhé. Bạn đã ăn sáng chưa?)*"
+      : "おはようございます！🌅 朝から日本語の練習を始めるなんて、本当に素晴らしい向上心ですね！今日もいい一日にしましょうね。朝ごはんはもう食べましたか？\n\n*(Good morning! Starting Japanese practice early in the morning shows such great dedication! Have a great day. Have you eaten breakfast yet?)*";
   }
 
   if (/(?:おやすみ|お休みなさい|oyasumi|ngủ ngon|đi ngủ|good night|晚安|잘 자)/i.test(msg)) {
-    return "今日もたくさん練習しましたね！本当にお疲れ様でした。ゆっくり休んで、いい夢を見てくださいね。おやすみなさい〜！⭐💤\n\n*(Hôm nay bạn đã luyện tập rất nhiều rồi! Vất vả cho bạn rồi. Hãy nghỉ ngơi thật thoải mái và có những giấc mơ đẹp nhé. Chúc bạn ngủ ngon~!)*";
+    return isVi
+      ? "今日もたくさん練習しましたね！本当にお疲れ様でした。ゆっくり休んで、いい夢を見てくださいね。おやすみなさい〜！⭐💤\n\n*(Hôm nay bạn đã luyện tập rất nhiều rồi! Vất vả cho bạn rồi. Hãy nghỉ ngơi thật thoải mái và có những giấc mơ đẹp nhé. Chúc bạn ngủ ngon~!)*"
+      : "今日もたくさん練習しましたね！本当にお疲れ様でした。ゆっくり休んで、いい夢を見てくださいね。おやすみなさい〜！⭐💤\n\n*(You practiced so much today! Rest well and have sweet dreams. Good night~!)*";
   }
 
   // 3. GRATITUDE & POLITE SOCIAL RESPONSES (Cảm ơn, xin lỗi)
   if (/(?:ありがとう|感謝|cảm ơn|thank|谢谢|고마워)/i.test(msg)) {
-    return "どういたしまして！こちらこそ、いつも一生懸命練習してくれて嬉しいです。😊 他にも気になるフレーズや話したいことがあれば、何でも気軽に言ってくださいね！🌸\n\n*(Không có chi! Sensei mới là người phải cảm ơn vì bạn luôn chăm chỉ luyện tập. Nếu còn cụm từ nào thắc mắc hay muốn trò chuyện đề tài gì, cứ tự nhiên nói nhé!)*";
+    return isVi
+      ? "どういたしまして！こちらこそ、いつも一生懸命練習してくれて嬉しいです。😊 他にも気になるフレーズや話したいことがあれば、何でも気軽に言ってくださいね！🌸\n\n*(Không có chi! Sensei mới là người phải cảm ơn vì bạn luôn chăm chỉ luyện tập. Nếu còn cụm từ nào thắc mắc hay muốn trò chuyện đề tài gì, cứ tự nhiên nói nhé!)*"
+      : "どういたしまして！こちらこそ、いつも一生懸命練習してくれて嬉しいです。😊 他にも気になるフレーズや話したいことがあれば、何でも気軽に言ってくださいね！🌸\n\n*(You're welcome! I'm glad you're always practicing so hard. Feel free to ask about any other phrases or topics!)*";
   }
 
   if (/(?:お疲れ様|おつかれ|vất vả rồi)/i.test(msg)) {
-    return "お疲れ様です！優しいお言葉をありがとうございます。あなたも毎日のお仕事や勉強、本当にお疲れ様です！お茶でも飲んで一息つきましょうね。🍵\n\n*(Bạn cũng vất vả rồi! Cảm ơn lời hỏi thăm ấm áp của bạn. Bạn học tập và làm việc mỗi ngày cũng vất vả lắm rồi! Hãy uống chút trà nghỉ ngơi nhé.)*";
+    return isVi
+      ? "お疲れ様です！優しいお言葉をありがとうございます。あなたも毎日のお仕事や勉強、本当にお疲れ様です！お茶でも飲んで一息つきましょうね。🍵\n\n*(Bạn cũng vất vả rồi! Cảm ơn lời hỏi thăm ấm áp của bạn. Bạn học tập và làm việc mỗi ngày cũng vất vả lắm rồi! Hãy uống chút trà nghỉ ngơi nhé.)*"
+      : "お疲れ様です！優しいお言葉をありがとうございます。あなたも毎日のお仕事や勉強、本当にお疲れ様です！お茶でも飲んで一息つきましょうね。🍵\n\n*(Thank you for your kind words! You work so hard every day too. Have some tea and take a nice breath.)*";
   }
 
   // 4. EMOTIONS & PHYSICAL STATES
   if (/(?:疲れた|つかれた|mệt|mệt mỏi|tired|累|피곤)/i.test(msg)) {
-    return "お疲れ様です！今日はいろいろ大変だったんですね… 無理をしないでくださいね。少し肩の力を抜いて、リラックスしながらお話ししましょう。今日は何が一番大変でしたか？🍀\n\n*(Vất vả cho bạn quá! Hôm nay chắc có nhiều việc mệt mỏi lắm nhỉ... Đừng gượng ép quá nhé. Thả lỏng vai một chút và trò chuyện thư giãn cùng tôi nào. Hôm nay điều gì làm bạn vất vả nhất?)*";
+    return isVi
+      ? "お疲れ様です！今日はいろいろ大変だったんですね… 無理をしないでくださいね。少し肩の力を抜いて、リラックスしながらお話ししましょう。今日は何が一番大変でしたか？🍀\n\n*(Vất vả cho bạn quá! Hôm nay chắc có nhiều việc mệt mỏi lắm nhỉ... Đừng gượng ép quá nhé. Thả lỏng vai một chút và trò chuyện thư giãn cùng tôi nào. Hôm nay điều gì làm bạn vất vả nhất?)*"
+      : "お疲れ様です！今日はいろいろ大変だったんですね… 無理をしないでくださいね。少し肩の力を抜いて、リラックスしながらお話ししましょう。今日は何が一番大変でしたか？🍀\n\n*(You must have had a tough day... Please don't push yourself too hard. Relax your shoulders and let's have a gentle chat. What was the most exhausting thing today?)*";
   }
 
   if (/(?:お腹|おなかすいた|腹減った|đói bụng|hungry|饿|배고파)/i.test(msg)) {
-    return "お腹が空きましたか！美味しいご飯を食べてエネルギーを補給してくださいね。今夜は何が食べたいですか？ラーメン、お寿司、それとも美味しい料理？🍜🍣\n\n*(Bạn đói bụng rồi à! Hãy ăn món gì thật ngon để nạp lại năng lượng nhé. Tối nay bạn muốn ăn món gì nào? Ramen, Sushi hay món ăn truyền thống quê bạn?)*";
+    return isVi
+      ? "お腹が空きましたか！美味しいご飯を食べてエネルギーを補給してくださいね。今夜は何が食べたいですか？ラーメン、お寿司、それとも美味しい料理？🍜🍣\n\n*(Bạn đói bụng rồi à! Hãy ăn món gì thật ngon để nạp lại năng lượng nhé. Tối nay bạn muốn ăn món gì nào? Ramen, Sushi hay món ăn truyền thống quê bạn?)*"
+      : "お腹が空きましたか！美味しいご飯を食べてエネルギーを補給してくださいね。今夜は何が食べたいですか？ラーメン、お寿司、それとも美味しい料理？🍜🍣\n\n*(You're hungry! Please eat something tasty and recharge your energy. What would you like to eat tonight? Ramen, Sushi, or a hometown dish?)*";
   }
 
   // 5. RESTAURANT & TRAVEL
   if (/(?:寿司|すし|sushi)/i.test(msg)) {
-    return "お寿司、最高ですよね！🍣 私もサーモンやマグロ、いくらが大好きです。ワサビは入れても大丈夫ですか？日本の回転寿司にも行ってみたいですか？😋\n\n*(Sushi ngon tuyệt cú mèo luôn nhỉ! Tôi cũng cực kỳ thích cá hồi (salmon), cá ngừ và trứng cá hồi đấy. Bạn ăn kèm mù tạt (wasabi) được không? Bạn có muốn đi thử các quán sushi băng chuyền ở Nhật không?)*";
+    return isVi
+      ? "お寿司、最高ですよね！🍣 私もサーモンやマグロ、いくらが大好きです。ワサビは入れても大丈夫ですか？日本の回転寿司にも行ってみたいですか？😋\n\n*(Sushi ngon tuyệt cú mèo luôn nhỉ! Tôi cũng cực kỳ thích cá hồi (salmon), cá ngừ và trứng cá hồi đấy. Bạn ăn kèm mù tạt (wasabi) được không? Bạn có muốn đi thử các quán sushi băng chuyền ở Nhật không?)*"
+      : "お寿司、最高ですよね！🍣 私もサーモンやマグロ、いくらが大好きです。ワサビは入れても大丈夫ですか？日本の回転寿司にも行ってみたいですか？😋\n\n*(Sushi is fantastic, isn't it! I love salmon, tuna, and salmon roe too. Can you eat wasabi? Would you like to try conveyor belt sushi in Japan?)*";
   }
 
   if (/(?:ラーメン|らーめん|ramen)/i.test(msg)) {
-    return "ラーメン、いいですね！🍜 豚骨（とんこつ）、醤油（しょうゆ）、味噌（みそ）、どれが一番好きですか？日本のラーメン屋さんはスープや麺の硬さも選べるんですよ！😋\n\n*(Ramen thích quá đi chứ! Giữa nước dùng xương heo (Tonkotsu), nước tương (Shoyu) và tương Miso, bạn mê vị nào nhất? Ở quán ramen bên Nhật mình còn được tự chọn độ đậm của nước súp và độ dai của sợi mì nữa đấy!)*";
+    return isVi
+      ? "ラーメン、いいですね！🍜 豚骨（とんこつ）、醤油（しょうゆ）、味噌（みそ）、どれが一番好きですか？日本のラーメン屋さんはスープや麺の硬さも選べるんですよ！😋\n\n*(Ramen thích quá đi chứ! Giữa nước dùng xương heo (Tonkotsu), nước tương (Shoyu) và tương Miso, bạn mê vị nào nhất? Ở quán ramen bên Nhật mình còn được tự chọn độ đậm của nước súp và độ dai của sợi mì nữa đấy!)*"
+      : "ラーメン、いいですね！🍜 豚骨（とんこつ）、醤油（しょうゆ）、味噌（みそ）、どれが一番好きですか？日本のラーメン屋さんはスープや麺の硬さも選べるんですよ！😋\n\n*(Ramen is so delicious! Which flavor do you like best: tonkotsu (pork bone), shoyu (soy sauce), or miso? In Japan, you can even customize broth richness and noodle firmness!)*";
   }
 
   // 6. GENERAL JAPANESE NATURAL CONVERSATION FALLBACK
-  return `なるほど、「${msg}」ですね！🌸\n\nとても自然で気持ちの伝わる表現ですね。あなたの日本語のセンス、とても素晴らしいと思います！✨\n\nもっと色んなお話がしたいので、最近あった楽しかったことや、気になっていることについて教えてくれますか？😊\n\n*(Sensei hiểu rồi, là chuyện "${msg}" nhỉ! Cách diễn đạt của bạn rất tự nhiên và truyền cảm xúc rất tốt. Hãy tiếp tục trò chuyện cùng Sensei nhé!)*`;
+  return isVi
+    ? `なるほど、「${msg}」ですね！🌸\n\nとても自然で気持ちの伝わる表現ですね。あなたの日本語のセンス、とても素晴らしいと思います！✨\n\nもっと色んなお話がしたいので、最近あった楽しかったことや、気になっていることについて教えてくれますか？😊\n\n*(Sensei hiểu rồi, là chuyện "${msg}" nhỉ! Cách diễn đạt của bạn rất tự nhiên và truyền cảm xúc rất tốt. Hãy tiếp tục trò chuyện cùng Sensei nhé!)*`
+    : `なるほど、「${msg}」ですね！🌸\n\nとても自然で気持ちの伝わる表現ですね。あなたの日本語のセンス、とても素晴らしいと思います！✨\n\nもっと色んなお話がしたいので、最近あった楽しかったことや、気になっていることについて教えてくれますか？😊\n\n*(I see, about "${msg}"! Your expression was so natural and communicative. Tell me more about recent fun things or what's on your mind!)*`;
 }

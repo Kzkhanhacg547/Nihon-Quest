@@ -37,6 +37,88 @@ interface SpeechRecognitionInstance {
   abort: () => void;
 }
 
+function getLocalizedGreeting(
+  lang: NativeLanguage,
+  level: string,
+  streak: number,
+  dueCards: number
+): string {
+  switch (lang) {
+    case "en":
+      return `Konnichiwa! I'm Aoi Sensei, your personal Japanese learning assistant 🌸\n\nI see you are on **JLPT ${level}** with a **${streak}-day streak** 🔥\n${
+        dueCards > 0
+          ? `⏰ You have **${dueCards} SRS flashcards** ready for review today!`
+          : "✨ Great job! No pending SRS cards today."
+      }\n\nAsk me anything! I can give daily study guidance, diagnose and fix your mistakes, or practice voice conversation! 🎙️`;
+    case "zh-CN":
+      return `Konnichiwa！我是 Aoi Sensei，你在 Nihon Quest 的专属日语学习导师 🌸\n\n我看到你目前正在学习 **JLPT ${level}**，已保持 **${streak} 天连续打卡** 🔥\n${
+        dueCards > 0
+          ? `⏰ 今天有 **${dueCards} 张 SRS 复习卡片** 到期需要复习！`
+          : "✨ 太棒了！今天没有积压的复习卡片。"
+      }\n\n你可以随时向我提问学习规划、分析错题与弱点，或者点击麦克风 🎙️ 一起练习日语实战会话！`;
+    case "zh-TW":
+      return `Konnichiwa！我是 Aoi Sensei，你在 Nihon Quest 的專屬日語學習導師 🌸\n\n我看到你目前正在學習 **JLPT ${level}**，已保持 **${streak} 天連續打卡** 🔥\n${
+        dueCards > 0
+          ? `⏰ 今天有 **${dueCards} 張 SRS 複習卡片** 到期需要複習！`
+          : "✨ 太棒了！今天沒有積壓的複習卡片。"
+      }\n\n你可以隨時向我提問學習規劃、分析錯題與弱點，或者點擊麥克風 🎙️ 一起練習日語實戰會話！`;
+    case "ko":
+      return `Konnichiwa! Aoi Sensei입니다 🌸 Nihon Quest에서 여러분의 맞춤형 일본어 학습을 도와드릴게요.\n\n현재 **JLPT ${level}**, 연속 **${streak}일 스트릭** 유지 중이시네요 🔥\n${
+        dueCards > 0
+          ? `⏰ 오늘 복습 대기 중인 **SRS 단어 카드가 ${dueCards}장** 있습니다!`
+          : "✨ 훌륭해요! 오늘 밀린 복습 카드가 없습니다."
+      }\n\n오늘의 공부 계획, 틀린 문제 교정, 또는 마이크 🎙️를 눌러 일본어 회화를 연습해 보세요!`;
+    case "es":
+      return `¡Konnichiwa! Soy Aoi Sensei, tu asistente personal de aprendizaje en Nihon Quest 🌸\n\nVeo que estás en **JLPT ${level}** con una racha de **${streak} días** 🔥\n${
+        dueCards > 0
+          ? `⏰ ¡Tienes **${dueCards} tarjetas SRS** pendientes de repaso hoy!`
+          : "✨ ¡Genial! No tienes tarjetas pendientes hoy."
+      }\n\n¡Pregúntame sobre tu plan de estudio, pide ayuda con tus errores o pulsa el micrófono 🎙️ para practicar conversación!`;
+    case "fr":
+      return `Konnichiwa ! Je suis Aoi Sensei, votre assistante personnelle de japonais 🌸\n\nVous êtes actuellement au niveau **JLPT ${level}** avec une série de **${streak} jours** 🔥\n${
+        dueCards > 0
+          ? `⏰ Vous avez **${dueCards} cartes SRS** à réviser aujourd'hui !`
+          : "✨ Bravo ! Aucune carte en attente aujourd'hui."
+      }\n\nPosez-moi des questions sur vos leçons, vos erreurs ou activez le micro 🎙️ pour vous entraîner à l'oral !`;
+    case "de":
+      return `Konnichiwa! Ich bin Aoi Sensei, deine persönliche Japanisch-Lernassistentin 🌸\n\nDu lernst aktuell für **JLPT ${level}** mit einer Serie von **${streak} Tagen** 🔥\n${
+        dueCards > 0
+          ? `⏰ Du hast heute **${dueCards} SRS-Karten** zur Wiederholung fällig!`
+          : "✨ Großartig! Heute sind keine Karten offen."
+      }\n\nFrag mich nach deinem Lernplan, Fehlern oder nutze das Mikrofon 🎙️ für japanische Konversation!`;
+    case "id":
+      return `Konnichiwa! Saya Aoi Sensei, asisten belajar bahasa Jepang Anda 🌸\n\nSaya melihat Anda belajar di **JLPT ${level}** dengan runtutan **${streak} hari** 🔥\n${
+        dueCards > 0
+          ? `⏰ Ada **${dueCards} kartu SRS** yang perlu diulas hari ini!`
+          : "✨ Luar biasa! Tidak ada kartu tertunda hari ini."
+      }\n\nTanyakan apa saja tentang rencana belajar, analisis kesalahan, atau tekan mikrofon 🎙️ untuk latihan percakapan!`;
+    case "th":
+      return `Konnichiwa! ฉันคือ Aoi Sensei ผู้ช่วยส่วนตัวสำหรับการเรียนภาษาญี่ปุ่นของคุณ 🌸\n\nคุณกำลังเรียนระดับ **JLPT ${level}** และรักษาสถิติต่อเนื่อง **${streak} วัน** 🔥\n${
+        dueCards > 0
+          ? `⏰ มีการ์ดคำศัพท์ SRS **${dueCards} ใบ** ที่ต้องทบทวนวันนี้!`
+          : "✨ ยอดเยี่ยมมาก! วันนี้ไม่มีการ์ดค้างทบทวน"
+      }\n\nสอบถามแผนการเรียน ช่วยวิเคราะห์ข้อผิดพลาด หรือกดไมค์ 🎙️ เพื่อฝึกสนทนาได้เลย!`;
+    case "ru":
+      return `Konnichiwa! Я Aoi Sensei, ваш персональный помощник по японскому языку 🌸\n\nВы изучаете **JLPT ${level}** с серией в **${streak} дней** 🔥\n${
+        dueCards > 0
+          ? `⏰ Сегодня вас ждут **${dueCards} карточек SRS** для повторения!`
+          : "✨ Отлично! На сегодня нет отложенных карточек."
+      }\n\nСпросите меня о плане занятий, разборе ошибок или нажмите микрофон 🎙️ для практики разговора!`;
+    case "pt":
+      return `Konnichiwa! Eu sou a Aoi Sensei, sua assistente pessoal de japonês 🌸\n\nVejo que você está no **JLPT ${level}** com uma sequência de **${streak} dias** 🔥\n${
+        dueCards > 0
+          ? `⏰ Você tem **${dueCards} cartões SRS** para revisar hoje!`
+          : "✨ Excelente! Sem cartões pendentes hoje."
+      }\n\nPergunte sobre seu plano de estudo, tire dúvidas sobre erros ou aperte o microfone 🎙️ para praticar!`;
+    default:
+      return `Konnichiwa! Sensei chào bạn nhé 🌸 Mình là trợ lý học tập cá nhân của bạn tại Nihon Quest.\n\nSensei thấy bạn đang học **JLPT ${level}**, duy trì chuỗi **${streak} ngày Streak** 🔥\n${
+        dueCards > 0
+          ? `⏰ Hiện đang có **${dueCards} thẻ từ vựng SRS** đến hạn ôn tập hôm nay đấy!`
+          : "✨ Tuyệt vời! Bạn không còn thẻ SRS nào bị nợ hôm nay."
+      }\n\nBạn có thể hỏi Sensei về kế hoạch học hôm nay, nhờ Sensei phân tích & khắc phục lỗi sai, hoặc bấm biểu tượng mic 🎙️ để luyện nói chuyện nhé!`;
+  }
+}
+
 export function KawaiiSenseiBubble() {
   const pathname = usePathname();
   const { progress } = useUserProgress();
@@ -97,33 +179,19 @@ export function KawaiiSenseiBubble() {
       // Ignore
     }
     showToast({
-      title: nextVal ? "🔊 Tự động phát âm: BẬT" : "🔇 Tự động phát âm: TẮT",
+      title: nextVal ? t("autoSpeechToastOn") : t("autoSpeechToastOff"),
       type: "info",
     });
   };
 
   // Initial greeting tailored to user progress & mistakes
   useEffect(() => {
-    if (messages.length === 0) {
-      const isEn = nativeLanguage === "en";
+    if (messages.length === 0 || (messages.length === 1 && messages[0].id === "welcome-1")) {
       const streak = progress?.currentStreak ?? 0;
       const dueCards = progress?.stats?.dueReviewCount ?? 0;
       const level = progress?.learningLevel || "N5";
 
-      let greetingContent = "";
-      if (isEn) {
-        greetingContent = `Konnichiwa! I'm Aoi Sensei, your personal Japanese learning assistant 🌸\n\nI see you are on **JLPT ${level}** with a **${streak}-day streak** 🔥\n${
-          dueCards > 0
-            ? `⏰ You have **${dueCards} SRS flashcards** ready for review today!`
-            : "✨ Great job! No pending SRS cards today."
-        }\n\nAsk me anything! I can give daily study guidance, diagnose and fix your mistakes, or practice voice conversation! 🎙️`;
-      } else {
-        greetingContent = `Konnichiwa! Sensei chào bạn nhé 🌸 Mình là trợ lý học tập cá nhân của bạn tại Nihon Quest.\n\nSensei thấy bạn đang học **JLPT ${level}**, duy trì chuỗi **${streak} ngày Streak** 🔥\n${
-          dueCards > 0
-            ? `⏰ Hiện đang có **${dueCards} thẻ từ vựng SRS** đến hạn ôn tập hôm nay đấy!`
-            : "✨ Tuyệt vời! Bạn không còn thẻ SRS nào bị nợ hôm nay."
-        }\n\nBạn có thể hỏi Sensei về kế hoạch học hôm nay, nhờ Sensei phân tích & khắc phục lỗi sai, hoặc bấm biểu tượng mic 🎙️ để luyện nói chuyện nhé!`;
-      }
+      const greetingContent = getLocalizedGreeting(nativeLanguage, level, streak, dueCards);
 
       setMessages([
         {
@@ -267,10 +335,7 @@ export function KawaiiSenseiBubble() {
         {
           id: "err-" + Date.now(),
           role: "assistant",
-          content:
-            nativeLanguage === "en"
-              ? "Gomen ne! I had trouble connecting. Please try again!"
-              : "Gomen ne! Sensei gặp chút trục trặc kết nối, bạn thử lại nhé!",
+          content: t("senseiError"),
           timestamp: new Date(),
         },
       ]);
@@ -280,28 +345,26 @@ export function KawaiiSenseiBubble() {
   };
 
   const handleQuickAction = (actionKey: string) => {
-    const isEn = nativeLanguage === "en";
     let prompt = "";
     if (actionKey === "recommend") {
-      prompt = isEn
-        ? "What should I study today based on my progress?"
-        : "Hôm nay tôi nên học gì dựa trên tiến trình của mình?";
+      prompt = t("todayStudyTip");
     } else if (actionKey === "mistakes") {
-      prompt = isEn
-        ? "Sensei, what are my recent mistakes and weak points? Please help me fix them!"
-        : "Sensei ơi, em gần đây hay làm sai những chỗ nào? Hãy phân tích lỗi sai và hướng dẫn em cách khắc phục với!";
+      prompt =
+        nativeLanguage === "en"
+          ? "Sensei, what are my recent mistakes and weak points? Please help me fix them!"
+          : nativeLanguage === "zh-CN"
+          ? "Sensei，我最近有哪些错题和薄弱知识点？请帮我分析并针对性辅导！"
+          : nativeLanguage === "zh-TW"
+          ? "Sensei，我最近有哪些錯題和薄弱知識點？請幫我分析並針對性輔導！"
+          : nativeLanguage === "ko"
+          ? "Sensei, 최근 제가 틀린 문제와 취약점은 무엇인가요? 분석하고 교정해 주세요!"
+          : "Sensei ơi, em gần đây hay làm sai những chỗ nào? Hãy phân tích lỗi sai và hướng dẫn em cách khắc phục với!";
     } else if (actionKey === "srs") {
-      prompt = isEn
-        ? "How many vocabulary cards do I need to review in SRS today?"
-        : "Kiểm tra giúp tôi các thẻ từ vựng cần ôn tập SRS hôm nay.";
+      prompt = t("checkSrsCards");
     } else if (actionKey === "grammar") {
-      prompt = isEn
-        ? "Explain the key grammar points for my level in Japanese."
-        : "Giải thích giúp tôi cấu trúc ngữ pháp thông dụng cấp độ hiện tại.";
+      prompt = t("explainGrammar");
     } else if (actionKey === "conversation") {
-      prompt = isEn
-        ? "Let's practice a casual Japanese conversation!"
-        : "Chúng ta cùng luyện phản xạ đối thoại tiếng Nhật nhé!";
+      prompt = t("practiceSpeaking");
     }
     handleSendMessage(prompt);
   };
@@ -325,7 +388,7 @@ export function KawaiiSenseiBubble() {
           {!isOpen && !hasInteracted && (progress?.stats?.dueReviewCount ?? 0) > 0 && (
             <div className="bg-gradient-to-r from-red-600 to-rose-500 text-white text-[11px] font-black px-3 py-1 rounded-full shadow-lg border border-white/20 animate-bounce flex items-center gap-1.5 pointer-events-none">
               <span>🌸</span>
-              <span>{progress?.stats?.dueReviewCount} thẻ SRS cần ôn!</span>
+              <span>{progress?.stats?.dueReviewCount} {t("srsDueTag")}</span>
             </div>
           )}
 
@@ -438,7 +501,7 @@ export function KawaiiSenseiBubble() {
                 {showLangMenu && (
                   <div className="absolute right-0 top-full mt-1.5 w-48 bg-white dark:bg-sumi-800 rounded-2xl shadow-xl border border-slate-200 dark:border-sumi-700 py-1.5 z-50 max-h-56 overflow-y-auto">
                     <div className="px-3 py-1 text-[10px] font-black uppercase text-slate-400">
-                      Ngôn ngữ giải thích (12)
+                      {t("explainLangLabel")} (12)
                     </div>
                     {SUPPORTED_LANGUAGES.map((l) => (
                       <button
@@ -449,7 +512,7 @@ export function KawaiiSenseiBubble() {
                           setShowLangMenu(false);
                           playClick();
                           showToast({
-                            title: `Đã đổi ngôn ngữ: ${l.nativeName} ${l.flag}`,
+                            title: `${t("langSwitchedToast")}${l.nativeName} ${l.flag}`,
                             type: "info",
                           });
                         }}
@@ -477,7 +540,7 @@ export function KawaiiSenseiBubble() {
                   playClick();
                   setCharacter(character === "aoi" ? "ren" : "aoi");
                 }}
-                title="Đổi giáo viên"
+                title={t("switchTeacher")}
                 className="p-1.5 rounded-full bg-white/20 hover:bg-white/30 text-white text-xs transition"
               >
                 🔄
@@ -505,7 +568,7 @@ export function KawaiiSenseiBubble() {
               className="shrink-0 px-2.5 py-1 rounded-full bg-red-100 dark:bg-red-950/60 text-red-700 dark:text-red-300 hover:bg-red-200 font-bold transition active:scale-95 flex items-center gap-1"
             >
               <span>🧭</span>
-              <span>{nativeLanguage === "en" ? "Study Plan" : "Học gì hôm nay"}</span>
+              <span>{t("studyPlanQuick")}</span>
             </button>
             <button
               type="button"
@@ -527,14 +590,14 @@ export function KawaiiSenseiBubble() {
               onClick={() => handleQuickAction("grammar")}
               className="shrink-0 px-2.5 py-1 rounded-full bg-white dark:bg-sumi-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:border-red-400 font-semibold transition active:scale-95"
             >
-              💡 {nativeLanguage === "en" ? "Grammar" : "Ngữ pháp"}
+              💡 {t("grammarQuick")}
             </button>
             <button
               type="button"
               onClick={() => handleQuickAction("conversation")}
               className="shrink-0 px-2.5 py-1 rounded-full bg-white dark:bg-sumi-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:border-red-400 font-semibold transition active:scale-95"
             >
-              🗣️ {nativeLanguage === "en" ? "Voice Chat" : "Đối thoại"}
+              🗣️ {t("voiceChatQuick")}
             </button>
           </div>
 
@@ -605,7 +668,7 @@ export function KawaiiSenseiBubble() {
                   <span className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse delay-75" />
                   <span className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse delay-150" />
                   <span className="text-[11px] font-bold ml-1 text-slate-500">
-                    Sensei đang suy nghĩ & phân tích...
+                    {t("senseiThinking")}
                   </span>
                 </div>
               </div>
@@ -620,7 +683,7 @@ export function KawaiiSenseiBubble() {
               <div className="flex items-center gap-2">
                 <span className="w-2.5 h-2.5 rounded-full bg-red-600 animate-ping" />
                 <span>
-                  Đang lắng nghe ({voiceInputLang === "ja" ? "Tiếng Nhật 🇯🇵" : `${langInfo.name} ${langInfo.flag}`})...
+                  {t("senseiListening")} ({voiceInputLang === "ja" ? "日本語 🇯🇵" : `${langInfo.name} ${langInfo.flag}`})
                 </span>
               </div>
               <button
@@ -628,7 +691,7 @@ export function KawaiiSenseiBubble() {
                 onClick={stopListening}
                 className="text-xs bg-red-600 text-white px-2 py-0.5 rounded-full font-bold"
               >
-                Dừng mic
+                {t("senseiStopMic")}
               </button>
             </div>
           )}
@@ -645,7 +708,7 @@ export function KawaiiSenseiBubble() {
             <button
               type="button"
               onClick={isListening ? stopListening : startListening}
-              title={isListening ? "Dừng ghi âm" : "Nói chuyện với Sensei bằng giọng nói"}
+              title={isListening ? t("senseiStopMic") : t("voiceChatTitle")}
               className={`p-2 rounded-xl transition text-sm font-bold flex items-center justify-center shrink-0 ${
                 isListening
                   ? "bg-red-600 text-white animate-pulse shadow-md"
@@ -662,7 +725,7 @@ export function KawaiiSenseiBubble() {
                 setVoiceInputLang(voiceInputLang === "ja" ? "native" : "ja");
                 playClick();
               }}
-              title={`Ngôn ngữ mic: ${voiceInputLang === "ja" ? "Tiếng Nhật" : langInfo.name}`}
+              title={`${t("micLangLabel")}: ${voiceInputLang === "ja" ? "日本語" : langInfo.name}`}
               className="text-[10px] font-black px-1.5 py-2 rounded-xl bg-slate-100 dark:bg-sumi-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 shrink-0"
             >
               {voiceInputLang === "ja" ? "🇯🇵 JA" : langInfo.short}
@@ -672,11 +735,7 @@ export function KawaiiSenseiBubble() {
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder={
-                nativeLanguage === "en"
-                  ? "Ask Sensei about lessons, mistakes, tips..."
-                  : "Hỏi Sensei về bài học, lỗi sai, từ vựng hoặc bật mic nói..."
-              }
+              placeholder={t("senseiPlaceholder")}
               className="flex-1 bg-white dark:bg-sumi-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-800 dark:text-slate-100 placeholder-slate-400 outline-none focus:border-red-400 transition"
               disabled={isLoading}
             />

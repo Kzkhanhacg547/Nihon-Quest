@@ -32,21 +32,91 @@ const DAILY_INSPIRATIONS = [
   { kanji: "温故知新", romaji: "Onko chishin", meaning: "Ôn lại cái cũ để hiểu sâu cái mới. Ôn tập SRS đều đặn để nhớ mãi." },
 ];
 
-const MODES: { tone: "rose" | "blue" | "green" | "amber"; art: ModeArtKind; title: string; body: string; href: string; cta: string }[] = [
-  { tone: "rose", art: "torii", title: "Yōkai Dash — Mini Game 3D", body: "Chạy vô tận 3 làn, né chướng ngại vật & chọn cổng tri thức tiếng Nhật nhận XP.", href: "/app/yokai-dash", cta: "Chơi Yōkai Dash ngay" },
-  { tone: "rose", art: "srs", title: "Hàng đợi Ôn tập (SRS)", body: "Chống quên lãng với thuật toán SM-2. Ôn tập thông minh, ghi nhớ dài hạn.", href: "/app/review", cta: "Xem kho thẻ ôn tập" },
-  { tone: "blue", art: "kana", title: "Kana Lab — Bảng Chữ Cái", body: "Luyện viết nét Hiragana & Katakana kèm âm thanh chuẩn và vẽ trên canvas.", href: "/app/learn", cta: "Luyện vẽ bảng chữ cái" },
-  { tone: "green", art: "mountain", title: "Kho Từ Vựng & Hán Tự", body: "Tra cứu nghĩa, phát âm và ví dụ thực tế, kèm tính năng lưu SRS 1 chạm.", href: "/app/vocabulary", cta: "Tra cứu từ vựng & Kanji" },
-  { tone: "amber", art: "bird", title: "Survival Mode — Sinh Tồn", body: "Thử thách phản xạ từ vựng và xử lý tình huống giao tiếp theo thời gian thực.", href: "/app/survival", cta: "Bắt đầu thử thách sinh tồn" },
-  { tone: "rose", art: "torii", title: "Ngữ Pháp Cơ Bản", body: "Giải thích dễ hiểu, ví dụ minh họa rõ ràng, luyện tập ngay.", href: "/app/grammar", cta: "Học ngữ pháp" },
+const MODES: {
+  tone: "rose" | "blue" | "green" | "amber";
+  art: ModeArtKind;
+  titleKey: string;
+  title: string;
+  bodyKey: string;
+  body: string;
+  href: string;
+  ctaKey: string;
+  cta: string;
+}[] = [
+  {
+    tone: "rose",
+    art: "torii",
+    titleKey: "modeYokaiTitle",
+    title: "Yōkai Dash — Mini Game 3D",
+    bodyKey: "modeYokaiDesc",
+    body: "Chạy vô tận 3 làn, né chướng ngại vật & chọn cổng tri thức tiếng Nhật nhận XP.",
+    href: "/app/yokai-dash",
+    ctaKey: "modeYokaiCta",
+    cta: "Chơi Yōkai Dash ngay",
+  },
+  {
+    tone: "rose",
+    art: "srs",
+    titleKey: "modeSrsTitle",
+    title: "Hàng đợi Ôn tập (SRS)",
+    bodyKey: "modeSrsDesc",
+    body: "Chống quên lãng với thuật toán SM-2. Ôn tập thông minh, ghi nhớ dài hạn.",
+    href: "/app/review",
+    ctaKey: "modeSrsCta",
+    cta: "Xem kho thẻ ôn tập",
+  },
+  {
+    tone: "blue",
+    art: "kana",
+    titleKey: "modeKanaTitle",
+    title: "Kana Lab — Bảng Chữ Cái",
+    bodyKey: "modeKanaDesc",
+    body: "Luyện viết nét Hiragana & Katakana kèm âm thanh chuẩn và vẽ trên canvas.",
+    href: "/app/learn",
+    ctaKey: "modeKanaCta",
+    cta: "Luyện vẽ bảng chữ cái",
+  },
+  {
+    tone: "green",
+    art: "mountain",
+    titleKey: "modeVocabTitle",
+    title: "Kho Từ Vựng & Hán Tự",
+    bodyKey: "modeVocabDesc",
+    body: "Tra cứu nghĩa, phát âm và ví dụ thực tế, kèm tính năng lưu SRS 1 chạm.",
+    href: "/app/vocabulary",
+    ctaKey: "modeVocabCta",
+    cta: "Tra cứu từ vựng & Kanji",
+  },
+  {
+    tone: "amber",
+    art: "bird",
+    titleKey: "modeSurvivalTitle",
+    title: "Survival Mode — Sinh Tồn",
+    bodyKey: "modeSurvivalDesc",
+    body: "Thử thách phản xạ từ vựng và xử lý tình huống giao tiếp theo thời gian thực.",
+    href: "/app/survival",
+    ctaKey: "modeSurvivalCta",
+    cta: "Bắt đầu thử thách sinh tồn",
+  },
+  {
+    tone: "rose",
+    art: "torii",
+    titleKey: "modeGrammarTitle",
+    title: "Ngữ Pháp Cơ Bản",
+    bodyKey: "modeGrammarDesc",
+    body: "Giải thích dễ hiểu, ví dụ minh họa rõ ràng, luyện tập ngay.",
+    href: "/app/grammar",
+    ctaKey: "modeGrammarCta",
+    cta: "Học ngữ pháp",
+  },
 ];
 
 // Thanh điều hướng nhanh bên trái (chỉ hiện ≥ 1100px, dưới đó AppNav lo).
 const RAIL = [
-  { icon: "home", label: "Trang chủ", href: "/app", active: true },
-  { icon: "book", label: "Học tập", href: "/app/learn", active: false },
-  { icon: "chart", label: "Thống kê", href: "/app/stats", active: false },
-  { icon: "gear", label: "Cài đặt", href: "/app/settings", active: false },
+  { icon: "home", labelKey: "railHome", label: "Trang chủ", href: "/app", active: true },
+  { icon: "book", labelKey: "railLearn", label: "Học tập", href: "/app/learn", active: false },
+  { icon: "chart", labelKey: "railStats", label: "Thống kê", href: "/app/stats", active: false },
+  { icon: "gear", labelKey: "railSettings", label: "Cài đặt", href: "/app/settings", active: false },
 ] as const;
 
 export default async function AppHome() {
@@ -206,7 +276,7 @@ export default async function AppHome() {
               {RAIL.map((r) => (
                 <Link key={r.href} href={r.href} className={`nqd-rail-item ${r.active ? "is-active" : ""}`} aria-current={r.active ? "page" : undefined}>
                   <Icon name={r.icon} size={26} />
-                  <span>{r.label}</span>
+                  <span><LocalizedText k={r.labelKey} fallback={r.label} /></span>
                 </Link>
               ))}
             </nav>
@@ -277,14 +347,19 @@ export default async function AppHome() {
                       </span>
                     )}
                     <span>
-                      {allLessons.length
-                        ? `Bài ${Math.min(completed + 1, allLessons.length)} / ${allLessons.length}`
-                        : "Chưa có bài học"}
+                      {allLessons.length ? (
+                        <>
+                          <LocalizedText k="lessonCounter" fallback="Bài" />{" "}
+                          {Math.min(completed + 1, allLessons.length)} / {allLessons.length}
+                        </>
+                      ) : (
+                        <LocalizedText k="noLessonsYet" fallback="Chưa có bài học" />
+                      )}
                     </span>
                     <span className="nqd-focus-pct">{lessonPercent}% <LocalizedText k="completedPct" fallback="hoàn thành" /></span>
                   </div>
-                  <h2>{currentLesson?.title || "Hoàn thành lộ trình hôm nay"}</h2>
-                  <p>{currentLesson?.description || `Bạn đã hoàn thành toàn bộ bài học ${userLevel}. Hãy ôn tập SRS hoặc tiếp tục hành trình.`}</p>
+                  <h2>{currentLesson?.title || <LocalizedText k="pathCompletedToday" fallback="Hoàn thành lộ trình hôm nay" />}</h2>
+                  <p>{currentLesson?.description || <LocalizedText k="pathCompletedDesc" fallback={`Bạn đã hoàn thành toàn bộ bài học ${userLevel}. Hãy ôn tập SRS hoặc tiếp tục hành trình.`} />}</p>
                   <div className="nqd-btns">
                     <Link className="nqd-btn-red" href={currentLesson ? `/app/practice/${currentLesson.slug}` : "/app/review"}>
                       {currentLesson ? <LocalizedText k="continueLesson" fallback="Tiếp tục bài học" /> : <LocalizedText k="reviewSrs" fallback="Ôn tập SRS" />} →
@@ -307,12 +382,18 @@ export default async function AppHome() {
                       <article key={m.href} className="nqd-card nqd-mode">
                         <span className={`art ${m.tone}`} aria-hidden="true"><ModeArt kind={m.art} /></span>
                         <div className="body">
-                          <h3>{m.title}</h3>
-                          <p>{m.body}</p>
-                          <Link href={m.href}>{m.cta} →</Link>
+                          <h3><LocalizedText k={m.titleKey} fallback={m.title} /></h3>
+                          <p><LocalizedText k={m.bodyKey} fallback={m.body} /></p>
+                          <Link href={m.href}><LocalizedText k={m.ctaKey} fallback={m.cta} /> →</Link>
                         </div>
-                        {m.href === "/app/review" && dueReviewCount === 0 && <span className="nqd-tag">Đã ôn hết hôm nay</span>}
-                        {m.href === "/app/review" && dueReviewCount > 0 && <span className="nqd-tag font-bold text-red-600 dark:text-red-400">🔥 {dueReviewCount} thẻ cần ôn</span>}
+                        {m.href === "/app/review" && dueReviewCount === 0 && (
+                          <span className="nqd-tag"><LocalizedText k="srsAllDone" fallback="Đã ôn hết hôm nay" /></span>
+                        )}
+                        {m.href === "/app/review" && dueReviewCount > 0 && (
+                          <span className="nqd-tag font-bold text-red-600 dark:text-red-400">
+                            🔥 {dueReviewCount} <LocalizedText k="srsDueTag" fallback="thẻ cần ôn" />
+                          </span>
+                        )}
                       </article>
                     ))}
                   </div>

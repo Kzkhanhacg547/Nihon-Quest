@@ -58,7 +58,7 @@ export function SettingsClient({ initial }: { initial: SettingsInitialData }) {
   const [focusSkill, setFocusSkill] = useState(initial.focusSkill);
   const [learningStyle, setLearningStyle] = useState(initial.learningStyle);
 
-  const { nativeLanguage, setNativeLanguage } = useNativeLanguage();
+  const { nativeLanguage, setNativeLanguage, t } = useNativeLanguage();
   const [notifDaily, setNotifDaily] = useState(true);
   const [notifReview, setNotifReview] = useState(true);
   const [notifAchievement, setNotifAchievement] = useState(true);
@@ -118,8 +118,7 @@ export function SettingsClient({ initial }: { initial: SettingsInitialData }) {
       notifyProgressUpdated();
       playCorrect();
       showToast({
-        title: "Đã lưu cài đặt thành công!",
-        description: "Các thay đổi đã được áp dụng và đồng bộ trên toàn bộ hệ thống.",
+        title: t("saveSuccess"),
         type: "success",
       });
       router.refresh();
@@ -192,13 +191,13 @@ export function SettingsClient({ initial }: { initial: SettingsInitialData }) {
   }
 
   const TABS = [
-    { id: "profile", label: "Hồ sơ cá nhân", icon: "👤" },
-    { id: "appearance", label: "Giao diện", icon: "🎨" },
-    { id: "learning", label: "Học tập & Lộ trình", icon: "⛩️" },
-    { id: "audio", label: "Âm thanh & Giọng đọc", icon: "🔊" },
-    { id: "notifications", label: "Thông báo", icon: "🔔" },
-    { id: "privacy", label: "Quyền riêng tư", icon: "🛡️" },
-    { id: "account", label: "Tài khoản & Bảo mật", icon: "⚙️" },
+    { id: "profile", label: t("tabProfile"), icon: "👤" },
+    { id: "appearance", label: t("tabAppearance"), icon: "🎨" },
+    { id: "learning", label: t("tabLearning"), icon: "⛩️" },
+    { id: "audio", label: t("tabAudio"), icon: "🔊" },
+    { id: "notifications", label: t("tabNotifications"), icon: "🔔" },
+    { id: "privacy", label: t("tabPrivacy"), icon: "🛡️" },
+    { id: "account", label: t("tabAccount"), icon: "⚙️" },
   ] as const;
 
   return (
@@ -207,17 +206,17 @@ export function SettingsClient({ initial }: { initial: SettingsInitialData }) {
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200/80 bg-white/90 px-4 py-2.5 shadow-sm dark:border-slate-800 dark:bg-sumi-900/90">
         <div className="flex items-center gap-2 text-xs font-bold text-slate-500 dark:text-slate-400">
           <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300">人</span>
-          <span>Trung tâm Tài khoản &amp; Cài đặt thống nhất</span>
+          <span>{t("navProfile")} &amp; {t("navSettings")}</span>
         </div>
         <div className="inline-flex rounded-xl bg-slate-100 p-1 dark:bg-sumi-950">
           <Link
             href="/app/profile"
             className="rounded-lg px-3 py-1.5 text-xs font-bold text-slate-600 transition hover:text-slate-900 dark:text-slate-300 dark:hover:text-white"
           >
-            👤 Hồ sơ tổng quan
+            👤 {t("navProfile")}
           </Link>
           <span className="rounded-lg bg-white px-3 py-1.5 text-xs font-extrabold text-rose-600 shadow-xs dark:bg-sumi-800 dark:text-rose-400">
-            ⚙️ Cài đặt chi tiết (7 mục)
+            ⚙️ {t("navSettings")}
           </span>
         </div>
       </div>
@@ -226,10 +225,10 @@ export function SettingsClient({ initial }: { initial: SettingsInitialData }) {
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between border-b border-slate-200/80 pb-5 dark:border-slate-800">
         <div>
           <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900 dark:text-white">
-            Hồ Sơ &amp; Cài Đặt Hệ Thống
+            {t("navProfile")} &amp; {t("navSettings")}
           </h1>
           <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-            Tùy chỉnh thông tin cá nhân, ảnh đại diện, giao diện, âm thanh và mục tiêu học tiếng Nhật
+            {t("learningGoalsSubtitle")}
           </p>
         </div>
 
@@ -239,7 +238,7 @@ export function SettingsClient({ initial }: { initial: SettingsInitialData }) {
           disabled={isSaving}
           className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl bg-rose-600 px-6 text-sm font-bold text-white shadow-md shadow-rose-600/30 transition hover:bg-rose-700 active:scale-95 disabled:opacity-50"
         >
-          {isSaving ? "Đang lưu..." : "💾 Lưu tất cả thay đổi"}
+          {isSaving ? t("saving") : `💾 ${t("saveChanges")}`}
         </button>
       </div>
 
@@ -435,8 +434,8 @@ export function SettingsClient({ initial }: { initial: SettingsInitialData }) {
                   ⛩️
                 </span>
                 <div>
-                  <h2 className="text-lg font-bold text-slate-900 dark:text-white">Mục tiêu &amp; Lộ trình học</h2>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">Tùy biến lộ trình cá nhân hóa và thời gian rèn luyện mỗi ngày</p>
+                  <h2 className="text-lg font-bold text-slate-900 dark:text-white">{t("learningGoalsTitle")}</h2>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">{t("learningGoalsSubtitle")}</p>
                 </div>
               </div>
 
@@ -445,10 +444,10 @@ export function SettingsClient({ initial }: { initial: SettingsInitialData }) {
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <label className="text-xs font-bold text-slate-500 dark:text-slate-400">
-                      Mục tiêu thời gian mỗi ngày (phút)
+                      {t("dailyGoalMinutesLabel")}
                     </label>
                     <span className="text-sm font-black text-rose-600 dark:text-rose-400">
-                      {dailyGoalMinutes} phút / ngày
+                      {dailyGoalMinutes} {t("minsPerDay")}
                     </span>
                   </div>
 
@@ -467,12 +466,12 @@ export function SettingsClient({ initial }: { initial: SettingsInitialData }) {
                             : "border border-slate-200 bg-white text-slate-700 hover:border-rose-300 dark:border-slate-700 dark:bg-sumi-950 dark:text-slate-300"
                         }`}
                       >
-                        {min} phút
+                        {min} {t("minsPerDay")}
                       </button>
                     ))}
                   </div>
                   <p className="mt-2 text-[11px] text-slate-500 dark:text-slate-400">
-                    Giá trị này sẽ đồng bộ với tiến độ rèn luyện hiển thị trên Dashboard và thanh mục tiêu ngày.
+                    {t("syncWithDashboardDesc")}
                   </p>
                 </div>
 
@@ -481,10 +480,10 @@ export function SettingsClient({ initial }: { initial: SettingsInitialData }) {
                   <div className="flex items-center justify-between mb-3">
                     <div>
                       <h3 className="text-sm font-bold text-slate-900 dark:text-white">
-                        🌐 Ngôn ngữ mẹ đẻ (Native Language)
+                        🌐 {t("nativeLangTitle")}
                       </h3>
                       <p className="text-xs text-slate-500 dark:text-slate-400">
-                        Học tiếng Nhật nhưng giải thích ngữ pháp, từ vựng và câu thoại từ AI Sensei sẽ hiển thị theo ngôn ngữ này để bạn tiếp thu tự nhiên nhất.
+                        {t("nativeLangDesc")}
                       </p>
                     </div>
                   </div>
@@ -497,8 +496,7 @@ export function SettingsClient({ initial }: { initial: SettingsInitialData }) {
                           playClick();
                           setNativeLanguage(lang.code);
                           showToast({
-                            title: `Ngôn ngữ mẹ đẻ: ${lang.nativeName} ${lang.flag}`,
-                            description: `AI Sensei và hệ thống sẽ giải thích tiếng Nhật qua ${lang.nativeName}.`,
+                            title: `${t("langSwitchedToast")}${lang.nativeName} ${lang.flag}`,
                             type: "info",
                           });
                         }}
@@ -522,7 +520,7 @@ export function SettingsClient({ initial }: { initial: SettingsInitialData }) {
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div>
                     <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1.5">
-                      Cấp độ JLPT trọng tâm
+                      {t("jlptFocusLevel")}
                     </label>
                     <select
                       value={learningLevel}
@@ -538,7 +536,7 @@ export function SettingsClient({ initial }: { initial: SettingsInitialData }) {
                   {/* Primary Goal */}
                   <div>
                     <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1.5">
-                      Mục tiêu học chính
+                      {t("primaryGoal")}
                     </label>
                     <select
                       value={learningGoal}
@@ -557,7 +555,7 @@ export function SettingsClient({ initial }: { initial: SettingsInitialData }) {
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div>
                     <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1.5">
-                      Kỹ năng ưu tiên
+                      {t("focusSkillLabel")}
                     </label>
                     <select
                       value={focusSkill}
@@ -574,7 +572,7 @@ export function SettingsClient({ initial }: { initial: SettingsInitialData }) {
 
                   <div>
                     <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1.5">
-                      Phong cách học tập
+                      {t("learningStyleLabel")}
                     </label>
                     <select
                       value={learningStyle}
