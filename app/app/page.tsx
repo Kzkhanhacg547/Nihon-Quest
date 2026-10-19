@@ -20,6 +20,7 @@ import { buildLearningPath, sanitizeAnswers } from "@/lib/personalization";
 import { getLessonCurriculumMetadata } from "@/lib/curriculum-tracks";
 import { DashboardHero } from "./DashboardHero";
 import { LocalizedText } from "@/components/LocalizedText";
+import { LocalizedLessonTitle, LocalizedLessonDesc, LocalizedRoadmapTag } from "@/components/LocalizedLesson";
 
 export const metadata = { title: "Dashboard — Nihon Quest" };
 
@@ -318,14 +319,16 @@ export default async function AppHome() {
                     <span>{myPath.estWeeks} <LocalizedText k="weeks" fallback="tuần" /></span>
                     <span>{myPath.answers.dailyMinutes} <LocalizedText k="minsPerDay" fallback="phút/ngày" /></span>
                     <span className="nqd-path-tags">
-                      {myPath.answers.goalLabel} - {myPath.answers.skillLabel} - {myPath.answers.styleLabel}
+                      <LocalizedRoadmapTag tagKey={pathAnswers.goal} fallback={myPath.answers.goalLabel} /> -{" "}
+                      <LocalizedRoadmapTag tagKey={pathAnswers.focusSkill} fallback={myPath.answers.skillLabel} /> -{" "}
+                      <LocalizedRoadmapTag tagKey={pathAnswers.learningStyle} fallback={myPath.answers.styleLabel} />
                     </span>
                   </div>
                   <div className="nqd-btns">
                     <Link className="nqd-btn-red" href="/app/path"><LocalizedText k="viewPersonalPath" fallback="Xem lộ trình cá nhân →" /></Link>
                     {nextPathModule && (
                       <Link className="nqd-btn-outline" href={nextPathModule.target}>
-                        <LocalizedText k="unlockNext" fallback="Mở khóa tiếp theo:" /> {nextPathModule.title}
+                        <LocalizedText k="unlockNext" fallback="Mở khóa tiếp theo:" /> <LocalizedLessonTitle slug={nextPathModule.slug} fallback={nextPathModule.title} />
                       </Link>
                     )}
                   </div>
@@ -358,8 +361,8 @@ export default async function AppHome() {
                     </span>
                     <span className="nqd-focus-pct">{lessonPercent}% <LocalizedText k="completedPct" fallback="hoàn thành" /></span>
                   </div>
-                  <h2>{currentLesson?.title || <LocalizedText k="pathCompletedToday" fallback="Hoàn thành lộ trình hôm nay" />}</h2>
-                  <p>{currentLesson?.description || <LocalizedText k="pathCompletedDesc" fallback={`Bạn đã hoàn thành toàn bộ bài học ${userLevel}. Hãy ôn tập SRS hoặc tiếp tục hành trình.`} />}</p>
+                  <h2>{currentLesson ? <LocalizedLessonTitle slug={currentLesson.slug} fallback={currentLesson.title} /> : <LocalizedText k="pathCompletedToday" fallback="Hoàn thành lộ trình hôm nay" />}</h2>
+                  <p>{currentLesson ? <LocalizedLessonDesc slug={currentLesson.slug} fallback={currentLesson.description} /> : <LocalizedText k="pathCompletedDesc" fallback={`Bạn đã hoàn thành toàn bộ bài học ${userLevel}. Hãy ôn tập SRS hoặc tiếp tục hành trình.`} />}</p>
                   <div className="nqd-btns">
                     <Link className="nqd-btn-red" href={currentLesson ? `/app/practice/${currentLesson.slug}` : "/app/review"}>
                       {currentLesson ? <LocalizedText k="continueLesson" fallback="Tiếp tục bài học" /> : <LocalizedText k="reviewSrs" fallback="Ôn tập SRS" />} →

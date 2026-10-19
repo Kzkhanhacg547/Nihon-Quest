@@ -282,8 +282,8 @@ export function SettingsClient({ initial }: { initial: SettingsInitialData }) {
                   👤
                 </span>
                 <div>
-                  <h2 className="text-lg font-bold text-slate-900 dark:text-white">Hồ sơ cá nhân</h2>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">Ảnh đại diện và thông tin hiển thị trên Nihon Quest</p>
+                  <h2 className="text-lg font-bold text-slate-900 dark:text-white">{t("tabProfileTitle")}</h2>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">{t("tabProfileSubtitle")}</p>
                 </div>
               </div>
 
@@ -291,15 +291,15 @@ export function SettingsClient({ initial }: { initial: SettingsInitialData }) {
                 {/* Avatar upload */}
                 <div>
                   <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-3">
-                    Ảnh đại diện
+                    {t("avatarSectionLabel")}
                   </label>
                   <div className="flex items-center gap-5">
                     <AvatarEditor src={initial.avatar} initial={initialAvatarChar} />
                     <div>
-                      <p className="text-sm font-bold text-slate-800 dark:text-slate-200">Ảnh chân dung</p>
-                      <p className="mt-0.5 text-xs text-slate-500">Định dạng JPG, PNG hoặc WebP. Tối đa 8MB.</p>
+                      <p className="text-sm font-bold text-slate-800 dark:text-slate-200">{t("avatarPortraitTitle")}</p>
+                      <p className="mt-0.5 text-xs text-slate-500">{t("avatarPortraitHint")}</p>
                       <p className="mt-1 text-[11px] text-rose-600 dark:text-rose-400">
-                        Ảnh sẽ hiển thị trên Navbar, Dashboard và Bảng xếp hạng.
+                        {t("avatarNotice")}
                       </p>
                     </div>
                   </div>
@@ -308,13 +308,13 @@ export function SettingsClient({ initial }: { initial: SettingsInitialData }) {
                 {/* Display Name */}
                 <div>
                   <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1.5">
-                    Tên hiển thị
+                    {t("displayNameField")}
                   </label>
                   <input
                     type="text"
                     value={displayName}
                     onChange={(e) => setDisplayName(e.target.value)}
-                    placeholder="Nhập tên của bạn"
+                    placeholder={t("displayNamePlaceholder")}
                     className="min-h-11 w-full rounded-xl border border-slate-200 bg-white px-3.5 text-sm text-slate-900 outline-none transition focus:border-rose-500 focus:ring-4 focus:ring-rose-500/15 dark:border-slate-700 dark:bg-sumi-950 dark:text-white"
                   />
                 </div>
@@ -323,10 +323,10 @@ export function SettingsClient({ initial }: { initial: SettingsInitialData }) {
                 <div>
                   <div className="flex items-center justify-between mb-1.5">
                     <label className="text-xs font-bold text-slate-500 dark:text-slate-400">
-                      Địa chỉ Email
+                      {t("emailField")}
                     </label>
                     <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300">
-                      ✓ Đã xác thực
+                      {t("verifiedStatus")}
                     </span>
                   </div>
                   <input
@@ -336,19 +336,19 @@ export function SettingsClient({ initial }: { initial: SettingsInitialData }) {
                     readOnly
                     className="min-h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 text-sm text-slate-500 outline-none cursor-not-allowed dark:border-slate-800 dark:bg-sumi-950/60 dark:text-slate-400"
                   />
-                  <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">Email dùng để đăng nhập và bảo mật tài khoản.</p>
+                  <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">{t("emailNotice")}</p>
                 </div>
 
                 {/* Bio */}
                 <div>
                   <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1.5">
-                    Giới thiệu bản thân (Bio)
+                    {t("bioField")}
                   </label>
                   <textarea
                     rows={3}
                     value={bio}
                     onChange={(e) => setBio(e.target.value)}
-                    placeholder="Chia sẻ lý do bạn học tiếng Nhật, bộ anime yêu thích, hoặc mục tiêu thi JLPT..."
+                    placeholder={t("bioPlaceholder")}
                     className="w-full rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-900 outline-none transition focus:border-rose-500 focus:ring-4 focus:ring-rose-500/15 dark:border-slate-700 dark:bg-sumi-950 dark:text-white"
                   />
                 </div>
@@ -356,20 +356,20 @@ export function SettingsClient({ initial }: { initial: SettingsInitialData }) {
                 {/* Timezone */}
                 <div>
                   <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1.5">
-                    Múi giờ hoạt động
+                    {t("timezoneField")}
                   </label>
                   <select
                     value={timezone}
                     onChange={(e) => setTimezone(e.target.value)}
-                    className="min-h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-rose-500 dark:border-slate-700 dark:bg-sumi-950 dark:text-white"
+                    className="min-h-11 w-full rounded-xl border border-slate-200 bg-white px-3.5 text-sm text-slate-900 outline-none transition focus:border-rose-500 dark:border-slate-700 dark:bg-sumi-950 dark:text-white"
                   >
-                    <option value="Asia/Ho_Chi_Minh">Asia/Ho_Chi_Minh (GMT+7 - Việt Nam)</option>
-                    <option value="Asia/Tokyo">Asia/Tokyo (GMT+9 - Nhật Bản)</option>
+                    <option value="Asia/Ho_Chi_Minh">Asia/Ho_Chi_Minh (GMT+7)</option>
+                    <option value="Asia/Tokyo">Asia/Tokyo (GMT+9)</option>
                     <option value="Asia/Bangkok">Asia/Bangkok (GMT+7)</option>
                     <option value="Asia/Seoul">Asia/Seoul (GMT+9)</option>
-                    <option value="UTC">UTC (Giờ chuẩn quốc tế)</option>
+                    <option value="UTC">UTC (GMT+0)</option>
                   </select>
-                  <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">Múi giờ quyết định chu kỳ reset streak và nhiệm vụ hàng ngày.</p>
+                  <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">{t("timezoneNotice")}</p>
                 </div>
               </div>
             </div>
@@ -383,21 +383,21 @@ export function SettingsClient({ initial }: { initial: SettingsInitialData }) {
                   🎨
                 </span>
                 <div>
-                  <h2 className="text-lg font-bold text-slate-900 dark:text-white">Giao diện (Theme)</h2>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">Tùy chỉnh chế độ hiển thị sáng tối theo sở thích của bạn</p>
+                  <h2 className="text-lg font-bold text-slate-900 dark:text-white">{t("appearanceTitle")}</h2>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">{t("appearanceSubtitle")}</p>
                 </div>
               </div>
 
               <div className="mt-6 space-y-6">
                 <div>
                   <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-3">
-                    Chế độ giao diện
+                    {t("themeSectionLabel")}
                   </label>
                   <div className="grid grid-cols-3 gap-3">
                     {[
-                      { id: "light" as const, title: "Sáng (Light)", icon: "☀️", desc: "Giấy truyền thống Washi" },
-                      { id: "dark" as const, title: "Tối (Dark)", icon: "🌙", desc: "Mực đen Sumi cao cấp" },
-                      { id: "system" as const, title: "Tự động", icon: "💻", desc: "Theo thiết bị của bạn" },
+                      { id: "light" as const, title: t("themeLightTitle"), icon: "☀️", desc: t("themeLightDesc") },
+                      { id: "dark" as const, title: t("themeDarkTitle"), icon: "🌙", desc: t("themeDarkDesc") },
+                      { id: "system" as const, title: t("themeSystemTitle"), icon: "💻", desc: t("themeSystemDesc") },
                     ].map((mode) => {
                       const on = theme === mode.id;
                       return (
@@ -527,9 +527,9 @@ export function SettingsClient({ initial }: { initial: SettingsInitialData }) {
                       onChange={(e) => setLearningLevel(e.target.value)}
                       className="min-h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-rose-500 dark:border-slate-700 dark:bg-sumi-950 dark:text-white"
                     >
-                      <option value="N5">N5 — Sơ cấp (Người mới bắt đầu)</option>
-                      <option value="N4">N4 — Sơ trung cấp (Giao tiếp cơ bản)</option>
-                      <option value="N3">N3 — Trung cấp (Thực chiến hằng ngày)</option>
+                      <option value="N5">{t("optN5")}</option>
+                      <option value="N4">{t("optN4")}</option>
+                      <option value="N3">{t("optN3")}</option>
                     </select>
                   </div>
 
@@ -543,10 +543,10 @@ export function SettingsClient({ initial }: { initial: SettingsInitialData }) {
                       onChange={(e) => setLearningGoal(e.target.value)}
                       className="min-h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-rose-500 dark:border-slate-700 dark:bg-sumi-950 dark:text-white"
                     >
-                      <option value="JLPT">Thi đỗ chứng chỉ JLPT</option>
-                      <option value="TRAVEL">Du lịch khám phá Nhật Bản</option>
-                      <option value="CONVERSATION">Giao tiếp &amp; làm việc</option>
-                      <option value="CULTURE">Văn hóa, Anime &amp; Manga</option>
+                      <option value="JLPT">{t("optGoalJlpt")}</option>
+                      <option value="TRAVEL">{t("optGoalTravel")}</option>
+                      <option value="CONVERSATION">{t("optGoalConversation")}</option>
+                      <option value="CULTURE">{t("optGoalCulture")}</option>
                     </select>
                   </div>
                 </div>
@@ -562,11 +562,11 @@ export function SettingsClient({ initial }: { initial: SettingsInitialData }) {
                       onChange={(e) => setFocusSkill(e.target.value)}
                       className="min-h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-rose-500 dark:border-slate-700 dark:bg-sumi-950 dark:text-white"
                     >
-                      <option value="BALANCED">Toàn diện (Nghe, Nói, Đọc, Viết)</option>
-                      <option value="LISTENING">Kỹ năng Nghe hiểu</option>
-                      <option value="SPEAKING">Kỹ năng Nói &amp; Đối đáp</option>
-                      <option value="READING">Kỹ năng Đọc &amp; Hán tự</option>
-                      <option value="WRITING">Kỹ năng Viết &amp; Ngữ pháp</option>
+                      <option value="BALANCED">{t("optSkillBalanced")}</option>
+                      <option value="LISTENING">{t("optSkillListening")}</option>
+                      <option value="SPEAKING">{t("optSkillSpeaking")}</option>
+                      <option value="READING">{t("optSkillReading")}</option>
+                      <option value="WRITING">{t("optSkillWriting")}</option>
                     </select>
                   </div>
 
@@ -579,10 +579,10 @@ export function SettingsClient({ initial }: { initial: SettingsInitialData }) {
                       onChange={(e) => setLearningStyle(e.target.value)}
                       className="min-h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-rose-500 dark:border-slate-700 dark:bg-sumi-950 dark:text-white"
                     >
-                      <option value="STRUCTURED">Bài bản — Trình tự khoa học, ôn SRS</option>
-                      <option value="IMMERSIVE">Nhập vai — Trải nghiệm như ở Nhật</option>
-                      <option value="GAMIFIED">Phiêu lưu — Mở khóa Shinkansen &amp; Streak</option>
-                      <option value="PRACTICAL">Thực chiến — Tình huống sinh tồn</option>
+                      <option value="STRUCTURED">{t("optStyleStructured")}</option>
+                      <option value="IMMERSIVE">{t("optStyleImmersive")}</option>
+                      <option value="GAMIFIED">{t("optStyleGamified")}</option>
+                      <option value="PRACTICAL">{t("optStylePractical")}</option>
                     </select>
                   </div>
                 </div>
@@ -598,8 +598,8 @@ export function SettingsClient({ initial }: { initial: SettingsInitialData }) {
                   🔊
                 </span>
                 <div>
-                  <h2 className="text-lg font-bold text-slate-900 dark:text-white">Âm thanh &amp; Giọng đọc tiếng Nhật</h2>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">Hiệu ứng âm thanh khi làm bài và công nghệ đọc giọng chuẩn bản xứ</p>
+                  <h2 className="text-lg font-bold text-slate-900 dark:text-white">{t("audioTitle")}</h2>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">{t("audioSubtitle")}</p>
                 </div>
               </div>
 
@@ -607,8 +607,8 @@ export function SettingsClient({ initial }: { initial: SettingsInitialData }) {
                 {/* Sound Effects Toggle */}
                 <div className="flex items-center justify-between rounded-2xl border border-slate-100 bg-slate-50 p-4 dark:border-slate-800 dark:bg-sumi-950">
                   <div>
-                    <p className="text-sm font-bold text-slate-900 dark:text-white">Âm thanh hiệu ứng (Sound FX)</p>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">Phát âm thanh vui tai khi trả lời đúng, hoàn thành bài và click</p>
+                    <p className="text-sm font-bold text-slate-900 dark:text-white">{t("soundFxTitle")}</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">{t("soundFxDesc")}</p>
                   </div>
                   <button
                     type="button"
@@ -633,7 +633,7 @@ export function SettingsClient({ initial }: { initial: SettingsInitialData }) {
                 {/* Speech Rate */}
                 <div>
                   <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-2">
-                    Tốc độ phát âm (Voice Speed)
+                    {t("voiceSpeedLabel")}
                   </label>
                   <div className="flex flex-wrap gap-2">
                     {SPEECH_RATES.map((rate) => (
@@ -660,14 +660,14 @@ export function SettingsClient({ initial }: { initial: SettingsInitialData }) {
                 {availableVoices.length > 0 && (
                   <div>
                     <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1.5">
-                      Giọng đọc tiếng Nhật
+                      {t("japaneseVoiceLabel")}
                     </label>
                     <select
                       value={speechVoiceURI}
                       onChange={(e) => setSpeechVoiceURI(e.target.value)}
                       className="min-h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-rose-500 dark:border-slate-700 dark:bg-sumi-950 dark:text-white"
                     >
-                      <option value="">Tự động (Giọng tiếng Nhật tốt nhất của hệ thống)</option>
+                      <option value="">{t("autoVoiceOpt")}</option>
                       {availableVoices.map((voice) => (
                         <option key={voice.voiceURI} value={voice.voiceURI}>
                           {voice.name} ({voice.lang}) · {voiceGenderLabel(guessVoiceGender(voice.name))}
@@ -684,7 +684,7 @@ export function SettingsClient({ initial }: { initial: SettingsInitialData }) {
                     onClick={() => speak("こんにちは！日本クエストへようこそ！")}
                     className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-xs font-bold text-slate-700 hover:border-rose-300 hover:text-rose-600 dark:border-slate-700 dark:bg-sumi-950 dark:text-slate-300"
                   >
-                    <span>🔊 Nghe thử giọng đọc mẫu</span>
+                    <span>{t("testVoiceBtn")}</span>
                     <span className="text-[11px] text-slate-500 dark:text-slate-400">(こんにちは！日本クエストへようこそ！)</span>
                   </button>
                 </div>
@@ -700,16 +700,16 @@ export function SettingsClient({ initial }: { initial: SettingsInitialData }) {
                   🔔
                 </span>
                 <div>
-                  <h2 className="text-lg font-bold text-slate-900 dark:text-white">Cài đặt thông báo</h2>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">Nhắc nhở học tập và sự kiện trong ứng dụng</p>
+                  <h2 className="text-lg font-bold text-slate-900 dark:text-white">{t("notifSectionTitle")}</h2>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">{t("notifSectionSubtitle")}</p>
                 </div>
               </div>
 
               <div className="mt-6 divide-y divide-slate-100 dark:divide-slate-800">
                 <div className="flex items-center justify-between py-4">
                   <div>
-                    <p className="text-sm font-bold text-slate-900 dark:text-white">Nhắc nhở học tập hàng ngày</p>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">Thông báo duy trì chuỗi Streak và hoàn thành mục tiêu ngày</p>
+                    <p className="text-sm font-bold text-slate-900 dark:text-white">{t("notifDailyTitle")}</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">{t("notifDailySub")}</p>
                   </div>
                   <input
                     type="checkbox"
@@ -721,8 +721,8 @@ export function SettingsClient({ initial }: { initial: SettingsInitialData }) {
 
                 <div className="flex items-center justify-between py-4">
                   <div>
-                    <p className="text-sm font-bold text-slate-900 dark:text-white">Nhắc nhở ôn tập SRS</p>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">Báo khi có thẻ từ vựng và Kanji đến hạn lặp lại</p>
+                    <p className="text-sm font-bold text-slate-900 dark:text-white">{t("notifReviewLabel") || "Nhắc nhở ôn tập SRS"}</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">{t("notifSrsSub")}</p>
                   </div>
                   <input
                     type="checkbox"
@@ -734,8 +734,8 @@ export function SettingsClient({ initial }: { initial: SettingsInitialData }) {
 
                 <div className="flex items-center justify-between py-4">
                   <div>
-                    <p className="text-sm font-bold text-slate-900 dark:text-white">Thông báo thành tựu</p>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">Huy hiệu mới khi bạn chinh phục các cột mốc đặc biệt</p>
+                    <p className="text-sm font-bold text-slate-900 dark:text-white">{t("notifAchievementLabel") || "Thông báo thành tựu"}</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">{t("notifAchievementSub")}</p>
                   </div>
                   <input
                     type="checkbox"
@@ -747,8 +747,8 @@ export function SettingsClient({ initial }: { initial: SettingsInitialData }) {
 
                 <div className="flex items-center justify-between py-4">
                   <div>
-                    <p className="text-sm font-bold text-slate-900 dark:text-white">Chúc mừng lên cấp (Level Up)</p>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">Hiệu ứng pháo hoa và thông báo khi bạn đạt Level mới</p>
+                    <p className="text-sm font-bold text-slate-900 dark:text-white">{t("notifLevelUpTitle")}</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">{t("notifLevelUpSub")}</p>
                   </div>
                   <input
                     type="checkbox"
@@ -761,13 +761,13 @@ export function SettingsClient({ initial }: { initial: SettingsInitialData }) {
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 py-4">
                   <div>
                     <div className="flex items-center gap-2">
-                      <p className="text-sm font-bold text-slate-900 dark:text-white">📧 Nhắc nhở học tập qua Email (Hệ thống tự động)</p>
+                      <p className="text-sm font-bold text-slate-900 dark:text-white">{t("notifEmailTitle")}</p>
                       <span className="text-[10px] bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 font-bold px-2 py-0.5 rounded-full">
-                        Tự động 8:00 AM
+                        {t("notifEmailAutoBadge")}
                       </span>
                     </div>
                     <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                      Hệ thống tự động quét và gửi email định kỳ mỗi sáng vào 8:00 AM khi có thẻ từ vựng SRS đến hạn hoặc Streak có nguy cơ bị ngắt quãng.
+                      {t("notifEmailSub")}
                     </p>
                   </div>
                   <div className="flex items-center gap-3 self-end sm:self-auto">
@@ -791,8 +791,8 @@ export function SettingsClient({ initial }: { initial: SettingsInitialData }) {
                   🛡️
                 </span>
                 <div>
-                  <h2 className="text-lg font-bold text-slate-900 dark:text-white">Quyền riêng tư &amp; Dữ liệu</h2>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">Kiểm soát hiển thị thông tin học tập của bạn</p>
+                  <h2 className="text-lg font-bold text-slate-900 dark:text-white">{t("privacySectionTitle")}</h2>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">{t("privacySectionSubtitle")}</p>
                 </div>
               </div>
 
@@ -800,8 +800,8 @@ export function SettingsClient({ initial }: { initial: SettingsInitialData }) {
                 <div className="divide-y divide-slate-100 dark:divide-slate-800">
                   <div className="flex items-center justify-between py-4">
                     <div>
-                      <p className="text-sm font-bold text-slate-900 dark:text-white">Hiển thị trên Bảng xếp hạng</p>
-                      <p className="text-xs text-slate-500 dark:text-slate-400">Cho phép người học khác nhìn thấy tên và XP tuần của bạn</p>
+                      <p className="text-sm font-bold text-slate-900 dark:text-white">{t("privacyLeaderboardTitle")}</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">{t("privacyLeaderboardSub")}</p>
                     </div>
                     <input
                       type="checkbox"
@@ -813,8 +813,8 @@ export function SettingsClient({ initial }: { initial: SettingsInitialData }) {
 
                   <div className="flex items-center justify-between py-4">
                     <div>
-                      <p className="text-sm font-bold text-slate-900 dark:text-white">Công khai biểu đồ thống kê</p>
-                      <p className="text-xs text-slate-500 dark:text-slate-400">Hiển thị lịch học và huy hiệu đạt được trên trang hồ sơ</p>
+                      <p className="text-sm font-bold text-slate-900 dark:text-white">{t("privacyStatsTitle")}</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">{t("privacyStatsSub")}</p>
                     </div>
                     <input
                       type="checkbox"
@@ -826,9 +826,9 @@ export function SettingsClient({ initial }: { initial: SettingsInitialData }) {
                 </div>
 
                 <div className="rounded-2xl bg-slate-50 p-4 dark:bg-sumi-950">
-                  <p className="text-xs font-bold text-slate-700 dark:text-slate-300">Thông tin tài khoản</p>
+                  <p className="text-xs font-bold text-slate-700 dark:text-slate-300">{t("accountInfoTitle")}</p>
                   <p className="mt-1 text-xs text-slate-500">
-                    Ngày tham gia: <strong className="text-slate-700 dark:text-slate-300">{initial.registeredDate}</strong>
+                    {t("joinDateLabel")}: <strong className="text-slate-700 dark:text-slate-300">{initial.registeredDate}</strong>
                   </p>
                 </div>
               </div>
@@ -845,15 +845,15 @@ export function SettingsClient({ initial }: { initial: SettingsInitialData }) {
                     🔒
                   </span>
                   <div>
-                    <h2 className="text-lg font-bold text-slate-900 dark:text-white">Đổi mật khẩu</h2>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">Bảo mật tài khoản với mật khẩu tối thiểu 8 ký tự</p>
+                    <h2 className="text-lg font-bold text-slate-900 dark:text-white">{t("accountSectionTitle")}</h2>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">{t("accountSectionSubtitle")}</p>
                   </div>
                 </div>
 
                 <form onSubmit={handleChangePassword} className="mt-6 space-y-4">
                   <div>
                     <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1.5">
-                      Mật khẩu hiện tại
+                      {t("currentPasswordLabel")}
                     </label>
                     <input
                       type="password"
@@ -868,26 +868,26 @@ export function SettingsClient({ initial }: { initial: SettingsInitialData }) {
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div>
                       <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1.5">
-                        Mật khẩu mới
+                        {t("newPasswordLabel")}
                       </label>
                       <input
                         type="password"
                         value={newPassword}
                         onChange={(e) => setNewPassword(e.target.value)}
-                        placeholder="Ít nhất 8 ký tự"
+                        placeholder={t("newPasswordPlaceholder")}
                         required
                         className="min-h-11 w-full rounded-xl border border-slate-200 bg-white px-3.5 text-sm text-slate-900 outline-none transition focus:border-rose-500 dark:border-slate-700 dark:bg-sumi-950 dark:text-white"
                       />
                     </div>
                     <div>
                       <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1.5">
-                        Xác nhận mật khẩu mới
+                        {t("confirmPasswordLabel")}
                       </label>
                       <input
                         type="password"
                         value={confirmPassword}
                         onChange={(e) => setConfirmPassword(e.target.value)}
-                        placeholder="Nhập lại mật khẩu mới"
+                        placeholder={t("confirmPasswordPlaceholder")}
                         required
                         className="min-h-11 w-full rounded-xl border border-slate-200 bg-white px-3.5 text-sm text-slate-900 outline-none transition focus:border-rose-500 dark:border-slate-700 dark:bg-sumi-950 dark:text-white"
                       />
@@ -899,7 +899,7 @@ export function SettingsClient({ initial }: { initial: SettingsInitialData }) {
                     disabled={pwdBusy}
                     className="mt-2 inline-flex min-h-10 items-center justify-center rounded-xl bg-slate-900 px-5 text-xs font-bold text-white transition hover:bg-slate-800 disabled:opacity-50 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-100"
                   >
-                    {pwdBusy ? "Đang cập nhật..." : "Cập nhật mật khẩu"}
+                    {pwdBusy ? t("updatePasswordUpdating") : t("updatePasswordBtn")}
                   </button>
                 </form>
               </div>
@@ -911,37 +911,37 @@ export function SettingsClient({ initial }: { initial: SettingsInitialData }) {
                     ⚠️
                   </span>
                   <div>
-                    <h2 className="text-lg font-bold text-red-700 dark:text-red-400">Vùng nguy hiểm</h2>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">Đăng xuất hoặc xóa vĩnh viễn tài khoản của bạn</p>
+                    <h2 className="text-lg font-bold text-red-700 dark:text-red-400">{t("dangerZoneTitle")}</h2>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">{t("dangerZoneSubtitle")}</p>
                   </div>
                 </div>
 
                 <div className="mt-6 space-y-4">
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between p-4 rounded-2xl bg-slate-50 dark:bg-sumi-950">
                     <div>
-                      <p className="text-sm font-bold text-slate-900 dark:text-white">Đăng xuất</p>
-                      <p className="text-xs text-slate-500 dark:text-slate-400">Kết thúc phiên đăng nhập trên trình duyệt này</p>
+                      <p className="text-sm font-bold text-slate-900 dark:text-white">{t("logoutTitle")}</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">{t("logoutDesc")}</p>
                     </div>
                     <button
                       type="button"
                       onClick={() => signOut({ callbackUrl: "/login" })}
                       className="inline-flex min-h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-xs font-bold text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:bg-sumi-900 dark:text-slate-200"
                     >
-                      Đăng xuất
+                      {t("logoutBtn")}
                     </button>
                   </div>
 
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between p-4 rounded-2xl border border-red-100 bg-red-50/50 dark:border-red-900/40 dark:bg-red-950/20">
                     <div>
-                      <p className="text-sm font-bold text-red-700 dark:text-red-400">Xóa tài khoản vĩnh viễn</p>
-                      <p className="text-xs text-slate-500 dark:text-slate-400">Toàn bộ kinh nghiệm, tiến độ học và dữ liệu ôn tập sẽ bị xóa</p>
+                      <p className="text-sm font-bold text-red-700 dark:text-red-400">{t("deleteAccountTitle")}</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">{t("deleteAccountDesc")}</p>
                     </div>
                     <button
                       type="button"
                       onClick={() => setShowDeleteModal(true)}
                       className="inline-flex min-h-10 items-center justify-center rounded-xl bg-red-600 px-4 text-xs font-bold text-white transition hover:bg-red-700"
                     >
-                      Xóa tài khoản
+                      {t("deleteAccountBtn")}
                     </button>
                   </div>
                 </div>
@@ -963,21 +963,21 @@ export function SettingsClient({ initial }: { initial: SettingsInitialData }) {
               ⚠️
             </div>
             <h3 className="mt-4 text-lg font-black text-slate-900 dark:text-white">
-              Bạn có chắc chắn muốn xóa tài khoản?
+              {t("deleteModalTitle")}
             </h3>
             <p className="mt-2 text-sm leading-relaxed text-slate-600 dark:text-slate-300">
-              Hành động này <strong className="text-red-600 dark:text-red-400">không thể hoàn tác</strong>. Toàn bộ tiến trình học, điểm XP, chuỗi ngày streak và dữ liệu thẻ nhớ SRS sẽ bị xóa vĩnh viễn khỏi hệ thống.
+              {t("deleteModalDesc")}
             </p>
 
             <div className="mt-4">
               <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1.5">
-                Nhập chữ <strong className="text-red-600">xóa tài khoản</strong> để xác nhận:
+                {t("deleteModalInputLabel")}
               </label>
               <input
                 type="text"
                 value={deleteConfirmText}
                 onChange={(e) => setDeleteConfirmText(e.target.value)}
-                placeholder="xóa tài khoản"
+                placeholder="xóa tài khoản / delete account"
                 className="min-h-11 w-full rounded-xl border border-red-300 bg-white px-3.5 text-sm text-slate-900 outline-none transition focus:border-red-600 focus:ring-4 focus:ring-red-600/15 dark:border-red-800 dark:bg-sumi-950 dark:text-white"
               />
             </div>
@@ -992,15 +992,19 @@ export function SettingsClient({ initial }: { initial: SettingsInitialData }) {
                 }}
                 className="min-h-11 rounded-xl border border-slate-200 px-5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200"
               >
-                Hủy bỏ
+                {t("deleteModalCancelBtn")}
               </button>
               <button
                 type="button"
-                disabled={deleteBusy || deleteConfirmText.trim().toLowerCase() !== "xóa tài khoản"}
+                disabled={
+                  deleteBusy ||
+                  (deleteConfirmText.trim().toLowerCase() !== "xóa tài khoản" &&
+                    deleteConfirmText.trim().toLowerCase() !== "delete account")
+                }
                 onClick={handleDeleteAccount}
                 className="min-h-11 rounded-xl bg-red-600 px-5 text-sm font-bold text-white transition hover:bg-red-700 disabled:opacity-50"
               >
-                {deleteBusy ? "Đang xóa..." : "Xác nhận xóa"}
+                {deleteBusy ? t("deleteModalDeleting") : t("deleteModalConfirmBtn")}
               </button>
             </div>
           </div>

@@ -11,6 +11,7 @@ import { AppNav } from "@/components/AppNav";
 import { JapanBackdrop } from "@/components/JapanIllustration";
 import { PathDecor, PathIcon, type DecorTheme, type PathIconName } from "@/components/Pathdecor";
 import { LocalizedText } from "@/components/LocalizedText";
+import { LocalizedLessonTitle, LocalizedLessonDesc } from "@/components/LocalizedLesson";
 import {
   buildLearningPath,
   buildRemediationPlan,
@@ -217,12 +218,12 @@ export default async function LearningPathPage() {
   const displayName = user.profile?.displayName || session?.user?.name || "Bạn";
   const [titleHead, titleTail] = splitTitle(path.name);
 
-  const answerChips: { label: string; value: string; icon: PathIconName }[] = [
-    { label: "Trình độ", value: LEVEL_LABELS[answers.level], icon: "level" },
-    { label: "Mục tiêu", value: GOAL_LABELS[answers.goal], icon: "goal" },
-    { label: "Kỹ năng", value: SKILL_LABELS[answers.focusSkill], icon: "skill" },
-    { label: "Phong cách", value: STYLE_LABELS[answers.learningStyle], icon: "style" },
-    { label: "Thời gian", value: `${answers.dailyGoalMinutes} phút`, icon: "clock" },
+  const answerChips: { labelKey: string; defaultLabel: string; value: string; icon: PathIconName }[] = [
+    { labelKey: "pathLevelLabel", defaultLabel: "Trình độ", value: LEVEL_LABELS[answers.level], icon: "level" },
+    { labelKey: "pathGoalLabel", defaultLabel: "Mục tiêu", value: GOAL_LABELS[answers.goal], icon: "goal" },
+    { labelKey: "pathSkillLabel", defaultLabel: "Kỹ năng", value: SKILL_LABELS[answers.focusSkill], icon: "skill" },
+    { labelKey: "pathStyleLabel", defaultLabel: "Phong cách", value: STYLE_LABELS[answers.learningStyle], icon: "style" },
+    { labelKey: "pathTimeLabel", defaultLabel: "Thời gian", value: `${answers.dailyGoalMinutes} phút`, icon: "clock" },
   ];
 
   return (
@@ -263,7 +264,7 @@ export default async function LearningPathPage() {
               {current && (
                 <p className="nqp-next">
                   <small>{current.status === "IN_PROGRESS" ? <LocalizedText k="inProgressLesson" fallback="Đang học dở" /> : <LocalizedText k="nextModule" fallback="Mô-đun tiếp theo" />}</small>
-                  <b>{current.title}</b>
+                  <b><LocalizedLessonTitle slug={current.slug} fallback={current.title} /></b>
                 </p>
               )}
 
@@ -299,10 +300,10 @@ export default async function LearningPathPage() {
 
           <div className="nqp-summary" aria-label="Lựa chọn cá nhân hóa của bạn">
             {answerChips.map((c) => (
-              <div key={c.label} className="nqp-chip">
+              <div key={c.labelKey} className="nqp-chip">
                 <span className="nqp-chip-ico"><PathIcon name={c.icon} /></span>
                 <span className="nqp-chip-txt">
-                  <small>{c.label}</small>
+                  <small><LocalizedText k={c.labelKey} fallback={c.defaultLabel} /></small>
                   <b>{c.value}</b>
                 </span>
               </div>
@@ -494,8 +495,8 @@ export default async function LearningPathPage() {
                           )}
                         </div>
 
-                        <h3>{m.title}</h3>
-                        <p>{m.description}</p>
+                        <h3><LocalizedLessonTitle slug={m.slug} fallback={m.title} /></h3>
+                        <p><LocalizedLessonDesc slug={m.slug} fallback={m.description} /></p>
 
                         <div className="nqp-module-foot">
                           <span className="nqp-why" title="Lý do mô-đun này nằm trong lộ trình của bạn">
@@ -565,7 +566,7 @@ export default async function LearningPathPage() {
               </h3>
               {current ? (
                 <>
-                  <p className="nqp-current-title">{current.title}</p>
+                  <p className="nqp-current-title"><LocalizedLessonTitle slug={current.slug} fallback={current.title} /></p>
                   <div className="nqp-progress-row">
                     <div className="nqp-bar"><span style={{ width: `${percent}%` }} /></div>
                     <small>{percent}% • {completed}/{modules.length}</small>

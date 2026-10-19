@@ -13,6 +13,7 @@ import { KanaLab } from "./KanaLab";
 import { LearnKanaPanel } from "./LearnKanaPanel";
 import { CulturePromo } from "./CulturePromo";
 import { LocalizedText } from "@/components/LocalizedText";
+import { LocalizedLessonTitle, LocalizedLessonDesc } from "@/components/LocalizedLesson";
 import "./learn.css";
 
 export default async function LearnPage() {
@@ -87,8 +88,8 @@ export default async function LearnPage() {
 
               <Link href={startHref} className="lp-spot">
                 <span className="lp-spot-tag">● {current ? <LocalizedText k="nextLesson" fallback="Bài tiếp theo" /> : <LocalizedText k="todaySpotlight" fallback="Nổi bật hôm nay" />}</span>
-                <b>{current ? current.title : <LocalizedText k="exploreKana" fallback="Khám phá bảng chữ cái Kana" />}</b>
-                <small>{current ? current.description : <LocalizedText k="exploreKanaDesc" fallback="Nền tảng quan trọng để bắt đầu hành trình học tiếng Nhật." />}</small>
+                <b>{current ? <LocalizedLessonTitle slug={current.slug} fallback={current.title} /> : <LocalizedText k="exploreKana" fallback="Khám phá bảng chữ cái Kana" />}</b>
+                <small>{current ? <LocalizedLessonDesc slug={current.slug} fallback={current.description} /> : <LocalizedText k="exploreKanaDesc" fallback="Nền tảng quan trọng để bắt đầu hành trình học tiếng Nhật." />}</small>
                 <span className="lp-spot-go" aria-hidden="true"><IcoArrow width={16} height={16} /></span>
               </Link>
             </div>
@@ -128,8 +129,8 @@ export default async function LearnPage() {
                       <div className="lp-card">
                         <div className="lp-thumb"><SceneArt index={index} /></div>
                         <div className="lp-copy">
-                          <h3>{lesson.title}</h3>
-                          <p>{lesson.description}</p>
+                          <h3><LocalizedLessonTitle slug={lesson.slug} fallback={lesson.title} /></h3>
+                          <p><LocalizedLessonDesc slug={lesson.slug} fallback={lesson.description} /></p>
                           <div className="lp-chips">
                             <span>▤ {lesson._count.exercises} <LocalizedText k="practiceExercisesUnit" fallback="bài luyện tập" /></span>
                             <span>✦ +{lesson.xpReward} XP</span>
