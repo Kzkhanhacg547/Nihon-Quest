@@ -124,52 +124,38 @@ export async function POST(req: NextRequest) {
           }
         : null;
 
-    // Guest / unauthenticated fallback
-    if (!uid) {
-      const guestResponse = generateNaturalJapaneseResponse({
-        scenarioId: scenarioId || "free_kaiwa",
-        userMessage: message,
-        userProgress: effectiveProgress,
-        nativeLanguage,
-      });
-      return NextResponse.json({
-        conversationId: "guest-" + Date.now(),
-        message: {
-          id: "guest-msg-" + Date.now(),
-          role: "assistant",
-          content: guestResponse,
-          createdAt: new Date().toISOString(),
-        },
-        isGuest: true,
-      });
-    }
+    let convId: string = conversationId || (uid ? "conv-" : "guest-") + Date.now();
+    if (uid) {
+      const limit = await rateLimitAsync(`ai-chat:${uid}`, 30, 60_000).catch(() => ({ ok: true as const, remaining: 30 }));
+      if (!limit.ok) return rateLimited(limit.retryAfterSeconds);
 
-    const limit = await rateLimitAsync(`ai-chat:${uid}`, 30, 60_000).catch(() => ({ ok: true as const, remaining: 30 }));
-    if (!limit.ok) return rateLimited(limit.retryAfterSeconds);
+      try {
+        let conv = conversationId
+          ? await prisma.aiConversation.findFirst({ where: { id: conversationId, userId: uid } })
+          : null;
 
-    let convId: string = conversationId || "conv-" + Date.now();
-    try {
-      let conv = conversationId
-        ? await prisma.aiConversation.findFirst({ where: { id: conversationId, userId: uid } })
-        : null;
+        if (!conv) {
+          conv = await prisma.aiConversation.create({
+            data: {
+              userId: uid,
+              title: message.slice(0, 60),
+              provider: "NATURAL_KAIWA_ENGINE",
+              model: "aoi-sensei-n3",
+            },
+          });
+        }
+        convId = conv.id;
 
-      if (!conv) {
-        conv = await prisma.aiConversation.create({
-          data: {
-            userId: uid,
-            title: message.slice(0, 60),
-            provider: "NATURAL_KAIWA_ENGINE",
-            model: "aoi-sensei-n3",
-          },
+        await prisma.aiMessage.create({
+          data: { conversationId: conv.id, role: "user", content: message.trim() },
         });
+      } catch (dbErr) {
+        console.warn("[AI Chat DB Warning - Continuing with AI response]:", dbErr);
       }
-      convId = conv.id;
-
-      await prisma.aiMessage.create({
-        data: { conversationId: conv.id, role: "user", content: message.trim() },
-      });
-    } catch (dbErr) {
-      console.warn("[AI Chat DB Warning - Continuing with AI response]:", dbErr);
+    } else {
+      const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "guest";
+      const limit = await rateLimitAsync(`ai-chat:guest:${ip}`, 50, 60_000).catch(() => ({ ok: true as const, remaining: 50 }));
+      if (!limit.ok) return rateLimited(limit.retryAfterSeconds);
     }
 
     let aiResponse = "";
@@ -214,13 +200,15 @@ export async function POST(req: NextRequest) {
 
   if (keyList.length > 0) {
     try {
-      const dbHistory = await prisma.aiMessage
-        .findMany({
-          where: { conversationId: convId },
-          orderBy: { createdAt: "desc" },
-          take: 20,
-        })
-        .catch(() => []);
+      const dbHistory = uid && !convId.startsWith("guest-")
+        ? await prisma.aiMessage
+            .findMany({
+              where: { conversationId: convId },
+              orderBy: { createdAt: "desc" },
+              take: 20,
+            })
+            .catch(() => [])
+        : [];
       dbHistory.reverse();
 
       const trustedClientHistory = Array.isArray(clientHistory)
@@ -334,12 +322,14 @@ VAI TRÒ VÀ NGUYÊN TẮC CỦA TRỢ LÝ HỌC TẬP (AI SENSEI):
                 if (textResult && textResult.trim().length > 0) {
                   aiResponse = textResult.trim();
                   aiSuccess = true;
-                  await prisma.aiConversation
-                    .update({
-                      where: { id: convId },
-                      data: { provider: "XAI_GROK", model: grModel },
-                    })
-                    .catch(() => {});
+                  if (uid && !convId.startsWith("guest-")) {
+                    await prisma.aiConversation
+                      .update({
+                        where: { id: convId },
+                        data: { provider: "XAI_GROK", model: grModel },
+                      })
+                      .catch(() => {});
+                  }
                   break;
                 }
               }
@@ -382,12 +372,14 @@ VAI TRÒ VÀ NGUYÊN TẮC CỦA TRỢ LÝ HỌC TẬP (AI SENSEI):
                 if (textResult && textResult.trim().length > 0) {
                   aiResponse = textResult.trim();
                   aiSuccess = true;
-                  await prisma.aiConversation
-                    .update({
-                      where: { id: convId },
-                      data: { provider: "GROQ", model: gModel },
-                    })
-                    .catch(() => {});
+                  if (uid && !convId.startsWith("guest-")) {
+                    await prisma.aiConversation
+                      .update({
+                        where: { id: convId },
+                        data: { provider: "GROQ", model: gModel },
+                      })
+                      .catch(() => {});
+                  }
                   break;
                 }
               }
@@ -435,12 +427,14 @@ VAI TRÒ VÀ NGUYÊN TẮC CỦA TRỢ LÝ HỌC TẬP (AI SENSEI):
                 if (textResult && textResult.trim().length > 0) {
                   aiResponse = textResult.trim();
                   aiSuccess = true;
-                  await prisma.aiConversation
-                    .update({
-                      where: { id: convId },
-                      data: { provider: "OPENROUTER", model: orModel },
-                    })
-                    .catch(() => {});
+                  if (uid && !convId.startsWith("guest-")) {
+                    await prisma.aiConversation
+                      .update({
+                        where: { id: convId },
+                        data: { provider: "OPENROUTER", model: orModel },
+                      })
+                      .catch(() => {});
+                  }
                   break;
                 }
               }
@@ -449,71 +443,113 @@ VAI TRÒ VÀ NGUYÊN TẮC CỦA TRỢ LÝ HỌC TẬP (AI SENSEI):
             }
           }
         } else {
-          const geminiContents: { role: "user" | "model"; parts: { text: string }[] }[] = [];
-          for (const m of history) {
-            const role = m.role === "assistant" ? "model" : "user";
-            if (geminiContents.length > 0 && geminiContents[geminiContents.length - 1].role === role) {
-              geminiContents[geminiContents.length - 1].parts[0].text += `\n${m.content}`;
-            } else {
-              geminiContents.push({ role, parts: [{ text: m.content }] });
-            }
-          }
+          // 1. Try Gemini Interactions API (gemini-3.8-flash)
+          try {
+            const interRes = await fetch("https://generativelanguage.googleapis.com/v1beta/interactions", {
+              method: "POST",
+              headers: {
+                "x-goog-api-key": currentKey,
+                "Content-Type": "application/json",
+                "Api-Revision": "2026-05-20",
+              },
+              body: JSON.stringify({
+                model: "gemini-3.8-flash",
+                input: `${systemPrompt}\n\nUser: ${message}`,
+              }),
+              signal: AbortSignal.timeout(9000),
+            });
 
-          while (geminiContents.length > 0 && geminiContents[0].role !== "user") {
-            geminiContents.shift();
-          }
-
-          if (geminiContents.length === 0) {
-            geminiContents.push({ role: "user", parts: [{ text: message }] });
-          }
-
-          const payload = {
-            system_instruction: { parts: [{ text: systemPrompt }] },
-            contents: geminiContents,
-            generationConfig: { temperature: 0.85, maxOutputTokens: 1024 },
-          };
-
-          const requestedModel =
-            typeof (body as { model?: unknown }).model === "string"
-              ? (body as { model: string }).model.trim()
-              : "";
-          const isValidGeminiModel = /^gemini-[a-zA-Z0-9.-]+$/.test(requestedModel);
-          const clientModel = isValidGeminiModel ? requestedModel : undefined;
-
-          const modelsToTry = Array.from(
-            new Set([clientModel, "gemini-2.5-flash", "gemini-flash-latest", "gemini-flash-lite-latest"].filter(Boolean) as string[]),
-          );
-
-          for (const modelName of modelsToTry) {
-            if (aiSuccess) break;
-            try {
-              const geminiRes = await fetch(
-                `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${currentKey}`,
-                {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify(payload),
-                  signal: AbortSignal.timeout(9000),
-                },
-              );
-
-              if (geminiRes.ok) {
-                const geminiData = await geminiRes.json();
-                const textResult = geminiData?.candidates?.[0]?.content?.parts?.[0]?.text;
-                if (textResult && textResult.trim().length > 0) {
-                  aiResponse = textResult.trim();
-                  aiSuccess = true;
+            if (interRes.ok) {
+              const interData = await interRes.json();
+              const steps = interData?.steps || [];
+              const modelStep = steps.find((s: { type?: string }) => s.type === "model_output");
+              const textResult = (modelStep?.content as { text?: string }[])?.[0]?.text;
+              if (textResult && textResult.trim().length > 0) {
+                aiResponse = textResult.trim();
+                aiSuccess = true;
+                if (uid && !convId.startsWith("guest-")) {
                   await prisma.aiConversation
                     .update({
                       where: { id: convId },
-                      data: { provider: "GOOGLE_GEMINI", model: modelName },
+                      data: { provider: "GOOGLE_GEMINI", model: "gemini-3.8-flash" },
                     })
                     .catch(() => {});
-                  break;
                 }
               }
-            } catch {
-              // Fall through to next model
+            }
+          } catch {
+            // Fall through to generateContent
+          }
+
+          if (!aiSuccess) {
+            const geminiContents: { role: "user" | "model"; parts: { text: string }[] }[] = [];
+            for (const m of history) {
+              const role = m.role === "assistant" ? "model" : "user";
+              if (geminiContents.length > 0 && geminiContents[geminiContents.length - 1].role === role) {
+                geminiContents[geminiContents.length - 1].parts[0].text += `\n${m.content}`;
+              } else {
+                geminiContents.push({ role, parts: [{ text: m.content }] });
+              }
+            }
+
+            while (geminiContents.length > 0 && geminiContents[0].role !== "user") {
+              geminiContents.shift();
+            }
+
+            if (geminiContents.length === 0) {
+              geminiContents.push({ role: "user", parts: [{ text: message }] });
+            }
+
+            const payload = {
+              system_instruction: { parts: [{ text: systemPrompt }] },
+              contents: geminiContents,
+              generationConfig: { temperature: 0.85, maxOutputTokens: 1024 },
+            };
+
+            const requestedModel =
+              typeof (body as { model?: unknown }).model === "string"
+                ? (body as { model: string }).model.trim()
+                : "";
+            const isValidGeminiModel = /^gemini-[a-zA-Z0-9.-]+$/.test(requestedModel);
+            const clientModel = isValidGeminiModel ? requestedModel : undefined;
+
+            const modelsToTry = Array.from(
+              new Set([clientModel, "gemini-2.5-flash", "gemini-flash-latest", "gemini-flash-lite-latest"].filter(Boolean) as string[]),
+            );
+
+            for (const modelName of modelsToTry) {
+              if (aiSuccess) break;
+              try {
+                const geminiRes = await fetch(
+                  `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${currentKey}`,
+                  {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload),
+                    signal: AbortSignal.timeout(9000),
+                  },
+                );
+
+                if (geminiRes.ok) {
+                  const geminiData = await geminiRes.json();
+                  const textResult = geminiData?.candidates?.[0]?.content?.parts?.[0]?.text;
+                  if (textResult && textResult.trim().length > 0) {
+                    aiResponse = textResult.trim();
+                    aiSuccess = true;
+                    if (uid && !convId.startsWith("guest-")) {
+                      await prisma.aiConversation
+                        .update({
+                          where: { id: convId },
+                          data: { provider: "GOOGLE_GEMINI", model: modelName },
+                        })
+                        .catch(() => {});
+                    }
+                    break;
+                  }
+                }
+              } catch {
+                // Fall through to next model
+              }
             }
           }
         }
@@ -549,18 +585,20 @@ VAI TRÒ VÀ NGUYÊN TẮC CỦA TRỢ LÝ HỌC TẬP (AI SENSEI):
   }
 
     let savedMsgId = "msg-" + Date.now();
-    try {
-      const aiMsg = await prisma.aiMessage.create({
-        data: { conversationId: convId, role: "assistant", content: aiResponse },
-      });
-      savedMsgId = aiMsg.id;
+    if (uid && !convId.startsWith("guest-")) {
+      try {
+        const aiMsg = await prisma.aiMessage.create({
+          data: { conversationId: convId, role: "assistant", content: aiResponse },
+        });
+        savedMsgId = aiMsg.id;
 
-      await prisma.aiConversation.update({
-        where: { id: convId },
-        data: { updatedAt: new Date() },
-      });
-    } catch (dbSaveErr) {
-      console.warn("[AI Chat DB Save Warning]:", dbSaveErr);
+        await prisma.aiConversation.update({
+          where: { id: convId },
+          data: { updatedAt: new Date() },
+        });
+      } catch (dbSaveErr) {
+        console.warn("[AI Chat DB Save Warning]:", dbSaveErr);
+      }
     }
 
     return NextResponse.json({
@@ -571,6 +609,7 @@ VAI TRÒ VÀ NGUYÊN TẮC CỦA TRỢ LÝ HỌC TẬP (AI SENSEI):
         content: aiResponse,
         createdAt: new Date().toISOString(),
       },
+      isGuest: !uid,
       aiDisclaimer: "Phản hồi được tạo bởi AI hỗ trợ luyện hội thoại — hãy đối chiếu với bài học chuẩn khi ôn thi JLPT.",
     });
   } catch (globalErr) {

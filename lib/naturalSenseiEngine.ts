@@ -95,10 +95,9 @@ export function generateNaturalJapaneseResponse({
 
   // 1. PROGRESS, STUDY ADVICE & TUTOR ASSISTANCE (Trợ lý học tập & tiến trình)
   if (
-    /(?:hôm nay học gì|học gì|tiến độ|tiến trình|srs|thẻ ôn|lời khuyên|gợi ý|thống kê|kế hoạch|what should i study|study advice|my progress|review cards|今天学什么|오늘 뭐 공부해)/i.test(
+    /(?:hôm nay học gì|học gì|tiến độ|tiến trình|srs|thẻ ôn|lời khuyên|gợi ý|thống kê|kế hoạch|bắt đầu|what should i study|study advice|my progress|review cards|今天学什么|오늘 뭐 공부해)/i.test(
       msg
-    ) ||
-    scenarioId === "assistant_guide"
+    )
   ) {
     const level = userProgress?.userLevel || "N5";
     const pLevel = userProgress?.level || 1;
