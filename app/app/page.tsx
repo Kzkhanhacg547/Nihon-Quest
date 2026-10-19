@@ -18,6 +18,8 @@ import {
 import { ActivityButton } from "./ActivityButton";
 import { buildLearningPath, sanitizeAnswers } from "@/lib/personalization";
 import { getLessonCurriculumMetadata } from "@/lib/curriculum-tracks";
+import { DashboardHero } from "./DashboardHero";
+import { LocalizedText } from "@/components/LocalizedText";
 
 export const metadata = { title: "Dashboard — Nihon Quest" };
 
@@ -215,30 +217,15 @@ export default async function AppHome() {
           </div>
 
           <div className="nqd-main">
-            <section className="nqd-hero" aria-labelledby="dashboard-title">
-              <div className="nqd-hero-copy">
-                <span className="nqd-greet">こんにちは、</span>
-                <h1 id="dashboard-title" className="nqd-name">
-                  {displayName}!
-                  <BrushUnderline />
-                </h1>
-                <p>{intro}{skillIntro ? ` ${skillIntro}` : ""}</p>
-              </div>
-              <div className="nqd-hero-scene" aria-hidden="true">
-                <Image src={BASE64_IMAGES.fujiDash} unoptimized alt="" fill priority sizes="(max-width: 1100px) 100vw, 800px" />
-              </div>
-              <div className="nqd-stamp-wrap" aria-hidden="true">
-                <div className="nqd-stamp"><span>一歩ずつ</span><span>夢に近づく</span></div>
-                <span className="nqd-stamp-flower"><Icon name="sakura" size={26} /></span>
-              </div>
-              <aside className="nqd-card nqd-hero-quote" aria-label="Câu nói hôm nay">
-                <b>{quote.kanji}</b>
-                <em>{quote.romaji}</em>
-                <p>{quote.meaning}</p>
-                <span className="dash" aria-hidden="true" />
-                <span className="chev" aria-hidden="true">›</span>
-              </aside>
-            </section>
+            <DashboardHero
+              displayName={displayName}
+              isBeginner={isBeginner}
+              learningGoal={user.learningGoal}
+              focusSkill={user.focusSkill}
+              quote={quote}
+              initialIntro={intro}
+              initialSkillIntro={skillIntro}
+            />
 
             <div className="nqd-grid">
               <div className="nqd-col">
@@ -247,28 +234,28 @@ export default async function AppHome() {
                   <div className="nqd-path-head">
                     <span className="nqd-pill-soft">
                       <span className="rk"><Icon name="rocket" size={14} /></span>
-                      LỘ TRÌNH CỦA BẠN
+                      <LocalizedText k="yourPath" fallback="LỘ TRÌNH CỦA BẠN" />
                     </span>
                     <div className="nqd-path-prog">
-                      <span className="nqd-pct">{pathPercent}% hoàn thành</span>
+                      <span className="nqd-pct">{pathPercent}% <LocalizedText k="completedPct" fallback="hoàn thành" /></span>
                       <div className="nqd-bar"><span style={{ width: `${pathPercent}%` }} /></div>
                     </div>
                   </div>
                   <h2>{myPath.name}</h2>
                   <p>{myPath.tagline}</p>
                   <div className="nqd-path-meta">
-                    <span>{myPath.modules.length} chủ đề</span>
-                    <span>{myPath.estWeeks} tuần</span>
-                    <span>{myPath.answers.dailyMinutes} phút/ngày</span>
+                    <span>{myPath.modules.length} <LocalizedText k="topics" fallback="chủ đề" /></span>
+                    <span>{myPath.estWeeks} <LocalizedText k="weeks" fallback="tuần" /></span>
+                    <span>{myPath.answers.dailyMinutes} <LocalizedText k="minsPerDay" fallback="phút/ngày" /></span>
                     <span className="nqd-path-tags">
                       {myPath.answers.goalLabel} - {myPath.answers.skillLabel} - {myPath.answers.styleLabel}
                     </span>
                   </div>
                   <div className="nqd-btns">
-                    <Link className="nqd-btn-red" href="/app/path">Xem lộ trình cá nhân →</Link>
+                    <Link className="nqd-btn-red" href="/app/path"><LocalizedText k="viewPersonalPath" fallback="Xem lộ trình cá nhân →" /></Link>
                     {nextPathModule && (
                       <Link className="nqd-btn-outline" href={nextPathModule.target}>
-                        Mở khóa tiếp theo: {nextPathModule.title}
+                        <LocalizedText k="unlockNext" fallback="Mở khóa tiếp theo:" /> {nextPathModule.title}
                       </Link>
                     )}
                   </div>
@@ -283,7 +270,7 @@ export default async function AppHome() {
                   </div>
                   <div className="nqd-focus-top">
                     {isNewLesson && <span className="nqd-new">New</span>}
-                    <span className="nqd-pill">BÀI HỌC HÔM NAY</span>
+                    <span className="nqd-pill"><LocalizedText k="todaysLesson" fallback="BÀI HỌC HÔM NAY" /></span>
                     {currentCurriculum && (
                       <span className="rounded-lg bg-red-100 px-2 py-0.5 text-xs font-black text-red-700 dark:bg-red-950/60 dark:text-red-300">
                         {currentCurriculum.shortTrackLabel}
@@ -294,15 +281,15 @@ export default async function AppHome() {
                         ? `Bài ${Math.min(completed + 1, allLessons.length)} / ${allLessons.length}`
                         : "Chưa có bài học"}
                     </span>
-                    <span className="nqd-focus-pct">{lessonPercent}% hoàn thành</span>
+                    <span className="nqd-focus-pct">{lessonPercent}% <LocalizedText k="completedPct" fallback="hoàn thành" /></span>
                   </div>
                   <h2>{currentLesson?.title || "Hoàn thành lộ trình hôm nay"}</h2>
                   <p>{currentLesson?.description || `Bạn đã hoàn thành toàn bộ bài học ${userLevel}. Hãy ôn tập SRS hoặc tiếp tục hành trình.`}</p>
                   <div className="nqd-btns">
                     <Link className="nqd-btn-red" href={currentLesson ? `/app/practice/${currentLesson.slug}` : "/app/review"}>
-                      {currentLesson ? "Tiếp tục bài học" : "Ôn tập SRS"} →
+                      {currentLesson ? <LocalizedText k="continueLesson" fallback="Tiếp tục bài học" /> : <LocalizedText k="reviewSrs" fallback="Ôn tập SRS" />} →
                     </Link>
-                    <Link className="nqd-btn-ghost" href="/app/practice">Xem tất cả bài học</Link>
+                    <Link className="nqd-btn-ghost" href="/app/practice"><LocalizedText k="viewAllLessons" fallback="Xem tất cả bài học" /></Link>
                   </div>
                   <div className="nqd-focus-vert" aria-hidden="true">
                     <div>日本語</div>
@@ -312,8 +299,8 @@ export default async function AppHome() {
 
                 <section className="nqd-explore">
                   <div className="nqd-sec-title">
-                    <h2><Icon name="sakura" size={26} />Khám phá các chủ đề học tập</h2>
-                    <span>Mỗi chủ đề là một bước tiến gần hơn đến mục tiêu của bạn!</span>
+                    <h2><Icon name="sakura" size={26} /><LocalizedText k="exploreTopics" fallback="Khám phá các chủ đề học tập" /></h2>
+                    <span><LocalizedText k="exploreSubtitle" fallback="Mỗi chủ đề là một bước tiến gần hơn đến mục tiêu của bạn!" /></span>
                   </div>
                   <div className="nqd-modes">
                     {MODES.map((m) => (
@@ -335,15 +322,15 @@ export default async function AppHome() {
               <aside className="nqd-col nqd-aside">
                 <div className="nqd-mini-row">
                   <div className="nqd-card nqd-mini nqd-streak">
-                    <div className="nqd-mini-top"><Icon name="flame" size={30} /><small>Chuỗi ngày học</small></div>
+                    <div className="nqd-mini-top"><Icon name="flame" size={30} /><small><LocalizedText k="streakTitle" fallback="Chuỗi ngày học" /></small></div>
                     <b className="big">{user.currentStreak}</b>
-                    <span className="unit">ngày</span>
-                    <p className="foot">Kỷ lục: {user.longestStreak} ngày</p>
+                    <span className="unit"><LocalizedText k="streakUnit" fallback="ngày" /></span>
+                    <p className="foot"><LocalizedText k="recordStreak" fallback="Kỷ lục:" /> {user.longestStreak} <LocalizedText k="streakUnit" fallback="ngày" /></p>
                     <span className="act"><ActivityButton /></span>
                     <span className="daruma"><Daruma /></span>
                   </div>
                   <div className="nqd-card nqd-mini nqd-level">
-                    <div className="nqd-mini-top"><span className="badge"><Icon name="shield" size={28} /></span><small>Cấp độ học viên</small></div>
+                    <div className="nqd-mini-top"><span className="badge"><Icon name="shield" size={28} /></span><small><LocalizedText k="levelTitle" fallback="Cấp độ học viên" /></small></div>
                     <b className="lv">Level {level.level}</b>
                     <div className="nqd-bar"><span style={{ width: `${xpPercent}%` }} /></div>
                     <p className="foot">{user.totalXP} / {level.nextLevelXP} XP</p>
@@ -352,8 +339,8 @@ export default async function AppHome() {
 
                 <section className="nqd-card nqd-side-card">
                   <div className="nqd-side-head">
-                    <h3><span className="hico red"><Icon name="target" size={24} /></span>Nhiệm vụ hôm nay</h3>
-                    <Link href="/app/practice">Xem tất cả →</Link>
+                    <h3><span className="hico red"><Icon name="target" size={24} /></span><LocalizedText k="dailyMissions" fallback="Nhiệm vụ hôm nay" /></h3>
+                    <Link href="/app/practice"><LocalizedText k="viewAll" fallback="Xem tất cả →" /></Link>
                   </div>
                   {missions.slice(0, 3).map((m, i) => {
                     // Progress can exceed the target (e.g. 2 lessons done for a
@@ -380,8 +367,8 @@ export default async function AppHome() {
 
                 <section className="nqd-card nqd-side-card">
                   <div className="nqd-side-head">
-                    <h3><span className="hico orange"><Icon name="trophy" size={24} /></span>Bảng xếp hạng tuần này</h3>
-                    <Link href="/app/leaderboard">Xem tất cả →</Link>
+                    <h3><span className="hico orange"><Icon name="trophy" size={24} /></span><LocalizedText k="weeklyLeaderboard" fallback="Bảng xếp hạng tuần này" /></h3>
+                    <Link href="/app/leaderboard"><LocalizedText k="viewAll" fallback="Xem tất cả →" /></Link>
                   </div>
                   {weeklyList.slice(0, 4).map((row, i) => {
                     const label = row.displayName || row.name || "Học viên";
@@ -415,14 +402,14 @@ export default async function AppHome() {
                     );
                   })}
                   {weeklyList.some((row) => row.isBot) && (
-                    <p className="nqd-bot-note">💡 Nhân vật có nhãn 🤖 AI là đối thủ mô phỏng để duy trì nhịp độ luyện tập.</p>
+                    <p className="nqd-bot-note"><LocalizedText k="simulatedOpponents" fallback="💡 Nhân vật có nhãn 🤖 AI là đối thủ mô phỏng để duy trì nhịp độ luyện tập." /></p>
                   )}
                 </section>
 
                 <section className="nqd-card nqd-side-card">
                   <div className="nqd-side-head">
-                    <h3><span className="hico blue"><Icon name="train" size={24} /></span>Hành trình Shinkansen</h3>
-                    <Link href="/app/journey">Bản đồ →</Link>
+                    <h3><span className="hico blue"><Icon name="train" size={24} /></span><LocalizedText k="shinkansenJourney" fallback="Hành trình Shinkansen" /></h3>
+                    <Link href="/app/journey"><LocalizedText k="journeyMap" fallback="Bản đồ →" /></Link>
                   </div>
                   <div className="nqd-train"><ShinkansenStrip /></div>
                   <div className="nqd-track">
@@ -434,7 +421,7 @@ export default async function AppHome() {
                   </div>
                   <div className="nqd-bar thick"><span style={{ width: `${journeyPercent}%` }} /></div>
                   <p className="nqd-journey-count">
-                    <b>{doneJourney}</b> / {totalJourney} thành phố đã khám phá
+                    <b>{doneJourney}</b> / {totalJourney} <LocalizedText k="citiesExplored" fallback="thành phố đã khám phá" />
                   </p>
                 </section>
               </aside>

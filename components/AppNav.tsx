@@ -15,49 +15,54 @@ import { Icon, IconButton, type IconName } from "./ui";
 interface NavItem {
   href: string;
   label: string;
+  labelKey?: string;
   /** Icon line (SVG) dùng chung từ ui.tsx */
   icon?: IconName;
   /** Hoặc một ký tự Nhật làm icon (あ, 文, 学...) */
   glyph?: string;
   /** Nhãn rút gọn cho tab bar dưới màn hình */
   short: string;
+  shortKey?: string;
   /** Các đường dẫn phụ cũng tính là đang active cho mục này */
   matchPrefixes?: string[];
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { href: "/app", label: "Tổng quan", icon: "dashboard", short: "Tổng quan" },
-  { href: "/app/path", label: "Lộ trình", glyph: "道", short: "Lộ trình" },
-  { href: "/app/practice", label: "Bài học", icon: "book", short: "Bài học" },
-  { href: "/app/review", label: "Ôn tập", icon: "cards", short: "Ôn tập" },
-  { href: "/app/vocabulary", label: "Từ vựng", glyph: "あ", short: "Từ vựng" },
-  { href: "/app/grammar", label: "Ngữ pháp", glyph: "文", short: "Ngữ pháp" },
+  { href: "/app", label: "Tổng quan", labelKey: "navOverview", icon: "dashboard", short: "Tổng quan", shortKey: "navOverview" },
+  { href: "/app/path", label: "Lộ trình", labelKey: "navPath", glyph: "道", short: "Lộ trình", shortKey: "navPath" },
+  { href: "/app/practice", label: "Bài học", labelKey: "navLessons", icon: "book", short: "Bài học", shortKey: "navLessons" },
+  { href: "/app/review", label: "Ôn tập", labelKey: "navReview", icon: "cards", short: "Ôn tập", shortKey: "navReview" },
+  { href: "/app/vocabulary", label: "Từ vựng", labelKey: "navVocab", glyph: "あ", short: "Từ vựng", shortKey: "navVocab" },
+  { href: "/app/grammar", label: "Ngữ pháp", labelKey: "navGrammar", glyph: "文", short: "Ngữ pháp", shortKey: "navGrammar" },
 ];
 
-const MORE_GROUPS: { title: string; items: NavItem[] }[] = [
+const MORE_GROUPS: { title: string; titleKey?: string; items: NavItem[] }[] = [
   {
     title: "Luyện tập & Kiểm tra",
+    titleKey: "groupPractice",
     items: [
-      { href: "/app/test", label: "Kiểm tra năng lực (4 kỹ năng)", glyph: "★", short: "Kiểm tra" },
-      { href: "/app/learn", label: "Bảng chữ cái Kana & Tổng quan", glyph: "学", short: "Kana" },
-      { href: "/app/sensei", label: "Hội thoại AI Sensei", glyph: "話", short: "Sensei" },
+      { href: "/app/test", label: "Kiểm tra năng lực (4 kỹ năng)", labelKey: "navTest", glyph: "★", short: "Kiểm tra" },
+      { href: "/app/learn", label: "Bảng chữ cái Kana & Tổng quan", labelKey: "navKana", glyph: "学", short: "Kana" },
+      { href: "/app/sensei", label: "Hội thoại AI Sensei", labelKey: "navSensei", glyph: "話", short: "Sensei" },
     ],
   },
   {
     title: "Tiến độ & Cộng đồng",
+    titleKey: "groupProgress",
     items: [
-      { href: "/app/analytics", label: "Đánh giá tiến bộ (Chu trình 8 bước)", glyph: "進", short: "Tiến bộ" },
-      { href: "/app/stats", label: "Thống kê học tập", glyph: "計", short: "Thống kê" },
-      { href: "/app/leaderboard", label: "Bảng xếp hạng", glyph: "杯", short: "BXH" },
-      { href: "/app/achievements", label: "Huy hiệu & Thành tựu", glyph: "🏆", short: "Huy hiệu" },
+      { href: "/app/analytics", label: "Đánh giá tiến bộ (Chu trình 8 bước)", labelKey: "navAnalytics", glyph: "進", short: "Tiến bộ" },
+      { href: "/app/stats", label: "Thống kê học tập", labelKey: "navStats", glyph: "計", short: "Thống kê" },
+      { href: "/app/leaderboard", label: "Bảng xếp hạng", labelKey: "navLeaderboard", glyph: "杯", short: "BXH" },
+      { href: "/app/achievements", label: "Huy hiệu & Thành tựu", labelKey: "navAchievements", glyph: "🏆", short: "Huy hiệu" },
     ],
   },
   {
     title: "Trò chơi & Khám phá",
+    titleKey: "groupExplore",
     items: [
-      { href: "/app/journey", label: "Hành trình Nhật Bản", glyph: "⌁", short: "Hành trình" },
-      { href: "/app/survival", label: "Thực chiến tiếng Nhật (Survival)", glyph: "食", short: "Thực chiến" },
-      { href: "/app/yokai-dash", label: "Mini-game Yōkai Dash", glyph: "狐", short: "Yōkai Dash" },
+      { href: "/app/journey", label: "Hành trình Nhật Bản", labelKey: "navJourney", glyph: "⌁", short: "Hành trình" },
+      { href: "/app/survival", label: "Thực chiến tiếng Nhật (Survival)", labelKey: "navSurvival", glyph: "食", short: "Thực chiến" },
+      { href: "/app/yokai-dash", label: "Mini-game Yōkai Dash", labelKey: "navYokaiDash", glyph: "狐", short: "Yōkai Dash" },
     ],
   },
 ];
@@ -125,7 +130,7 @@ export function AppNav({
   unreadCount?: number;
 }) {
   const { progress } = useUserProgress();
-  const { nativeLanguage, setNativeLanguage } = useNativeLanguage();
+  const { nativeLanguage, setNativeLanguage, t } = useNativeLanguage();
   const effectiveName = progress?.displayName || userName;
   const effectiveAvatar = progress?.avatar || avatar || userImage;
   const effectiveLevel = progress?.level ?? userLevel;
@@ -203,6 +208,10 @@ export function AppNav({
   const linkActive =
     "bg-slate-50 font-bold text-slate-900 shadow-sm ring-1 ring-slate-200/80 [&_svg]:text-red-600 [&_.jp-text]:text-red-600 dark:bg-sumi-800 dark:text-white dark:ring-slate-700";
 
+  const getItemLabel = (item: NavItem) => (item.labelKey ? t(item.labelKey) : item.label);
+  const getItemShort = (item: NavItem) => (item.shortKey ? t(item.shortKey) : (item.labelKey ? t(item.labelKey) : item.short));
+  const getGroupTitle = (group: { title: string; titleKey?: string }) => (group.titleKey ? t(group.titleKey) : group.title);
+
   return (
     <>
       {/* Thanh trên: logo + hành động. Link chính chỉ hiện từ xl trở lên;
@@ -234,7 +243,7 @@ export function AppNav({
                 className={`${linkBase} ${active(item.href) ? linkActive : linkIdle}`}
               >
                 <NavGlyph item={item} />
-                <span>{item.label}</span>
+                <span>{getItemLabel(item)}</span>
               </Link>
             ))}
 
@@ -250,7 +259,7 @@ export function AppNav({
                 aria-haspopup="true"
               >
                 <Icon name="bookmark" className="h-[18px] w-[18px]" />
-                <span>Khám phá</span>
+                <span>{t("navExplore") || "Khám phá"}</span>
                 <Icon name="chevron" className={`h-3.5 w-3.5 transition ${moreOpen ? "rotate-180" : ""}`} />
               </button>
               {moreOpen && (
@@ -258,7 +267,7 @@ export function AppNav({
                   {MORE_GROUPS.map((group, gIdx) => (
                     <div key={group.title} className={gIdx > 0 ? "mt-2 border-t border-slate-100 pt-1 dark:border-slate-800" : ""}>
                       <p className="px-3 pb-1 pt-1.5 text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
-                        {group.title}
+                        {getGroupTitle(group)}
                       </p>
                       {group.items.map((item) => (
                         <Link
@@ -277,7 +286,7 @@ export function AppNav({
                           <span className="jp-text inline-flex h-7 w-7 items-center justify-center rounded-lg bg-slate-100 text-sm font-bold dark:bg-sumi-800">
                             {item.glyph}
                           </span>
-                          <b className="flex-1 font-semibold">{item.label}</b>
+                          <b className="flex-1 font-semibold">{getItemLabel(item)}</b>
                           <Icon name="arrow" className="h-3.5 w-3.5 text-slate-400" />
                         </Link>
                       ))}
@@ -554,7 +563,7 @@ export function AppNav({
                   >
                     <NavGlyph item={item} />
                   </span>
-                  <span className="min-w-0 max-w-full truncate leading-none">{item.short}</span>
+                  <span className="min-w-0 max-w-full truncate leading-none">{getItemShort(item)}</span>
                 </Link>
               </li>
             );
@@ -630,31 +639,37 @@ export function AppNav({
                   <span>⚙️</span>
                   <span>Cài đặt</span>
                 </Link>
-                <button
-                  type="button"
-                  onClick={() => {
-                    playClick();
-                    const nextLang = nativeLanguage === "vi" ? "en" : "vi";
-                    setNativeLanguage(nextLang);
-                    showToast({
-                      title: nextLang === "en" ? "Native Language: English 🇬🇧" : "Ngôn ngữ mẹ đẻ: Tiếng Việt 🇻🇳",
-                      description:
-                        nextLang === "en"
-                          ? "AI Sensei will explain in English."
-                          : "AI Sensei sẽ hướng dẫn bằng Tiếng Việt.",
-                      type: "info",
-                    });
-                  }}
-                  className="flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 dark:border-slate-700 dark:bg-sumi-900 dark:text-slate-200"
-                >
-                  <span>{nativeLanguage === "vi" ? "🇻🇳" : "🇬🇧"}</span>
-                  <span>{nativeLanguage === "vi" ? "Tiếng Việt" : "English"}</span>
-                </button>
+                <div className="col-span-2 mt-1">
+                  <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-1">
+                    {t("nativeLangTitle")}
+                  </label>
+                  <select
+                    value={nativeLanguage}
+                    onChange={(e) => {
+                      playClick();
+                      const chosen = e.target.value as any;
+                      setNativeLanguage(chosen);
+                      const l = SUPPORTED_LANGUAGES.find((x) => x.code === chosen);
+                      showToast({
+                        title: `${t("nativeLangTitle")}: ${l?.nativeName} ${l?.flag}`,
+                        description: `AI Sensei & UI: ${l?.nativeName}`,
+                        type: "info",
+                      });
+                    }}
+                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 dark:border-slate-700 dark:bg-sumi-900 dark:text-slate-200 outline-none"
+                  >
+                    {SUPPORTED_LANGUAGES.map((l) => (
+                      <option key={l.code} value={l.code}>
+                        {l.flag} {l.nativeName} ({l.name})
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
             </div>
 
             <p className="px-2 pb-1 pt-1 text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
-              Học tập &amp; Tra cứu
+              {getGroupTitle({ title: "Học tập & Tra cứu", titleKey: "navLessons" })}
             </p>
             {NAV_ITEMS.map((item) => (
               <Link
@@ -674,7 +689,7 @@ export function AppNav({
                 <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center">
                   <NavGlyph item={item} />
                 </span>
-                <span className="flex-1">{item.label}</span>
+                <span className="flex-1">{getItemLabel(item)}</span>
                 <Icon name="arrow" className="h-3.5 w-3.5 shrink-0 text-slate-400" />
               </Link>
             ))}
@@ -682,7 +697,7 @@ export function AppNav({
             {MORE_GROUPS.map((group) => (
               <div key={group.title}>
                 <p className="px-2 pb-1 pt-3 text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
-                  {group.title}
+                  {getGroupTitle(group)}
                 </p>
                 {group.items.map((item) => (
                   <Link
@@ -702,7 +717,7 @@ export function AppNav({
                     <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center">
                       <NavGlyph item={item} />
                     </span>
-                    <span className="flex-1">{item.label}</span>
+                    <span className="flex-1">{getItemLabel(item)}</span>
                     <Icon name="arrow" className="h-3.5 w-3.5 shrink-0 text-slate-400" />
                   </Link>
                 ))}

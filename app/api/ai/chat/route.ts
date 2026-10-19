@@ -10,7 +10,7 @@ import type { NativeLanguage } from "@/components/LanguageContext";
 import { SUPPORTED_LANGUAGES } from "@/components/LanguageContext";
 
 const VALID_KEY_PATTERN =
-  /^(gsk_[A-Za-z0-9_-]{16,128}|sk-or-[A-Za-z0-9_.-]{16,128}|sk-[A-Za-z0-9_.-]{16,128}|AIza[A-Za-z0-9_-]{20,80}|AQ\.[A-Za-z0-9_.-]{16,128})$/;
+  /^(gsk_[A-Za-z0-9_-]{16,128}|sk-or-[A-Za-z0-9_.-]{16,128}|sk-[A-Za-z0-9_.-]{16,128}|xai-[A-Za-z0-9_-]{16,128}|AIza[A-Za-z0-9_-]{20,80}|AQ\.[A-Za-z0-9_.-]{16,128})$/;
 
 export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions);
@@ -180,17 +180,19 @@ export async function POST(req: NextRequest) {
     process.env.ALLOW_CLIENT_AI_KEYS === "true" || process.env.NODE_ENV !== "production";
 
   const rawKeySources = [
+    process.env.GROK_API_KEY,
+    process.env.XAI_API_KEY,
+    process.env.GROQ_API_KEY,
     process.env.GEMINI_API_KEY,
     process.env.OPENROUTER_API_KEY,
-    process.env.GROQ_API_KEY,
     ...(allowClientKeys
-      ? [apiKey, req.headers.get("x-gemini-key"), req.headers.get("x-groq-key")]
+      ? [apiKey, req.headers.get("x-grok-key"), req.headers.get("x-gemini-key"), req.headers.get("x-groq-key")]
       : []),
   ]
     .filter(Boolean)
     .join("\n");
 
-  // Cap at max 3 validated keys to prevent upstream request fan-out
+  // Cap at max 4 validated keys to prevent upstream request fan-out
   const keyList = Array.from(
     new Set(
       rawKeySources
@@ -198,7 +200,7 @@ export async function POST(req: NextRequest) {
         .map((k) => k.trim())
         .filter((k) => VALID_KEY_PATTERN.test(k)),
     ),
-  ).slice(0, 3);
+  ).slice(0, 4);
 
   if (keyList.length > 0) {
     try {
@@ -287,7 +289,55 @@ VAI TRÒ VÀ NGUYÊN TẮC CỦA TRỢ LÝ HỌC TẬP (AI SENSEI):
       for (const currentKey of keyList) {
         if (aiSuccess) break;
 
-        if (currentKey.startsWith("gsk_")) {
+        if (currentKey.startsWith("xai-")) {
+          const grokMessages = [
+            { role: "system", content: systemPrompt },
+            ...history.map((m) => ({
+              role: m.role === "assistant" ? "assistant" : "user",
+              content: m.content,
+            })),
+          ];
+
+          const grokModels = ["grok-2-latest", "grok-beta"];
+
+          for (const grModel of grokModels) {
+            if (aiSuccess) break;
+            try {
+              const grRes = await fetch("https://api.x.ai/v1/chat/completions", {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  Authorization: `Bearer ${currentKey}`,
+                },
+                body: JSON.stringify({
+                  model: grModel,
+                  messages: grokMessages,
+                  temperature: 0.85,
+                  max_tokens: 1024,
+                }),
+                signal: AbortSignal.timeout(9000),
+              });
+
+              if (grRes.ok) {
+                const grData = await grRes.json();
+                const textResult = grData?.choices?.[0]?.message?.content;
+                if (textResult && textResult.trim().length > 0) {
+                  aiResponse = textResult.trim();
+                  aiSuccess = true;
+                  await prisma.aiConversation
+                    .update({
+                      where: { id: convId },
+                      data: { provider: "XAI_GROK", model: grModel },
+                    })
+                    .catch(() => {});
+                  break;
+                }
+              }
+            } catch {
+              // Fall through to next model
+            }
+          }
+        } else if (currentKey.startsWith("gsk_")) {
           const groqMessages = [
             { role: "system", content: systemPrompt },
             ...history.map((m) => ({
@@ -296,7 +346,7 @@ VAI TRÒ VÀ NGUYÊN TẮC CỦA TRỢ LÝ HỌC TẬP (AI SENSEI):
             })),
           ];
 
-          const groqModels = ["qwen/qwen3.8-27b", "llama-3.3-70b-versatile"];
+          const groqModels = ["openai/gpt-oss-120b", "qwen/qwen3.8-27b"];
 
           for (const gModel of groqModels) {
             if (aiSuccess) break;
