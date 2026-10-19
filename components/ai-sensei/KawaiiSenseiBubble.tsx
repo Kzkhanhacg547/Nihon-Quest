@@ -8,6 +8,7 @@ import { useUserProgress } from "@/components/UserProgressContext";
 import { useNativeLanguage, SUPPORTED_LANGUAGES, type NativeLanguage } from "@/components/LanguageContext";
 import { useSoundAndTheme } from "@/components/SoundAndThemeContext";
 import { BASE64_IMAGES } from "@/lib/assets/base64Images";
+import { FormattedSenseiMessage } from "./markdownHelper";
 
 interface ChatMessage {
   id: string;
@@ -221,6 +222,19 @@ export function KawaiiSenseiBubble() {
           scenarioId: "assistant_guide",
           nativeLanguage,
           history: messages.slice(-10).map((m) => ({ role: m.role, content: m.content })),
+          userProgress: progress
+            ? {
+                userLevel: progress.learningLevel,
+                level: progress.level,
+                totalXP: progress.totalXP,
+                currentStreak: progress.currentStreak,
+                completedLessonsCount: progress.stats?.completedLessonsCount,
+                totalLessonsInLevel: progress.stats?.totalLessonsInLevel,
+                dueReviewCount: progress.stats?.dueReviewCount,
+                accuracyPercent: progress.stats?.reviewAccuracy ?? 100,
+                stats: progress.stats,
+              }
+            : undefined,
         }),
       });
 
@@ -548,11 +562,11 @@ export function KawaiiSenseiBubble() {
                   <div
                     className={`max-w-[85%] rounded-2xl px-3.5 py-2.5 shadow-sm text-[13px] leading-relaxed ${
                       isUser
-                        ? "bg-red-600 text-white rounded-tr-none font-medium"
-                        : "bg-slate-100 dark:bg-sumi-800 text-slate-800 dark:text-slate-100 rounded-tl-none border border-slate-200/60 dark:border-slate-700/60 whitespace-pre-wrap"
+                        ? "bg-red-600 text-white rounded-tr-none font-medium whitespace-pre-wrap"
+                        : "bg-slate-100 dark:bg-sumi-800 text-slate-800 dark:text-slate-100 rounded-tl-none border border-slate-200/60 dark:border-slate-700/60"
                     }`}
                   >
-                    <div>{m.content}</div>
+                    {isUser ? <div>{m.content}</div> : <FormattedSenseiMessage content={m.content} />}
 
                     {!isUser && (
                       <div className="mt-1.5 pt-1 border-t border-slate-200/60 dark:border-slate-700/60 flex items-center justify-between text-[11px] text-slate-400">

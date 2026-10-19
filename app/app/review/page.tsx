@@ -32,7 +32,7 @@ const PROMOS: { href: string; glyph: string; title: string; desc: string; tone: 
   { href: "/app/vocabulary", glyph: "語", title: "Từ vựng", desc: "Mở rộng vốn từ", tone: "red" },
   { href: "/app/grammar", glyph: "文", title: "Ngữ pháp", desc: "Hiểu sâu - Dùng chuẩn", tone: "blue" },
   { href: "/app/survival", glyph: "話", title: "Hội thoại", desc: "Tự tin giao tiếp", tone: "violet" },
-  { href: "/app/explore", glyph: "和", title: "Khám phá", desc: "Văn hóa Nhật Bản", tone: "teal" },
+  { href: "/app/journey", glyph: "和", title: "Khám phá", desc: "Văn hóa Nhật Bản", tone: "teal" },
 ];
 
 // Quét thư mục ảnh nền flashcard. Thêm / bớt ảnh trong public/images/SRS_card/back/ là tự cập nhật.

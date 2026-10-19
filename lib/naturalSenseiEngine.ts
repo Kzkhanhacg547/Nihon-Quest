@@ -16,6 +16,12 @@ export interface DialogueContext {
     totalLessonsInLevel?: number;
     dueReviewCount?: number;
     accuracyPercent?: number;
+    stats?: {
+      completedLessonsCount?: number;
+      totalLessonsInLevel?: number;
+      dueReviewCount?: number;
+      reviewAccuracy?: number | null;
+    };
   } | null;
   mistakes?: UserMistakeSummary | null;
   nativeLanguage?: NativeLanguage;
@@ -98,9 +104,9 @@ export function generateNaturalJapaneseResponse({
     const pLevel = userProgress?.level || 1;
     const xp = userProgress?.totalXP ?? 0;
     const streak = userProgress?.currentStreak ?? 0;
-    const due = userProgress?.dueReviewCount ?? 0;
-    const completed = userProgress?.completedLessonsCount ?? 0;
-    const totalLessons = userProgress?.totalLessonsInLevel ?? 50;
+    const due = userProgress?.dueReviewCount ?? userProgress?.stats?.dueReviewCount ?? 0;
+    const completed = userProgress?.completedLessonsCount ?? userProgress?.stats?.completedLessonsCount ?? 0;
+    const totalLessons = userProgress?.totalLessonsInLevel ?? userProgress?.stats?.totalLessonsInLevel ?? 50;
 
     if (isEn) {
       return `Konnichiwa! Sensei has reviewed your Nihon Quest learning profile: 🌸✨

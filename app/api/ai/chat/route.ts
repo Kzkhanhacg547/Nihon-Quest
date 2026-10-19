@@ -9,7 +9,8 @@ import { rateLimitAsync, rateLimited } from "@/lib/rateLimit";
 import type { NativeLanguage } from "@/components/LanguageContext";
 import { SUPPORTED_LANGUAGES } from "@/components/LanguageContext";
 
-const VALID_KEY_PATTERN = /^(gsk_[A-Za-z0-9_-]{16,128}|sk-or-[A-Za-z0-9_-]{16,128}|AIza[A-Za-z0-9_-]{20,80})$/;
+const VALID_KEY_PATTERN =
+  /^(gsk_[A-Za-z0-9_-]{16,128}|sk-or-[A-Za-z0-9_.-]{16,128}|sk-[A-Za-z0-9_.-]{16,128}|AIza[A-Za-z0-9_-]{20,80}|AQ\.[A-Za-z0-9_.-]{16,128})$/;
 
 export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions);
@@ -44,13 +45,37 @@ export async function POST(req: NextRequest) {
     const uid = (session?.user as { id?: string } | undefined)?.id;
 
     const body = await req.json().catch(() => ({}));
-    const { message, conversationId, apiKey, scenarioId, history: clientHistory, nativeLanguage: clientLang } = body as {
+    const {
+      message,
+      conversationId,
+      apiKey,
+      scenarioId,
+      history: clientHistory,
+      nativeLanguage: clientLang,
+      userProgress: clientProgress,
+    } = body as {
       message?: string;
       conversationId?: string;
       apiKey?: string;
       scenarioId?: string;
       history?: { role: "user" | "assistant"; content: string }[];
       nativeLanguage?: NativeLanguage;
+      userProgress?: {
+        userLevel?: string;
+        level?: number;
+        totalXP?: number;
+        currentStreak?: number;
+        completedLessonsCount?: number;
+        totalLessonsInLevel?: number;
+        dueReviewCount?: number;
+        accuracyPercent?: number;
+        stats?: {
+          completedLessonsCount?: number;
+          totalLessonsInLevel?: number;
+          dueReviewCount?: number;
+          reviewAccuracy?: number | null;
+        };
+      };
     };
 
     const isSupportedLang = clientLang && SUPPORTED_LANGUAGES.some((l) => l.code === clientLang);
@@ -64,11 +89,47 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Message quá dài (tối đa 4000 ký tự)." }, { status: 400 });
     }
 
+    const [dbProgress, userMistakes] = await Promise.all([
+      uid ? getUserProgress(uid).catch(() => null) : Promise.resolve(null),
+      uid ? getUserLearningMistakes(uid).catch(() => null) : Promise.resolve(null),
+    ]);
+
+    const effectiveProgress = dbProgress
+      ? {
+          userLevel: dbProgress.learningLevel,
+          level: dbProgress.level,
+          totalXP: dbProgress.totalXP,
+          currentStreak: dbProgress.currentStreak,
+          completedLessonsCount: dbProgress.stats?.completedLessonsCount,
+          totalLessonsInLevel: dbProgress.stats?.totalLessonsInLevel,
+          dueReviewCount: dbProgress.stats?.dueReviewCount,
+          accuracyPercent: dbProgress.stats?.reviewAccuracy ?? 100,
+          stats: dbProgress.stats,
+        }
+      : clientProgress && typeof clientProgress === "object"
+        ? {
+            userLevel: clientProgress.userLevel || "N5",
+            level: clientProgress.level || 1,
+            totalXP: clientProgress.totalXP ?? 0,
+            currentStreak: clientProgress.currentStreak ?? 0,
+            completedLessonsCount:
+              clientProgress.completedLessonsCount ?? clientProgress.stats?.completedLessonsCount ?? 0,
+            totalLessonsInLevel:
+              clientProgress.totalLessonsInLevel ?? clientProgress.stats?.totalLessonsInLevel ?? 50,
+            dueReviewCount:
+              clientProgress.dueReviewCount ?? clientProgress.stats?.dueReviewCount ?? 0,
+            accuracyPercent:
+              clientProgress.accuracyPercent ?? clientProgress.stats?.reviewAccuracy ?? 100,
+            stats: clientProgress.stats,
+          }
+        : null;
+
     // Guest / unauthenticated fallback
     if (!uid) {
       const guestResponse = generateNaturalJapaneseResponse({
         scenarioId: scenarioId || "free_kaiwa",
         userMessage: message,
+        userProgress: effectiveProgress,
         nativeLanguage,
       });
       return NextResponse.json({
@@ -85,11 +146,6 @@ export async function POST(req: NextRequest) {
 
     const limit = await rateLimitAsync(`ai-chat:${uid}`, 30, 60_000).catch(() => ({ ok: true as const, remaining: 30 }));
     if (!limit.ok) return rateLimited(limit.retryAfterSeconds);
-
-    const [userProgress, userMistakes] = await Promise.all([
-      getUserProgress(uid).catch(() => null),
-      getUserLearningMistakes(uid).catch(() => null),
-    ]);
 
     let convId: string = conversationId || "conv-" + Date.now();
     try {
@@ -124,9 +180,9 @@ export async function POST(req: NextRequest) {
     process.env.ALLOW_CLIENT_AI_KEYS === "true" || process.env.NODE_ENV !== "production";
 
   const rawKeySources = [
-    process.env.GROQ_API_KEY,
     process.env.GEMINI_API_KEY,
     process.env.OPENROUTER_API_KEY,
+    process.env.GROQ_API_KEY,
     ...(allowClientKeys
       ? [apiKey, req.headers.get("x-gemini-key"), req.headers.get("x-groq-key")]
       : []),
@@ -134,7 +190,7 @@ export async function POST(req: NextRequest) {
     .filter(Boolean)
     .join("\n");
 
-  // Cap at max 2 validated keys to prevent upstream request fan-out
+  // Cap at max 3 validated keys to prevent upstream request fan-out
   const keyList = Array.from(
     new Set(
       rawKeySources
@@ -142,7 +198,7 @@ export async function POST(req: NextRequest) {
         .map((k) => k.trim())
         .filter((k) => VALID_KEY_PATTERN.test(k)),
     ),
-  ).slice(0, 2);
+  ).slice(0, 3);
 
   if (keyList.length > 0) {
     try {
@@ -174,14 +230,35 @@ export async function POST(req: NextRequest) {
         ? formatMistakesForAiPrompt(userMistakes, nativeLangName)
         : "";
 
-      const progressSnippet = userProgress
+      const progressLevel = effectiveProgress?.userLevel || "N5";
+      const progressTier = effectiveProgress?.level || 1;
+      const progressXP = effectiveProgress?.totalXP ?? 0;
+      const progressStreak = effectiveProgress?.currentStreak ?? 0;
+      const progressDone =
+        effectiveProgress?.stats?.completedLessonsCount ??
+        effectiveProgress?.completedLessonsCount ??
+        0;
+      const progressTotal =
+        effectiveProgress?.stats?.totalLessonsInLevel ??
+        effectiveProgress?.totalLessonsInLevel ??
+        50;
+      const progressDue =
+        effectiveProgress?.stats?.dueReviewCount ??
+        effectiveProgress?.dueReviewCount ??
+        0;
+      const progressAccuracy =
+        effectiveProgress?.stats?.reviewAccuracy ??
+        effectiveProgress?.accuracyPercent ??
+        100;
+
+      const progressSnippet = effectiveProgress
         ? `\nTHÔNG TIN TIẾN TRÌNH HỌC TẬP THỰC TẾ CỦA HỌC VIÊN:
-- Trình độ JLPT hiện tại: ${userProgress.learningLevel} (Cấp độ Level ${userProgress.level})
-- Tổng tích lũy XP: ${userProgress.totalXP} XP
-- Chuỗi Streak học tập: ${userProgress.currentStreak} ngày liên tiếp
-- Bài học đã hoàn thành: ${userProgress.stats.completedLessonsCount}/${userProgress.stats.totalLessonsInLevel} bài học
-- Thẻ từ vựng SRS cần ôn tập hôm nay: ${userProgress.stats.dueReviewCount} thẻ
-- Tỷ lệ làm bài chính xác: ${userProgress.stats.reviewAccuracy ?? 100}%
+- Trình độ JLPT hiện tại: ${progressLevel} (Cấp độ Level ${progressTier})
+- Tổng tích lũy XP: ${progressXP} XP
+- Chuỗi Streak học tập: ${progressStreak} ngày liên tiếp
+- Bài học đã hoàn thành: ${progressDone}/${progressTotal} bài học
+- Thẻ từ vựng SRS cần ôn tập hôm nay: ${progressDue} thẻ
+- Tỷ lệ làm bài chính xác: ${progressAccuracy}%
 - Ngôn ngữ mẹ đẻ (Native Language) của học viên: ${nativeLangName} (${nativeLanguage}).`
         : `\nNgôn ngữ mẹ đẻ của học viên: ${nativeLangName} (${nativeLanguage}).`;
 
@@ -197,7 +274,7 @@ export async function POST(req: NextRequest) {
       const systemPrompt = `${baseInstruction}${progressSnippet}${mistakesSnippet}
 VAI TRÒ VÀ NGUYÊN TẮC CỦA TRỢ LÝ HỌC TẬP (AI SENSEI):
 1. Bạn là TRỢ LÝ ĐỒNG HÀNH THÔNG MINH, KHÔNG PHẢI chatbot vô hồn:
-   - Hãy quan tâm đến tiến trình học tập của học viên: khen ngợi khi có streak tốt, nhắc nhở nhẹ nhàng nếu có thẻ SRS đang đến hạn ôn tập (${userProgress?.stats.dueReviewCount ?? 0} thẻ).
+   - Hãy quan tâm đến tiến trình học tập của học viên: khen ngợi khi có streak tốt, nhắc nhở nhẹ nhàng nếu có thẻ SRS đang đến hạn ôn tập (${progressDue} thẻ).
    - Khi học viên hỏi "hôm nay học gì", "gợi ý học", "tiến độ thế nào", hãy đưa ra lời khuyên cụ thể, thực tế theo đúng dữ liệu học tập bên trên.
    - Khi học viên hỏi về "lỗi sai", "tại sao sai", "khắc phục", hoặc cần ôn luyện, hãy trực tiếp dựa vào THÔNG TIN CHI TIẾT VỀ LỖI SAI VÀ ĐIỂM YẾU ở trên để chỉ dẫn cặn kẽ, giải thích cội nguồn nhầm lẫn và cho bài tập thực hành sửa sai ngay!
    - Giải thích từ vựng, ngữ pháp, trợ từ cặn kẽ và dịch nghĩa rõ ràng bằng ngôn ngữ mẹ đẻ của học viên (${nativeLangName}).
@@ -219,7 +296,7 @@ VAI TRÒ VÀ NGUYÊN TẮC CỦA TRỢ LÝ HỌC TẬP (AI SENSEI):
             })),
           ];
 
-          const groqModels = ["llama-3.3-70b-versatile", "llama-3.1-8b-instant"];
+          const groqModels = ["qwen/qwen3.8-27b", "llama-3.3-70b-versatile"];
 
           for (const gModel of groqModels) {
             if (aiSuccess) break;
@@ -234,7 +311,7 @@ VAI TRÒ VÀ NGUYÊN TẮC CỦA TRỢ LÝ HỌC TẬP (AI SENSEI):
                   model: gModel,
                   messages: groqMessages,
                   temperature: 0.85,
-                  max_tokens: 1024,
+                  max_tokens: 512,
                 }),
                 signal: AbortSignal.timeout(9000),
               });
@@ -334,7 +411,7 @@ VAI TRÒ VÀ NGUYÊN TẮC CỦA TRỢ LÝ HỌC TẬP (AI SENSEI):
           const clientModel = isValidGeminiModel ? requestedModel : undefined;
 
           const modelsToTry = Array.from(
-            new Set([clientModel, "gemini-2.0-flash", "gemini-1.5-flash"].filter(Boolean) as string[]),
+            new Set([clientModel, "gemini-2.5-flash", "gemini-flash-latest"].filter(Boolean) as string[]),
           ).slice(0, 2);
 
           for (const modelName of modelsToTry) {
@@ -376,7 +453,7 @@ VAI TRÒ VÀ NGUYÊN TẮC CỦA TRỢ LÝ HỌC TẬP (AI SENSEI):
         aiResponse = generateNaturalJapaneseResponse({
           scenarioId,
           userMessage: message,
-          userProgress,
+          userProgress: effectiveProgress,
           mistakes: userMistakes,
           nativeLanguage,
         });
@@ -386,7 +463,7 @@ VAI TRÒ VÀ NGUYÊN TẮC CỦA TRỢ LÝ HỌC TẬP (AI SENSEI):
       aiResponse = generateNaturalJapaneseResponse({
         scenarioId,
         userMessage: message,
-        userProgress,
+        userProgress: effectiveProgress,
         mistakes: userMistakes,
         nativeLanguage,
       });
@@ -395,7 +472,7 @@ VAI TRÒ VÀ NGUYÊN TẮC CỦA TRỢ LÝ HỌC TẬP (AI SENSEI):
     aiResponse = generateNaturalJapaneseResponse({
       scenarioId,
       userMessage: message,
-      userProgress,
+      userProgress: effectiveProgress,
       mistakes: userMistakes,
       nativeLanguage,
     });

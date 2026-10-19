@@ -15,6 +15,8 @@ import { kanaToRomaji } from "@/lib/romajiConverter";
 import { SENSEI_CHARACTERS, DEFAULT_SENSEI_ID, type SenseiCharacterId } from "@/lib/senseiCharacters";
 import { useSenseiVoice, type VoiceSource } from "@/lib/useSenseiVoice";
 import { voiceGenderLabel } from "@/lib/voiceGender";
+import { useUserProgress } from "@/components/UserProgressContext";
+import { FormattedSenseiMessage } from "@/components/ai-sensei/markdownHelper";
 
 interface Message {
   id: string;
@@ -140,6 +142,7 @@ interface SenseiKaiwaClientProps {
 
 export function SenseiKaiwaClient({ recentLessons = [] }: SenseiKaiwaClientProps) {
   const { playClick, playCorrect, speechVoiceURI } = useSoundAndTheme();
+  const { progress } = useUserProgress();
 
   // Main Tab State (Kaiwa vs Dungeon)
   const [activeSenseiTab, setActiveSenseiTab] = useState<"KAIWA" | "DUNGEON">("KAIWA");
@@ -459,7 +462,20 @@ export function SenseiKaiwaClient({ recentLessons = [] }: SenseiKaiwaClientProps
           history: historyPayload,
           scenarioId: selectedScenario.id,
           apiKey: activeKey,
-          model: selectedModel || "gemini-3.6-flash",
+          model: selectedModel || "gemini-2.5-flash",
+          userProgress: progress
+            ? {
+                userLevel: progress.learningLevel,
+                level: progress.level,
+                totalXP: progress.totalXP,
+                currentStreak: progress.currentStreak,
+                completedLessonsCount: progress.stats?.completedLessonsCount,
+                totalLessonsInLevel: progress.stats?.totalLessonsInLevel,
+                dueReviewCount: progress.stats?.dueReviewCount,
+                accuracyPercent: progress.stats?.reviewAccuracy ?? 100,
+                stats: progress.stats,
+              }
+            : undefined,
           nativeLanguage:
             (typeof window !== "undefined" ? localStorage.getItem("nq_native_language") : "vi") || "vi",
         }),
@@ -1034,9 +1050,9 @@ export function SenseiKaiwaClient({ recentLessons = [] }: SenseiKaiwaClientProps
                       <div key={msg.id} className="flex items-start gap-2 sm:gap-3">
                         <SenseiPortrait character={character} className="mt-0.5 h-8 w-8 sm:h-10 sm:w-10" />
                         <div className="max-w-[88%] sm:max-w-[78%] rounded-2xl rounded-tl-sm border border-slate-100 bg-white px-3.5 py-2.5 shadow-sm dark:border-slate-700 dark:bg-sumi-800 sm:px-4 sm:py-3">
-                          <p lang="ja" className="whitespace-pre-wrap font-jp text-[14px] sm:text-[15px] font-medium leading-relaxed text-slate-900 dark:text-slate-100">
-                            {msg.content}
-                          </p>
+                          <div lang="ja" className="font-jp text-[14px] sm:text-[15px] font-medium leading-relaxed text-slate-900 dark:text-slate-100">
+                            <FormattedSenseiMessage content={msg.content} />
+                          </div>
                           {(romaji || (showFurigana && msg.furigana)) && (
                             <p className="mt-1 text-xs leading-relaxed text-sky-700 dark:text-sky-300">
                               {romaji}
