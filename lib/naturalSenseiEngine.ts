@@ -1,7 +1,7 @@
 // Natural Japanese Conversational Dialogue Engine (Context-Aware Kaiwa Simulator & Learning Assistant)
 // Speaks authentic, warm Japanese with personalized learning recommendations, mistakes remediation, and multi-language translations.
 
-import type { NativeLanguage } from "@/components/LanguageContext";
+import type { NativeLanguage } from "@/lib/languages";
 import type { UserMistakeSummary } from "@/lib/learningMistakes";
 
 export interface DialogueContext {

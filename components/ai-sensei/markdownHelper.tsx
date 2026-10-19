@@ -81,6 +81,37 @@ export function FormattedSenseiMessage({
           return <div key={`empty-${lineIdx}`} className="h-1" />;
         }
 
+        if (/^(\s*[-*_]{3,}\s*)$/.test(line)) {
+          return <hr key={`hr-${lineIdx}`} className="border-t border-slate-200 dark:border-slate-700 my-2" />;
+        }
+
+        const headerMatch = line.match(/^(\s*)(#{1,3})\s+(.*)$/);
+        if (headerMatch) {
+          const level = headerMatch[2].length;
+          return (
+            <div
+              key={`h-${lineIdx}`}
+              className={`font-bold text-slate-900 dark:text-white mt-2 mb-1 ${
+                level === 1 ? "text-base" : level === 2 ? "text-[14px]" : "text-[13px]"
+              }`}
+            >
+              {parseInlineMarkdown(headerMatch[3], `h-${lineIdx}`)}
+            </div>
+          );
+        }
+
+        const quoteMatch = line.match(/^(\s*)>\s*(.*)$/);
+        if (quoteMatch) {
+          return (
+            <div
+              key={`q-${lineIdx}`}
+              className="border-l-2 border-rose-400 pl-2.5 py-0.5 text-slate-600 dark:text-slate-300 italic my-1 bg-rose-50/40 dark:bg-rose-950/20 rounded-r"
+            >
+              {parseInlineMarkdown(quoteMatch[2], `q-${lineIdx}`)}
+            </div>
+          );
+        }
+
         const bulletMatch = line.match(/^(\s*)(?:[-•*])\s+(.*)$/);
         if (bulletMatch) {
           const indent = bulletMatch[1].length > 0 ? "ml-4" : "ml-0.5";

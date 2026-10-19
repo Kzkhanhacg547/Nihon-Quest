@@ -6,8 +6,8 @@ import { generateNaturalJapaneseResponse, getLanguageName } from "@/lib/naturalS
 import { getUserProgress } from "@/lib/progress-service";
 import { getUserLearningMistakes, formatMistakesForAiPrompt } from "@/lib/learningMistakes";
 import { rateLimitAsync, rateLimited } from "@/lib/rateLimit";
-import type { NativeLanguage } from "@/components/LanguageContext";
-import { SUPPORTED_LANGUAGES } from "@/components/LanguageContext";
+import type { NativeLanguage } from "@/lib/languages";
+import { SUPPORTED_LANGUAGES } from "@/lib/languages";
 
 const VALID_KEY_PATTERN =
   /^(gsk_[A-Za-z0-9_-]{16,128}|sk-or-[A-Za-z0-9_.-]{16,128}|sk-[A-Za-z0-9_.-]{16,128}|xai-[A-Za-z0-9_-]{16,128}|AIza[A-Za-z0-9_-]{20,80}|AQ\.[A-Za-z0-9_.-]{16,128})$/;
@@ -40,9 +40,16 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  let fallbackMessage = "Xin chào";
+  let fallbackScenario = "general_kaiwa";
+  let fallbackLang: NativeLanguage = "vi";
+  let fallbackProgress: Parameters<typeof generateNaturalJapaneseResponse>[0]["userProgress"] = null;
+  let fallbackMistakes: Parameters<typeof generateNaturalJapaneseResponse>[0]["mistakes"] = null;
+
   try {
     const session = await getServerSession(authOptions).catch(() => null);
-    const uid = (session?.user as { id?: string } | undefined)?.id;
+    const uid = (session?.user as { id?: string; name?: string } | undefined)?.id;
+    const userName = (session?.user as { name?: string } | undefined)?.name?.trim() || "";
 
     const body = await req.json().catch(() => ({}));
     const {
@@ -80,6 +87,10 @@ export async function POST(req: NextRequest) {
 
     const isSupportedLang = clientLang && SUPPORTED_LANGUAGES.some((l) => l.code === clientLang);
     const nativeLanguage: NativeLanguage = isSupportedLang ? (clientLang as NativeLanguage) : "vi";
+
+    if (message) fallbackMessage = message;
+    if (scenarioId) fallbackScenario = scenarioId;
+    fallbackLang = nativeLanguage;
 
     if (!message || typeof message !== "string" || message.trim().length === 0) {
       return NextResponse.json({ error: "Message is required" }, { status: 400 });
@@ -124,6 +135,9 @@ export async function POST(req: NextRequest) {
           }
         : null;
 
+    fallbackProgress = effectiveProgress;
+    fallbackMistakes = userMistakes;
+
     let convId: string = conversationId || (uid ? "conv-" : "guest-") + Date.now();
     if (uid) {
       const limit = await rateLimitAsync(`ai-chat:${uid}`, 30, 60_000).catch(() => ({ ok: true as const, remaining: 30 }));
@@ -159,46 +173,48 @@ export async function POST(req: NextRequest) {
     }
 
     let aiResponse = "";
+    let activeProvider = "NATURAL_KAIWA_ENGINE";
+    let activeModel = "aoi-sensei-n3";
 
-  // Only accept client-supplied API keys when explicitly enabled or in dev/test,
-  // and never mix unvalidated strings into server key pools.
-  const allowClientKeys =
-    process.env.ALLOW_CLIENT_AI_KEYS === "true" || process.env.NODE_ENV !== "production";
+    // Only accept client-supplied API keys when explicitly enabled or in dev/test,
+    // and never mix unvalidated strings into server key pools.
+    const allowClientKeys =
+      process.env.ALLOW_CLIENT_AI_KEYS === "true" || process.env.NODE_ENV !== "production";
 
-  const rawKeySources = [
-    process.env.GEMINI_API_KEY,
-    process.env.GROQ_API_KEY,
-    process.env.OPENROUTER_API_KEY,
-    process.env.GROK_API_KEY,
-    process.env.XAI_API_KEY,
-    ...(allowClientKeys
-      ? [req.headers.get("x-gemini-key"), req.headers.get("x-groq-key"), apiKey, req.headers.get("x-grok-key")]
-      : []),
-  ]
-    .filter(Boolean)
-    .join("\n");
+    const rawKeySources = [
+      process.env.GEMINI_API_KEY,
+      process.env.GROQ_API_KEY,
+      process.env.OPENROUTER_API_KEY,
+      process.env.GROK_API_KEY,
+      process.env.XAI_API_KEY,
+      ...(allowClientKeys
+        ? [req.headers.get("x-gemini-key"), req.headers.get("x-groq-key"), apiKey, req.headers.get("x-grok-key")]
+        : []),
+    ]
+      .filter(Boolean)
+      .join("\n");
 
-  const getKeyPriority = (k: string): number => {
-    if (k.startsWith("AIza") || k.startsWith("AQ.")) return 1; // 1. Gemini
-    if (k.startsWith("gsk_")) return 2;                       // 2. Groq
-    if (k.startsWith("sk-or-")) return 3;                     // 3. OpenRouter
-    if (k.startsWith("xai-")) return 4;                       // 4. xAI Grok
-    return 5;
-  };
+    const getKeyPriority = (k: string): number => {
+      if (k.startsWith("AIza") || k.startsWith("AQ.")) return 1; // 1. Gemini
+      if (k.startsWith("gsk_")) return 2;                       // 2. Groq
+      if (k.startsWith("sk-or-")) return 3;                     // 3. OpenRouter
+      if (k.startsWith("xai-")) return 4;                       // 4. xAI Grok
+      return 5;
+    };
 
-  // Sort strictly by priority: Gemini (1) -> Groq (2) -> OpenRouter (3) -> Grok (4)
-  const keyList = Array.from(
-    new Set(
-      rawKeySources
-        .split(/[\s,;\n]+/)
-        .map((k) => k.trim().replace(/^["']|["']$/g, ""))
-        .filter((k) => VALID_KEY_PATTERN.test(k)),
-    ),
-  )
-    .sort((a, b) => getKeyPriority(a) - getKeyPriority(b))
-    .slice(0, 6);
+    // Sort strictly by priority: Gemini (1) -> Groq (2) -> OpenRouter (3) -> Grok (4)
+    const keyList = Array.from(
+      new Set(
+        rawKeySources
+          .split(/[\s,;\n]+/)
+          .map((k) => k.trim().replace(/^["']|["']$/g, ""))
+          .filter((k) => VALID_KEY_PATTERN.test(k)),
+      ),
+    )
+      .sort((a, b) => getKeyPriority(a) - getKeyPriority(b))
+      .slice(0, 6);
 
-  if (keyList.length > 0) {
+    if (keyList.length > 0) {
     try {
       const dbHistory = uid && !convId.startsWith("guest-")
         ? await prisma.aiMessage
@@ -251,16 +267,17 @@ export async function POST(req: NextRequest) {
         effectiveProgress?.accuracyPercent ??
         100;
 
+      const studentNameText = userName ? `- Tên học viên: ${userName}\n` : "";
       const progressSnippet = effectiveProgress
-        ? `\nTHÔNG TIN TIẾN TRÌNH HỌC TẬP THỰC TẾ CỦA HỌC VIÊN:
-- Trình độ JLPT hiện tại: ${progressLevel} (Cấp độ Level ${progressTier})
+        ? `\nTHÔNG TIN HỒ SƠ & TIẾN TRÌNH HỌC TẬP THỰC TẾ CỦA HỌC VIÊN:
+${studentNameText}- Trình độ JLPT hiện tại: ${progressLevel} (Cấp độ Level ${progressTier})
 - Tổng tích lũy XP: ${progressXP} XP
 - Chuỗi Streak học tập: ${progressStreak} ngày liên tiếp
 - Bài học đã hoàn thành: ${progressDone}/${progressTotal} bài học
 - Thẻ từ vựng SRS cần ôn tập hôm nay: ${progressDue} thẻ
 - Tỷ lệ làm bài chính xác: ${progressAccuracy}%
 - Ngôn ngữ mẹ đẻ (Native Language) của học viên: ${nativeLangName} (${nativeLanguage}).`
-        : `\nNgôn ngữ mẹ đẻ của học viên: ${nativeLangName} (${nativeLanguage}).`;
+        : `\n${studentNameText}Ngôn ngữ mẹ đẻ của học viên: ${nativeLangName} (${nativeLanguage}).`;
 
       const baseInstruction =
         scenarioId === "business_horenso"
@@ -273,14 +290,16 @@ export async function POST(req: NextRequest) {
 
       const systemPrompt = `${baseInstruction}${progressSnippet}${mistakesSnippet}
 VAI TRÒ VÀ NGUYÊN TẮC CỦA TRỢ LÝ HỌC TẬP (AI SENSEI):
-1. Bạn là TRỢ LÝ ĐỒNG HÀNH THÔNG MINH, KHÔNG PHẢI chatbot vô hồn:
-   - Hãy quan tâm đến tiến trình học tập của học viên: khen ngợi khi có streak tốt, nhắc nhở nhẹ nhàng nếu có thẻ SRS đang đến hạn ôn tập (${progressDue} thẻ).
-   - Khi học viên hỏi "hôm nay học gì", "gợi ý học", "tiến độ thế nào", hãy đưa ra lời khuyên cụ thể, thực tế theo đúng dữ liệu học tập bên trên.
-   - Khi học viên hỏi về "lỗi sai", "tại sao sai", "khắc phục", hoặc cần ôn luyện, hãy trực tiếp dựa vào THÔNG TIN CHI TIẾT VỀ LỖI SAI VÀ ĐIỂM YẾU ở trên để chỉ dẫn cặn kẽ, giải thích cội nguồn nhầm lẫn và cho bài tập thực hành sửa sai ngay!
-   - Giải thích từ vựng, ngữ pháp, trợ từ cặn kẽ và dịch nghĩa rõ ràng bằng ngôn ngữ mẹ đẻ của học viên (${nativeLangName}).
-2. Phong cách:
+1. TRẢ LỜI ĐÚNG TRỌNG TÂM CÂU HỎI CỦA HỌC VIÊN:
+   - Luôn ưu tiên trả lời chi tiết, chính xác và giải đáp thấu đáo câu hỏi hoặc tin nhắn của học viên trước hết!
+   - Không lặp lại cùng một câu chào mừng nếu đang trong cuộc hội thoại tiếp diễn.
+2. LIÊN KẾT VỚI DỮ LIỆU HỌC TẬP THỰC TẾ CỦA HỌC VIÊN:
+   - ${userName ? `Gọi học viên bằng tên thân thiện "${userName}-san"` : "Xưng hô thân thiện với học viên"}.
+   - Khi học viên hỏi "hôm nay học gì", "gợi ý học", "tiến độ thế nào", hãy dựa chính xác vào tiến trình bên trên (JLPT ${progressLevel}, ${progressStreak} ngày streak, ${progressDue} thẻ SRS cần ôn, đã học ${progressDone}/${progressTotal} bài) để đưa ra lời khuyên thiết thực.
+   - Khi học viên hỏi về "lỗi sai", "tại sao sai", "khắc phục", hoặc cần ôn luyện: lập tức dùng thông tin chi tiết về lỗi sai/từ vựng yếu ở trên để phân tích và cho bài tập ngắn củng cố ngay.
+3. PHONG CÁCH SƯ PHẠM VÀ NGÔN NGỮ:
    - Thân thiện, đáng yêu, ấm áp (Kawaii Sensei), dùng emoji phù hợp 🌸✨🎌.
-   - Luôn kèm câu thoại tiếng Nhật tự nhiên (có Kanji + Hiragana) và bản dịch ${nativeLangName} bên dưới.`;
+   - Luôn kèm câu thoại tiếng Nhật tự nhiên (có Kanji + Hiragana) và bản dịch nghĩa ${nativeLangName} rõ ràng bên dưới.`;
 
       let aiSuccess = false;
 
@@ -313,7 +332,7 @@ VAI TRÒ VÀ NGUYÊN TẮC CỦA TRỢ LÝ HỌC TẬP (AI SENSEI):
                   temperature: 0.85,
                   max_tokens: 1024,
                 }),
-                signal: AbortSignal.timeout(9000),
+                signal: AbortSignal.timeout(3500),
               });
 
               if (grRes.ok) {
@@ -322,6 +341,8 @@ VAI TRÒ VÀ NGUYÊN TẮC CỦA TRỢ LÝ HỌC TẬP (AI SENSEI):
                 if (textResult && textResult.trim().length > 0) {
                   aiResponse = textResult.trim();
                   aiSuccess = true;
+                  activeProvider = "XAI_GROK";
+                  activeModel = grModel;
                   if (uid && !convId.startsWith("guest-")) {
                     await prisma.aiConversation
                       .update({
@@ -361,9 +382,9 @@ VAI TRÒ VÀ NGUYÊN TẮC CỦA TRỢ LÝ HỌC TẬP (AI SENSEI):
                   model: gModel,
                   messages: groqMessages,
                   temperature: 0.85,
-                  max_tokens: 512,
+                  max_tokens: 600,
                 }),
-                signal: AbortSignal.timeout(9000),
+                signal: AbortSignal.timeout(3500),
               });
 
               if (groqRes.ok) {
@@ -372,6 +393,8 @@ VAI TRÒ VÀ NGUYÊN TẮC CỦA TRỢ LÝ HỌC TẬP (AI SENSEI):
                 if (textResult && textResult.trim().length > 0) {
                   aiResponse = textResult.trim();
                   aiSuccess = true;
+                  activeProvider = "GROQ";
+                  activeModel = gModel;
                   if (uid && !convId.startsWith("guest-")) {
                     await prisma.aiConversation
                       .update({
@@ -416,9 +439,9 @@ VAI TRÒ VÀ NGUYÊN TẮC CỦA TRỢ LÝ HỌC TẬP (AI SENSEI):
                   model: orModel,
                   messages: orMessages,
                   temperature: 0.85,
-                  max_tokens: 1024,
+                  max_tokens: 800,
                 }),
-                signal: AbortSignal.timeout(9000),
+                signal: AbortSignal.timeout(3500),
               });
 
               if (orRes.ok) {
@@ -427,6 +450,8 @@ VAI TRÒ VÀ NGUYÊN TẮC CỦA TRỢ LÝ HỌC TẬP (AI SENSEI):
                 if (textResult && textResult.trim().length > 0) {
                   aiResponse = textResult.trim();
                   aiSuccess = true;
+                  activeProvider = "OPENROUTER";
+                  activeModel = orModel;
                   if (uid && !convId.startsWith("guest-")) {
                     await prisma.aiConversation
                       .update({
@@ -443,113 +468,76 @@ VAI TRÒ VÀ NGUYÊN TẮC CỦA TRỢ LÝ HỌC TẬP (AI SENSEI):
             }
           }
         } else {
-          // 1. Try Gemini Interactions API (gemini-3.8-flash)
-          try {
-            const interRes = await fetch("https://generativelanguage.googleapis.com/v1beta/interactions", {
-              method: "POST",
-              headers: {
-                "x-goog-api-key": currentKey,
-                "Content-Type": "application/json",
-                "Api-Revision": "2026-05-20",
-              },
-              body: JSON.stringify({
-                model: "gemini-3.8-flash",
-                input: `${systemPrompt}\n\nUser: ${message}`,
-              }),
-              signal: AbortSignal.timeout(9000),
-            });
-
-            if (interRes.ok) {
-              const interData = await interRes.json();
-              const steps = interData?.steps || [];
-              const modelStep = steps.find((s: { type?: string }) => s.type === "model_output");
-              const textResult = (modelStep?.content as { text?: string }[])?.[0]?.text;
-              if (textResult && textResult.trim().length > 0) {
-                aiResponse = textResult.trim();
-                aiSuccess = true;
-                if (uid && !convId.startsWith("guest-")) {
-                  await prisma.aiConversation
-                    .update({
-                      where: { id: convId },
-                      data: { provider: "GOOGLE_GEMINI", model: "gemini-3.8-flash" },
-                    })
-                    .catch(() => {});
-                }
-              }
+          // Google Gemini Direct generateContent (~1.5s latency, official & stable)
+          const geminiContents: { role: "user" | "model"; parts: { text: string }[] }[] = [];
+          for (const m of history) {
+            const role = m.role === "assistant" ? "model" : "user";
+            if (geminiContents.length > 0 && geminiContents[geminiContents.length - 1].role === role) {
+              geminiContents[geminiContents.length - 1].parts[0].text += `\n${m.content}`;
+            } else {
+              geminiContents.push({ role, parts: [{ text: m.content }] });
             }
-          } catch {
-            // Fall through to generateContent
           }
 
-          if (!aiSuccess) {
-            const geminiContents: { role: "user" | "model"; parts: { text: string }[] }[] = [];
-            for (const m of history) {
-              const role = m.role === "assistant" ? "model" : "user";
-              if (geminiContents.length > 0 && geminiContents[geminiContents.length - 1].role === role) {
-                geminiContents[geminiContents.length - 1].parts[0].text += `\n${m.content}`;
-              } else {
-                geminiContents.push({ role, parts: [{ text: m.content }] });
-              }
-            }
+          while (geminiContents.length > 0 && geminiContents[0].role !== "user") {
+            geminiContents.shift();
+          }
 
-            while (geminiContents.length > 0 && geminiContents[0].role !== "user") {
-              geminiContents.shift();
-            }
+          if (geminiContents.length === 0) {
+            geminiContents.push({ role: "user", parts: [{ text: message }] });
+          }
 
-            if (geminiContents.length === 0) {
-              geminiContents.push({ role: "user", parts: [{ text: message }] });
-            }
+          const payload = {
+            system_instruction: { parts: [{ text: systemPrompt }] },
+            contents: geminiContents,
+            generationConfig: { temperature: 0.85, maxOutputTokens: 800 },
+          };
 
-            const payload = {
-              system_instruction: { parts: [{ text: systemPrompt }] },
-              contents: geminiContents,
-              generationConfig: { temperature: 0.85, maxOutputTokens: 1024 },
-            };
+          const requestedModel =
+            typeof (body as { model?: unknown }).model === "string"
+              ? (body as { model: string }).model.trim()
+              : "";
+          const isValidGeminiModel = /^gemini-[a-zA-Z0-9.-]+$/.test(requestedModel);
+          const clientModel = isValidGeminiModel ? requestedModel : undefined;
 
-            const requestedModel =
-              typeof (body as { model?: unknown }).model === "string"
-                ? (body as { model: string }).model.trim()
-                : "";
-            const isValidGeminiModel = /^gemini-[a-zA-Z0-9.-]+$/.test(requestedModel);
-            const clientModel = isValidGeminiModel ? requestedModel : undefined;
+          const modelsToTry = Array.from(
+            new Set([clientModel, "gemini-2.5-flash", "gemini-flash-latest"].filter(Boolean) as string[]),
+          );
 
-            const modelsToTry = Array.from(
-              new Set([clientModel, "gemini-2.5-flash", "gemini-flash-latest", "gemini-flash-lite-latest"].filter(Boolean) as string[]),
-            );
+          for (const modelName of modelsToTry) {
+            if (aiSuccess) break;
+            try {
+              const geminiRes = await fetch(
+                `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${currentKey}`,
+                {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify(payload),
+                  signal: AbortSignal.timeout(3500),
+                },
+              );
 
-            for (const modelName of modelsToTry) {
-              if (aiSuccess) break;
-              try {
-                const geminiRes = await fetch(
-                  `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${currentKey}`,
-                  {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(payload),
-                    signal: AbortSignal.timeout(9000),
-                  },
-                );
-
-                if (geminiRes.ok) {
-                  const geminiData = await geminiRes.json();
-                  const textResult = geminiData?.candidates?.[0]?.content?.parts?.[0]?.text;
-                  if (textResult && textResult.trim().length > 0) {
-                    aiResponse = textResult.trim();
-                    aiSuccess = true;
-                    if (uid && !convId.startsWith("guest-")) {
-                      await prisma.aiConversation
-                        .update({
-                          where: { id: convId },
-                          data: { provider: "GOOGLE_GEMINI", model: modelName },
-                        })
-                        .catch(() => {});
-                    }
-                    break;
+              if (geminiRes.ok) {
+                const geminiData = await geminiRes.json();
+                const textResult = geminiData?.candidates?.[0]?.content?.parts?.[0]?.text;
+                if (textResult && textResult.trim().length > 0) {
+                  aiResponse = textResult.trim();
+                  aiSuccess = true;
+                  activeProvider = "GOOGLE_GEMINI";
+                  activeModel = modelName;
+                  if (uid && !convId.startsWith("guest-")) {
+                    await prisma.aiConversation
+                      .update({
+                        where: { id: convId },
+                        data: { provider: "GOOGLE_GEMINI", model: modelName },
+                      })
+                      .catch(() => {});
                   }
+                  break;
                 }
-              } catch {
-                // Fall through to next model
               }
+            } catch {
+              // Fall through to next model or next provider
             }
           }
         }
@@ -609,15 +597,19 @@ VAI TRÒ VÀ NGUYÊN TẮC CỦA TRỢ LÝ HỌC TẬP (AI SENSEI):
         content: aiResponse,
         createdAt: new Date().toISOString(),
       },
+      provider: activeProvider,
+      model: activeModel,
       isGuest: !uid,
       aiDisclaimer: "Phản hồi được tạo bởi AI hỗ trợ luyện hội thoại — hãy đối chiếu với bài học chuẩn khi ôn thi JLPT.",
     });
   } catch (globalErr) {
     console.error("[AI Chat Global Fallback]:", globalErr);
     const fallbackText = generateNaturalJapaneseResponse({
-      scenarioId: "assistant_guide",
-      userMessage: "Konnichiwa",
-      nativeLanguage: "vi",
+      scenarioId: fallbackScenario,
+      userMessage: fallbackMessage,
+      userProgress: fallbackProgress,
+      mistakes: fallbackMistakes,
+      nativeLanguage: fallbackLang,
     });
     return NextResponse.json({
       conversationId: "fallback-" + Date.now(),
@@ -627,6 +619,8 @@ VAI TRÒ VÀ NGUYÊN TẮC CỦA TRỢ LÝ HỌC TẬP (AI SENSEI):
         content: fallbackText,
         createdAt: new Date().toISOString(),
       },
+      provider: "NATURAL_KAIWA_ENGINE",
+      model: "fallback-rescue",
       aiDisclaimer: "Phản hồi dự phòng từ trợ lý AI Kawaii Sensei.",
     });
   }
