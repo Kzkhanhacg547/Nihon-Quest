@@ -180,11 +180,11 @@ export async function POST(req: NextRequest) {
     process.env.ALLOW_CLIENT_AI_KEYS === "true" || process.env.NODE_ENV !== "production";
 
   const rawKeySources = [
-    process.env.GROK_API_KEY,
-    process.env.XAI_API_KEY,
+    process.env.OPENROUTER_API_KEY,
     process.env.GROQ_API_KEY,
     process.env.GEMINI_API_KEY,
-    process.env.OPENROUTER_API_KEY,
+    process.env.GROK_API_KEY,
+    process.env.XAI_API_KEY,
     ...(allowClientKeys
       ? [apiKey, req.headers.get("x-grok-key"), req.headers.get("x-gemini-key"), req.headers.get("x-groq-key")]
       : []),
@@ -197,7 +197,7 @@ export async function POST(req: NextRequest) {
     new Set(
       rawKeySources
         .split(/[\s,;\n]+/)
-        .map((k) => k.trim())
+        .map((k) => k.trim().replace(/^["']|["']$/g, ""))
         .filter((k) => VALID_KEY_PATTERN.test(k)),
     ),
   ).slice(0, 4);
@@ -346,7 +346,7 @@ VAI TRÒ VÀ NGUYÊN TẮC CỦA TRỢ LÝ HỌC TẬP (AI SENSEI):
             })),
           ];
 
-          const groqModels = ["openai/gpt-oss-120b", "qwen/qwen3.8-27b"];
+          const groqModels = ["qwen/qwen3.8-27b", "openai/gpt-oss-120b"];
 
           for (const gModel of groqModels) {
             if (aiSuccess) break;
@@ -386,47 +386,57 @@ VAI TRÒ VÀ NGUYÊN TẮC CỦA TRỢ LÝ HỌC TẬP (AI SENSEI):
             }
           }
         } else if (currentKey.startsWith("sk-or-")) {
-          try {
-            const orMessages = [
-              { role: "system", content: systemPrompt },
-              ...history.map((m) => ({
-                role: m.role === "assistant" ? "assistant" : "user",
-                content: m.content,
-              })),
-            ];
+          const orModels = [
+            "deepseek/deepseek-chat",
+            "meta-llama/llama-3.3-70b-instruct:free",
+            "google/gemini-2.0-flash-exp:free",
+            "qwen/qwen-2.5-72b-instruct:free",
+          ];
 
-            const orRes = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${currentKey}`,
-              },
-              body: JSON.stringify({
-                model: "deepseek/deepseek-chat",
-                messages: orMessages,
-                temperature: 0.85,
-                max_tokens: 1024,
-              }),
-              signal: AbortSignal.timeout(9000),
-            });
+          const orMessages = [
+            { role: "system", content: systemPrompt },
+            ...history.map((m) => ({
+              role: m.role === "assistant" ? "assistant" : "user",
+              content: m.content,
+            })),
+          ];
 
-            if (orRes.ok) {
-              const orData = await orRes.json();
-              const textResult = orData?.choices?.[0]?.message?.content;
-              if (textResult && textResult.trim().length > 0) {
-                aiResponse = textResult.trim();
-                aiSuccess = true;
-                await prisma.aiConversation
-                  .update({
-                    where: { id: convId },
-                    data: { provider: "OPENROUTER", model: "deepseek/deepseek-chat" },
-                  })
-                  .catch(() => {});
-                break;
+          for (const orModel of orModels) {
+            if (aiSuccess) break;
+            try {
+              const orRes = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  Authorization: `Bearer ${currentKey}`,
+                },
+                body: JSON.stringify({
+                  model: orModel,
+                  messages: orMessages,
+                  temperature: 0.85,
+                  max_tokens: 1024,
+                }),
+                signal: AbortSignal.timeout(9000),
+              });
+
+              if (orRes.ok) {
+                const orData = await orRes.json();
+                const textResult = orData?.choices?.[0]?.message?.content;
+                if (textResult && textResult.trim().length > 0) {
+                  aiResponse = textResult.trim();
+                  aiSuccess = true;
+                  await prisma.aiConversation
+                    .update({
+                      where: { id: convId },
+                      data: { provider: "OPENROUTER", model: orModel },
+                    })
+                    .catch(() => {});
+                  break;
+                }
               }
+            } catch {
+              // Fall through to next model
             }
-          } catch {
-            // Fall through
           }
         } else {
           const geminiContents: { role: "user" | "model"; parts: { text: string }[] }[] = [];
