@@ -2,7 +2,13 @@
 
 import React from "react";
 import { useNativeLanguage } from "@/components/LanguageContext";
-import { getLocalizedLessonTitle, getLocalizedLessonDesc, getLocalizedRoadmapLabel } from "@/lib/lessonLocalization";
+import {
+  getLocalizedLessonTitle,
+  getLocalizedLessonDesc,
+  getLocalizedRoadmapLabel,
+  getLocalizedUnitTitle,
+  getLocalizedUnitDesc,
+} from "@/lib/lessonLocalization";
 
 export function LocalizedLessonTitle({
   slug,
@@ -56,3 +62,42 @@ export function LocalizedRoadmapTag({
     </span>
   );
 }
+
+export function LocalizedUnitTitle({
+  level,
+  unitNumber,
+  fallback,
+  className,
+}: {
+  level: string;
+  unitNumber: number;
+  fallback: string;
+  className?: string;
+}) {
+  const { nativeLanguage } = useNativeLanguage();
+  return (
+    <span className={className} suppressHydrationWarning>
+      {getLocalizedUnitTitle(level, unitNumber, nativeLanguage, fallback)}
+    </span>
+  );
+}
+
+export function LocalizedUnitDesc({
+  level,
+  unitNumber,
+  fallback,
+  className,
+}: {
+  level: string;
+  unitNumber: number;
+  fallback: string;
+  className?: string;
+}) {
+  const { nativeLanguage } = useNativeLanguage();
+  return (
+    <span className={className} suppressHydrationWarning>
+      {getLocalizedUnitDesc(level, unitNumber, nativeLanguage, fallback)}
+    </span>
+  );
+}
+

@@ -5,6 +5,7 @@ import Image from "next/image";
 import { BASE64_IMAGES } from "@/lib/assets/base64Images";
 import Link from "next/link";
 import { useSoundAndTheme } from "@/components/SoundAndThemeContext";
+import { useNativeLanguage } from "@/components/LanguageContext";
 
 interface GrammarExample {
   id: string;
@@ -83,16 +84,17 @@ const QUICK_LINKS = [
 /* ------------------------------------------------------------------ */
 function GrammarDetail({ item }: { item: GrammarItem }) {
   const { speak } = useSoundAndTheme();
+  const { t } = useNativeLanguage();
 
   return (
     <div className="space-y-4">
       <section>
-        <h4 className="text-[11px] font-bold text-fuji-500 dark:text-fuji-400">Ý nghĩa</h4>
+        <h4 className="text-[11px] font-bold text-fuji-500 dark:text-fuji-400">{t("grammarMeaning")}</h4>
         <p className="mt-1 text-sm leading-relaxed text-slate-700 dark:text-slate-200">{item.meaning}</p>
       </section>
 
       <section>
-        <h4 className="text-[11px] font-bold text-matcha-600 dark:text-matcha-400">Cấu trúc</h4>
+        <h4 className="text-[11px] font-bold text-matcha-600 dark:text-matcha-400">{t("grammarStructure")}</h4>
         <div className="mt-1 rounded-xl border border-matcha-200 bg-matcha-50 px-4 py-3 dark:border-matcha-900 dark:bg-matcha-950/30">
           <p className="font-mono text-sm font-bold text-matcha-800 dark:text-matcha-200">{item.structure}</p>
         </div>
@@ -100,7 +102,7 @@ function GrammarDetail({ item }: { item: GrammarItem }) {
 
       {item.commonMistakes && (
         <section>
-          <h4 className="text-[11px] font-bold text-amber-600 dark:text-amber-400">⚠️ Lưu ý / lỗi hay gặp</h4>
+          <h4 className="text-[11px] font-bold text-amber-600 dark:text-amber-400">{t("grammarMistakes")}</h4>
           <div className="mt-1 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-900 dark:bg-amber-950/30">
             <p className="text-sm leading-relaxed text-amber-800 dark:text-amber-200">{item.commonMistakes}</p>
           </div>
@@ -109,7 +111,7 @@ function GrammarDetail({ item }: { item: GrammarItem }) {
 
       {item.examples.length > 0 && (
         <section>
-          <h4 className="text-[11px] font-bold text-sakura-500 dark:text-sakura-400">Ví dụ thực tế</h4>
+          <h4 className="text-[11px] font-bold text-sakura-500 dark:text-sakura-400">{t("grammarRealExamples")}</h4>
           <ul className="mt-2 space-y-2.5">
             {item.examples.map((ex) => (
               <li
@@ -123,8 +125,8 @@ function GrammarDetail({ item }: { item: GrammarItem }) {
                 </div>
                 <button
                   onClick={() => speak(ex.japanese)}
-                  aria-label="Phát âm ví dụ"
-                  title="Phát âm"
+                  aria-label={t("grammarPronounce")}
+                  title={t("grammarPronounce")}
                   className="grid h-11 w-11 shrink-0 place-items-center rounded-xl border border-slate-200 text-slate-500 transition hover:border-sakura-300 hover:text-sakura-500 dark:border-slate-700 dark:text-slate-300"
                 >
                   🔊
@@ -142,12 +144,21 @@ function GrammarDetail({ item }: { item: GrammarItem }) {
 /* Component chính                                                     */
 /* ------------------------------------------------------------------ */
 export function GrammarClient({ grammar, defaultLevel = "N5", displayName = "bạn", levelImages }: GrammarClientProps) {
+  const { t } = useNativeLanguage();
   const initialLevel = (LEVELS as string[]).includes(defaultLevel) ? defaultLevel : "N5";
   const [search, setSearch] = useState("");
   const [levelFilter, setLevelFilter] = useState<string>(initialLevel);
   const [sort, setSort] = useState<"level" | "title">("level");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const { playClick } = useSoundAndTheme();
+
+  const quickLinks = useMemo(() => [
+    { label: t("grammarQuickVocab"), href: "/app/vocabulary#vocabulary", icon: "📘", color: "from-blue-500 to-blue-600" },
+    { label: t("grammarQuickKanji"), href: "/app/vocabulary#kanji", icon: "名", color: "from-violet-500 to-purple-600" },
+    { label: t("grammarQuickSummary"), href: "/app/grammar", icon: "📝", color: "from-emerald-500 to-green-600" },
+    { label: t("grammarQuickPath"), href: "/app/path", icon: "⛩️", color: "from-red-500 to-rose-500" },
+    { label: t("grammarQuickTest"), href: "/app/test", icon: "★", color: "from-amber-400 to-orange-500" },
+  ], [t]);
 
   const levelFiltered = useMemo(
     () => (levelFilter === "ALL" ? grammar : grammar.filter((g) => g.level === levelFilter)),
@@ -190,15 +201,15 @@ export function GrammarClient({ grammar, defaultLevel = "N5", displayName = "b�
             ⛩️
           </div>
           <div className="min-w-0">
-            <p className="truncate text-base font-extrabold">Xin chào, {displayName}!</p>
-            <p className="text-xs text-white/70">Cùng Nihon Quest chinh phục tiếng Nhật nhé!</p>
+            <p className="truncate text-base font-extrabold">{t("grammarHello")}, {displayName}!</p>
+            <p className="text-xs text-white/70">{t("grammarSub")}</p>
           </div>
         </div>
         <dl className="grid grid-cols-3 gap-4 md:flex-[2] md:border-l md:border-white/10 md:pl-6">
           {[
-            { v: levelFiltered.length, l: "Điểm ngữ pháp", c: "text-white", bg: "bg-rose-500", i: "📖" },
-            { v: exampleCount, l: "Câu ví dụ", c: "text-emerald-400", bg: "bg-emerald-500", i: "★" },
-            { v: levelFilter === "ALL" ? "Tất cả" : levelFilter, l: "Cấp độ hiện tại", c: "text-orange-400", bg: "bg-orange-500", i: "🔥" },
+            { v: levelFiltered.length, l: t("grammarPoints"), c: "text-white", bg: "bg-rose-500", i: "📖" },
+            { v: exampleCount, l: t("grammarExamples"), c: "text-emerald-400", bg: "bg-emerald-500", i: "★" },
+            { v: levelFilter === "ALL" ? t("filterAll") : levelFilter, l: t("statsCurrentLevel"), c: "text-orange-400", bg: "bg-orange-500", i: "🔥" },
           ].map((s) => (
             <div key={s.l} className="flex items-center gap-3">
               <span className={`hidden h-11 w-11 shrink-0 place-items-center rounded-full ${s.bg} text-lg sm:grid`} aria-hidden="true">
@@ -214,8 +225,8 @@ export function GrammarClient({ grammar, defaultLevel = "N5", displayName = "b�
       </section>
 
       {/* ============ QUICK LINKS ============ */}
-      <nav aria-label="Thư viện tiếng Nhật" className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-        {QUICK_LINKS.map((q) => (
+      <nav aria-label={t("grammarQuickLinks")} className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+        {quickLinks.map((q) => (
           <Link
             key={q.label}
             href={q.href}
@@ -236,8 +247,8 @@ export function GrammarClient({ grammar, defaultLevel = "N5", displayName = "b�
       <section aria-labelledby="levels-title">
         <div className="mb-3 flex items-end justify-between">
           <div>
-            <h2 id="levels-title" className="text-lg font-black text-slate-900 dark:text-white">Khóa học theo cấp độ</h2>
-            <p className="text-xs text-slate-500 dark:text-slate-400">Học đúng lộ trình – Hiệu quả bền vững</p>
+            <h2 id="levels-title" className="text-lg font-black text-slate-900 dark:text-white">{t("tabLessons")}</h2>
+            <p className="text-xs text-slate-500 dark:text-slate-400">{t("exploreLessonsSubtitle")}</p>
           </div>
           <button
             onClick={() => {
@@ -246,7 +257,7 @@ export function GrammarClient({ grammar, defaultLevel = "N5", displayName = "b�
             }}
             className="min-h-11 px-2 text-sm font-bold text-red-600 hover:underline dark:text-red-400"
           >
-            Xem tất cả ›
+            {t("filterAll")} ›
           </button>
         </div>
 
@@ -284,7 +295,7 @@ export function GrammarClient({ grammar, defaultLevel = "N5", displayName = "b�
                     <span className="jp-text mt-1 text-sm font-bold text-white/90">{meta.jp}</span>
                     <span className="mt-0.5 text-xs text-white/85">{meta.tagline}</span>
                     <span className="mt-3 inline-flex min-h-9 items-center justify-between rounded-full bg-white px-4 text-xs font-bold text-slate-900">
-                      Vào học <span aria-hidden="true">→</span>
+                      {t("btnLearnNow")} <span aria-hidden="true">→</span>
                     </span>
                   </div>
                 </button>
@@ -308,13 +319,13 @@ export function GrammarClient({ grammar, defaultLevel = "N5", displayName = "b�
                   <div className="flex gap-6">
                     <div>
                       <p className="text-2xl font-black">{countOf(activeLevel)}</p>
-                      <p className="text-[11px] text-white/60">Điểm ngữ pháp</p>
+                      <p className="text-[11px] text-white/60">{t("grammarPoints")}</p>
                     </div>
                     <div>
                       <p className="text-2xl font-black text-emerald-400">
                         {grammar.filter((g) => g.level === activeLevel).reduce((a, g) => a + g.examples.length, 0)}
                       </p>
-                      <p className="text-[11px] text-white/60">Câu ví dụ</p>
+                      <p className="text-[11px] text-white/60">{t("grammarExamples")}</p>
                     </div>
                   </div>
                   <button
@@ -326,15 +337,15 @@ export function GrammarClient({ grammar, defaultLevel = "N5", displayName = "b�
                     }}
                     className="min-h-11 shrink-0 rounded-full bg-gradient-to-r from-red-600 to-rose-500 px-5 text-sm font-bold shadow-lg shadow-red-900/30 transition hover:brightness-110"
                   >
-                    Học bài đầu tiên ›
+                    {t("statsStartFirstLesson")}
                   </button>
                 </div>
               </>
             ) : (
               <div>
-                <p className="text-2xl font-black">Tất cả cấp độ</p>
+                <p className="text-2xl font-black">{t("grammarAllLevels")}</p>
                 <p className="mt-3 text-sm leading-relaxed text-white/75">
-                  Đang xem {grammar.length} điểm ngữ pháp từ N5 đến N3. Chọn một thẻ cấp độ để lọc theo lộ trình.
+                  {t("exploreLessonsSubtitle")}
                 </p>
               </div>
             )}
@@ -346,9 +357,9 @@ export function GrammarClient({ grammar, defaultLevel = "N5", displayName = "b�
       <section id="grammar-list" aria-labelledby="lessons-title" className="scroll-mt-24">
         <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <h2 id="lessons-title" className="text-lg font-black text-slate-900 dark:text-white">Danh sách bài học</h2>
+            <h2 id="lessons-title" className="text-lg font-black text-slate-900 dark:text-white">{t("jlptCourseListTitle")}</h2>
             <p className="text-xs text-slate-500 dark:text-slate-400">
-              {filtered.length} / {grammar.length} điểm ngữ pháp · Học theo chủ đề – Dễ hiểu – Ứng dụng thực tế
+              {filtered.length} / {grammar.length} {t("grammarPoints")}
             </p>
           </div>
           <div className="flex items-center gap-2 sm:w-[420px]">
@@ -358,14 +369,14 @@ export function GrammarClient({ grammar, defaultLevel = "N5", displayName = "b�
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Tìm ngữ pháp... (VD: て形, から, たい)"
-                aria-label="Tìm ngữ pháp"
+                placeholder={t("grammarSearchPlaceholder")}
+                aria-label={t("grammarSearchPlaceholder")}
                 className="w-full rounded-full border border-slate-200 bg-white py-2.5 pl-10 pr-11 text-base text-slate-800 placeholder-slate-400 transition focus:border-red-400 focus:outline-none dark:border-slate-800 dark:bg-sumi-900 dark:text-slate-100 sm:text-sm"
               />
               {search && (
                 <button
                   onClick={() => setSearch("")}
-                  aria-label="Xoá từ khoá tìm kiếm"
+                  aria-label="Clear search"
                   className="absolute right-0 top-1/2 grid h-11 w-11 -translate-y-1/2 place-items-center text-slate-400 transition hover:text-slate-600 dark:text-slate-400 dark:hover:text-slate-200"
                 >
                   ✕
@@ -375,11 +386,11 @@ export function GrammarClient({ grammar, defaultLevel = "N5", displayName = "b�
             <select
               value={sort}
               onChange={(e) => setSort(e.target.value as "level" | "title")}
-              aria-label="Sắp xếp"
+              aria-label="Sort"
               className="min-h-11 rounded-full border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 dark:border-slate-800 dark:bg-sumi-900 dark:text-slate-200"
             >
-              <option value="level">Theo cấp độ</option>
-              <option value="title">Tên A → Z</option>
+              <option value="level">{t("grammarSortLevel")}</option>
+              <option value="title">{t("grammarSortName")}</option>
             </select>
           </div>
         </div>
@@ -388,7 +399,7 @@ export function GrammarClient({ grammar, defaultLevel = "N5", displayName = "b�
         <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-sumi-900 lg:grid lg:h-[640px] lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
           {/* ---- Cột trái: bộ lọc + danh sách ---- */}
           <div className="flex min-h-0 flex-col lg:border-r lg:border-slate-200 lg:dark:border-slate-800">
-            <div className="flex gap-2 overflow-x-auto border-b border-slate-100 p-3 dark:border-slate-800" role="group" aria-label="Lọc theo cấp độ">
+            <div className="flex gap-2 overflow-x-auto border-b border-slate-100 p-3 dark:border-slate-800" role="group" aria-label="Filter by level">
               {[...LEVELS, "ALL" as const].map((lv) => {
                 const on = levelFilter === lv;
                 return (
@@ -402,7 +413,7 @@ export function GrammarClient({ grammar, defaultLevel = "N5", displayName = "b�
                         : "bg-slate-100 text-slate-700 hover:bg-red-50 hover:text-red-600 dark:bg-slate-800 dark:text-slate-200"
                     }`}
                   >
-                    {lv === "ALL" ? "Tất cả" : lv}
+                    {lv === "ALL" ? t("filterAll") : lv}
                     <span className="ml-1 opacity-70">({lv === "ALL" ? grammar.length : countOf(lv)})</span>
                   </button>
                 );
@@ -410,7 +421,7 @@ export function GrammarClient({ grammar, defaultLevel = "N5", displayName = "b�
             </div>
 
             {filtered.length === 0 ? (
-              <p className="p-8 text-center text-sm text-slate-500 dark:text-slate-400">Không tìm thấy ngữ pháp phù hợp. Thử từ khóa khác nhé！🌸</p>
+              <p className="p-8 text-center text-sm text-slate-500 dark:text-slate-400">{t("grammarNoResults")}. {t("grammarNoResultsSub")} 🌸</p>
             ) : (
               <ul className="max-h-[70vh] min-h-0 flex-1 divide-y divide-slate-100 overflow-y-auto overscroll-contain dark:divide-slate-800 lg:max-h-none">
                 {filtered.map((item, i) => {
@@ -479,7 +490,7 @@ export function GrammarClient({ grammar, defaultLevel = "N5", displayName = "b�
                         playClick();
                         setSelectedId(null);
                       }}
-                      aria-label="Đóng chi tiết"
+                      aria-label="Close details"
                       className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-white/15 text-white backdrop-blur transition hover:bg-white/25"
                     >
                       ✕
@@ -492,10 +503,10 @@ export function GrammarClient({ grammar, defaultLevel = "N5", displayName = "b�
               </div>
             ) : (
               <>
-                <Image src={BASE64_IMAGES.grammar} unoptimized alt="Thành phố Tokyo về đêm" fill sizes="50vw" className="object-cover" />
+                <Image src={BASE64_IMAGES.grammar} unoptimized alt="Tokyo night scene" fill sizes="50vw" className="object-cover" />
                 <div className="absolute inset-0 bg-gradient-to-t from-[#0d1535]/80 via-transparent to-transparent" aria-hidden="true" />
                 <p className="absolute inset-x-0 bottom-0 p-6 text-sm font-semibold text-white/90">
-                  Chọn một điểm ngữ pháp ở danh sách bên trái để xem ý nghĩa, cấu trúc và ví dụ.
+                  {t("grammarSelectHint")}
                 </p>
               </>
             )}

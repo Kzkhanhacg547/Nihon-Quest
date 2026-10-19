@@ -10,6 +10,13 @@ import {
   type CurriculumTrackId,
   type LessonCurriculumMetadata,
 } from "@/lib/curriculum-tracks";
+import { useNativeLanguage } from "@/components/LanguageContext";
+import {
+  LocalizedLessonTitle,
+  LocalizedLessonDesc,
+  LocalizedUnitTitle,
+  LocalizedUnitDesc,
+} from "@/components/LocalizedLesson";
 
 export function cleanLessonTitle(title: string): string {
   if (!title) return "";
@@ -63,6 +70,7 @@ export function PracticeClient({
   userLevel: string;
   currentLevelCompletionRatio?: number;
 }) {
+  const { t } = useNativeLanguage();
   const [mainTab, setMainTab] = useState<MainTab>("LESSONS");
   const [activeLevel, setActiveLevel] = useState<string>(userLevel || "N5");
   const [selectedUnit, setSelectedUnit] = useState<number | "ALL">("ALL");
@@ -356,7 +364,7 @@ export function PracticeClient({
             <div className="flex items-center gap-2 overflow-x-auto scrollbar-none">
               <button type="button" onClick={() => { playClick(); setSelectedUnit("ALL"); }} className={pill(selectedUnit === "ALL")}>
                 <span className={`flex h-8 w-8 items-center justify-center rounded-xl text-base ${selectedUnit === "ALL" ? "bg-white/20" : "bg-slate-100 dark:bg-sumi-800"}`}>▦</span>
-                Tất cả <span className="text-[11px] opacity-70">({levelLessons.length} bài)</span>
+                {t("filterAll")} <span className="text-[11px] opacity-70">({levelLessons.length} {t("lessonsUnit")})</span>
               </button>
               {activeUnits.map((u) => {
                 const list = levelLessons.slice(u.startIndex, u.endIndex);
@@ -365,7 +373,7 @@ export function PracticeClient({
                 return (
                   <button key={u.number} type="button" onClick={() => { playClick(); setSelectedUnit(u.number); }} className={pill(active)}>
                     <span className={`flex h-8 w-8 items-center justify-center rounded-xl text-base ${active ? "bg-white/20" : "bg-slate-100 dark:bg-sumi-800"}`}>{u.icon}</span>
-                    {u.number === 6 && activeLevel === "N5" ? "Unit 06 (Bổ trợ)" : `Unit 0${u.number}`}
+                    <LocalizedUnitTitle level={activeLevel} unitNumber={u.number} fallback={u.number === 6 && activeLevel === "N5" ? "Unit 06 (Bổ trợ)" : `Unit 0${u.number}`} />
                     <span className={`text-[11px] ${active ? "text-rose-100" : "text-slate-500 dark:text-slate-400"}`}>
                       {list.length > 0 && done === list.length ? "✓" : `(${done}/${list.length})`}
                     </span>
@@ -383,10 +391,18 @@ export function PracticeClient({
               </span>
               <div>
                 <h3 className="text-xl font-black text-slate-900 dark:text-white">
-                  {currentUnit ? currentUnit.title : `Danh sách khóa học JLPT ${activeLevel}`}
+                  {currentUnit ? (
+                    <LocalizedUnitTitle level={activeLevel} unitNumber={currentUnit.number} fallback={currentUnit.title} />
+                  ) : (
+                    `${t("jlptCourseListTitle")} ${activeLevel}`
+                  )}
                 </h3>
                 <p className="mt-0.5 max-w-2xl text-xs text-slate-500 dark:text-slate-400">
-                  {currentUnit ? currentUnit.description : `Khám phá ${levelLessons.length} bài học JLPT ${activeLevel} được sắp xếp theo trình độ, dễ học, dễ nhớ`}
+                  {currentUnit ? (
+                    <LocalizedUnitDesc level={activeLevel} unitNumber={currentUnit.number} fallback={currentUnit.description} />
+                  ) : (
+                    t("exploreLessonsSubtitle").replace("{count}", String(levelLessons.length)).replace("{level}", activeLevel)
+                  )}
                 </p>
               </div>
             </div>
@@ -397,8 +413,8 @@ export function PracticeClient({
                   type="text"
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
-                  placeholder="Tìm kiếm bài học..."
-                  aria-label="Tìm bài học"
+                  placeholder={t("searchLessonPlaceholder")}
+                  aria-label={t("searchLessonPlaceholder")}
                   className="min-w-0 flex-1 bg-transparent px-3 text-base text-slate-800 placeholder:text-slate-400 focus:outline-none dark:text-slate-200 sm:text-sm"
                 />
                 <span className="flex w-11 items-center justify-center bg-slate-900 text-sm text-white dark:bg-white dark:text-sumi-950" aria-hidden>🔍</span>
@@ -406,15 +422,15 @@ export function PracticeClient({
               <select
                 value={sort}
                 onChange={(e) => setSort(e.target.value as SortKey)}
-                aria-label="Sắp xếp"
+                aria-label={t("sortPath")}
                 className="min-h-11 rounded-xl border border-slate-200 bg-white px-3 text-base text-slate-700 dark:border-slate-700 dark:bg-sumi-800 dark:text-slate-200 sm:text-sm"
               >
-                <option value="ORDER">Sắp xếp: Theo lộ trình</option>
-                <option value="SCORE">Điểm cao nhất</option>
-                <option value="XP">Nhiều XP nhất</option>
+                <option value="ORDER">{t("sortPath")}</option>
+                <option value="SCORE">{t("sortScore")}</option>
+                <option value="XP">{t("sortXp")}</option>
               </select>
               <div className="flex items-center gap-1 rounded-xl border border-slate-200 bg-white p-1 dark:border-slate-700 dark:bg-sumi-800">
-                {([["ALL", "Tất cả"], ["UNFINISHED", "Chưa xong"], ["COMPLETED", "Đã xong"]] as const).map(([key, label]) => (
+                {([["ALL", t("filterAll")], ["UNFINISHED", t("filterUnfinished")], ["COMPLETED", t("filterCompleted")]] as const).map(([key, label]) => (
                   <button
                     key={key}
                     type="button"
@@ -436,10 +452,10 @@ export function PracticeClient({
             <div className="flex flex-col justify-between gap-3 rounded-2xl border border-amber-300 bg-amber-50/90 p-4 shadow-sm dark:border-amber-800/60 dark:bg-amber-950/35 sm:flex-row sm:items-center">
               <div>
                 <p className="text-xs font-extrabold uppercase tracking-wider text-amber-800 dark:text-amber-300">
-                  🩺 Bài ôn tập củng cố (Remediation)
+                  {t("remediationHeader")}
                 </p>
                 <p className="mt-0.5 text-xs text-amber-900 dark:text-amber-100">
-                  Bạn có bài học đạt dưới 75%. Hãy ôn lại để nắm vững ngữ pháp & từ vựng trước khi tiến xa hơn, hoặc vào phòng SRS để ôn các câu đã làm sai.
+                  {t("remediationDesc")}
                 </p>
               </div>
               <div className="flex shrink-0 flex-wrap gap-2">
@@ -450,7 +466,8 @@ export function PracticeClient({
                       href={`/app/practice/${weak.slug}`}
                       className="inline-flex min-h-9 items-center rounded-xl bg-amber-600 px-3.5 py-1.5 text-xs font-bold text-white transition hover:bg-amber-700"
                     >
-                      Ôn lại: {cleanLessonTitle(weak.title)} ({weak.score}%) →
+                      {t("reviewAgainPrefix")}{" "}
+                      <LocalizedLessonTitle slug={weak.slug} fallback={cleanLessonTitle(weak.title)} /> ({weak.score}%) →
                     </Link>
                   ) : null;
                 })()}
@@ -458,7 +475,7 @@ export function PracticeClient({
                   href="/app/review"
                   className="inline-flex min-h-9 items-center rounded-xl border border-amber-300 bg-white px-3.5 py-1.5 text-xs font-bold text-amber-800 transition hover:bg-amber-100 dark:border-amber-700 dark:bg-sumi-900 dark:text-amber-200"
                 >
-                  Ôn thẻ SRS
+                  {t("reviewSrsCardsBtn")}
                 </Link>
               </div>
             </div>
@@ -468,8 +485,8 @@ export function PracticeClient({
           {displayedLessons.length === 0 ? (
             <div className="rounded-2xl border border-slate-200 bg-white p-10 text-center dark:border-slate-800 dark:bg-sumi-900">
               <span className="text-3xl">🔍</span>
-              <p className="mt-2 text-sm font-bold text-slate-700 dark:text-slate-300">Không tìm thấy bài học phù hợp</p>
-              <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm</p>
+              <p className="mt-2 text-sm font-bold text-slate-700 dark:text-slate-300">{t("noMatchingLessonsFound")}</p>
+              <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{t("tryAdjustingFilter")}</p>
             </div>
           ) : (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -516,42 +533,42 @@ export function PracticeClient({
                     <div className="relative flex flex-wrap items-center justify-between gap-2">
                       <div className="flex flex-wrap items-center gap-1.5">
                         <span className={`w-fit rounded-lg border px-2.5 py-1 text-xs font-black ${LEVEL_TONE[l.level] ?? LEVEL_TONE.N5}`}>
-                          {l.curriculum?.shortTrackLabel || `${l.level} · Bài ${String(l.order + 1).padStart(2, "0")}`}
+                          {l.curriculum?.shortTrackLabel || `${l.level} · #${String(l.order + 1).padStart(2, "0")}`}
                         </span>
                         {l.curriculum?.provenance === "TEXTBOOK_VERIFIED" ? (
                           <span className="rounded-md border border-emerald-300 bg-emerald-50 px-2 py-0.5 text-[10.5px] font-bold text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300" title="Đã đối soát giáo trình chuẩn">
-                            📘 Chuẩn
+                            {t("badgeTextbookVerified")}
                           </span>
                         ) : l.curriculum?.provenance === "SUPPLEMENTARY_VERIFIED" ? (
                           <span className="rounded-md border border-sky-300 bg-sky-50 px-2 py-0.5 text-[10.5px] font-bold text-sky-700 dark:border-sky-800 dark:bg-sky-950/40 dark:text-sky-300" title="Chuyên đề kỹ năng bổ trợ">
-                            📗 Bổ trợ
+                            {t("badgeSupplementaryVerified")}
                           </span>
                         ) : null}
                       </div>
                       {done ? (
                         <span className="rounded-full bg-emerald-50 px-2.5 py-0.5 text-[11px] font-bold text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300">
-                          ✓ Hoàn thành
+                          ✓ {t("statusCompleted")}
                         </span>
                       ) : access.isPreview ? (
                         <span className="rounded-full bg-sky-50 px-2.5 py-0.5 text-[11px] font-bold text-sky-700 dark:bg-sky-950/50 dark:text-sky-300">
-                          👁️ Xem trước
+                          {t("statusPreview")}
                         </span>
                       ) : access.isReviewMode ? (
                         <span className="rounded-full bg-emerald-50 px-2.5 py-0.5 text-[11px] font-bold text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300">
-                          Ôn tập {l.level}
+                          {t("statusReviewLevel")} {l.level}
                         </span>
                       ) : !isUnlocked ? (
                         <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-[11px] font-bold text-slate-600 dark:bg-slate-800 dark:text-slate-300">
-                          {access.badgeText || "🔒 Khóa"}
+                          {access.badgeText || t("statusLocked")}
                         </span>
                       ) : null}
                     </div>
 
                     <h4 className="relative mt-3 text-[15px] font-black leading-snug text-slate-900 dark:text-white">
-                      {cleanLessonTitle(l.title)}
+                      <LocalizedLessonTitle slug={l.slug} fallback={cleanLessonTitle(l.title)} />
                     </h4>
                     <p className="relative mt-1 line-clamp-2 min-h-[2.5rem] text-xs leading-relaxed text-slate-500 dark:text-slate-400">
-                      {l.description}
+                      <LocalizedLessonDesc slug={l.slug} fallback={l.description} />
                     </p>
 
                     {l.curriculum?.relatedGenkiLesson && (
@@ -562,8 +579,8 @@ export function PracticeClient({
                     )}
 
                     <div className="relative mt-3 flex items-center gap-3 text-[11px] font-semibold text-slate-500 dark:text-slate-400">
-                      <span>📝 {l.exercisesCount} câu</span>
-                      <span className="text-red-500">◔ {pct}% (cần ≥60%)</span>
+                      <span>📝 {l.exercisesCount} {t("questionsUnit")}</span>
+                      <span className="text-red-500">◔ {pct}% ({t("needsSixtyPercent")})</span>
                       <span className="ml-auto rounded-md bg-amber-50 px-2 py-0.5 font-bold text-amber-600 dark:bg-amber-950/40 dark:text-amber-300">+{l.xpReward} XP</span>
                     </div>
 
@@ -578,14 +595,14 @@ export function PracticeClient({
                       >
                         <span aria-hidden>▶</span>
                         {done
-                          ? "Ôn tập lại"
+                          ? t("btnReviewAgain")
                           : doing
-                            ? "Tiếp tục học"
+                            ? t("btnContinue")
                             : access.isPreview
-                              ? "Học thử (Preview)"
+                              ? t("btnTryPreview")
                               : access.isReviewMode
-                                ? `Ôn tập ${l.level}`
-                                : "Bắt đầu học"}
+                                ? `${t("btnReviewLevel")} ${l.level}`
+                                : t("btnStartLearn")}
                       </Link>
                     ) : access.lockReason === "HIGHER_LEVEL" ? (
                       <div className="relative mt-4 flex items-center gap-2">
@@ -594,7 +611,7 @@ export function PracticeClient({
                           title={access.lockMessage ?? undefined}
                           className="inline-flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-xl border border-amber-300 bg-amber-50 px-3 text-xs font-bold text-amber-800 transition hover:bg-amber-100 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-300"
                         >
-                          🔒 Thi xếp lớp mở khóa {l.level}
+                          🔒 {t("testOutToUnlockLevel")} {l.level}
                         </Link>
                       </div>
                     ) : (
@@ -604,14 +621,14 @@ export function PracticeClient({
                           title={prevLesson ? `Cần hoàn thành: ${cleanLessonTitle(prevLesson.title)}` : ""}
                           className="inline-flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-xl border border-slate-300 bg-slate-100 px-3 text-xs font-bold text-slate-700 transition hover:bg-slate-200 dark:border-slate-700 dark:bg-sumi-800 dark:text-slate-200"
                         >
-                          🔒 Học bài trước
+                          {t("lockedPrerequisiteNote")}
                         </Link>
                         <Link
                           href="/app/test"
                           title="Kiểm tra miễn học phần"
                           className="inline-flex min-h-11 items-center justify-center rounded-xl border border-amber-300 bg-amber-50 px-3 text-xs font-bold text-amber-800 transition hover:bg-amber-100 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-300"
                         >
-                          Thi vượt
+                          ⚡
                         </Link>
                       </div>
                     )}

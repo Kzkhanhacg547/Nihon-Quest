@@ -10,6 +10,8 @@ import { AppNav } from "@/components/AppNav";
 import { JapanBackdrop } from "@/components/JapanIllustration";
 import { PracticeClient, type UnitInfo, type PracticeLessonItem } from "./PracticeClient";
 import { getLessonCurriculumMetadata } from "@/lib/curriculum-tracks";
+import { LocalizedText } from "@/components/LocalizedText";
+import { LocalizedLessonTitle } from "@/components/LocalizedLesson";
 
 function cleanLessonTitle(title: string): string {
   if (!title) return "";
@@ -128,31 +130,45 @@ export default async function PracticePage() {
           <div className="max-w-xl">
             <div className="mb-4 flex items-center gap-2 text-[11px] font-bold tracking-[0.3em] text-slate-600 dark:text-slate-300">
               <span className="h-2 w-2 rounded-full bg-red-600" aria-hidden="true" />
-              HỌC TIẾNG NHẬT · JLPT {userLevel}
+              <LocalizedText k="learnJapaneseTag" fallback="HỌC TIẾNG NHẬT" /> · JLPT {userLevel}
             </div>
             <h1 className="text-[clamp(2.25rem,8vw,4rem)] font-black leading-[1.05] tracking-tight text-slate-900 dark:text-white">
-              Học theo hành
+              <LocalizedText k="practiceHeroLine1" fallback="Học theo hành" />
               <br />
-              trình <span className="relative text-red-600">thực tế.
+              <LocalizedText k="practiceHeroLine2" fallback="trình" />{" "}
+              <span className="relative text-red-600">
+                <LocalizedText k="practiceHeroHighlight" fallback="thực tế." />
                 <svg className="absolute -bottom-2 left-0 w-full" viewBox="0 0 200 8" preserveAspectRatio="none" aria-hidden="true">
                   <path d="M2 6 Q60 1 120 4 T198 3" fill="none" stroke="#dc2626" strokeWidth="3" strokeLinecap="round" />
                 </svg>
               </span>
             </h1>
             <p className="mt-6 max-w-md text-[15px] leading-relaxed text-slate-700 dark:text-slate-300">
-              {LEVEL_DESCS[userLevel] ?? LEVEL_DESCS["N5"]}
+              <LocalizedText k={`levelDesc_${userLevel}`} fallback={LEVEL_DESCS[userLevel] ?? LEVEL_DESCS["N5"]} />
             </p>
 
             <div className="mt-6 flex flex-wrap gap-3">
-              {stats.map((s) => (
-                <div key={s.label} className="flex items-center gap-3 rounded-2xl border border-slate-200/70 bg-white/90 px-3.5 py-2.5 shadow-sm backdrop-blur dark:border-slate-800 dark:bg-sumi-900/80">
-                  <span className={`flex h-9 w-9 items-center justify-center rounded-xl text-lg ${s.tone}`}>{s.icon}</span>
-                  <div className="leading-tight">
-                    <b className="block text-[13px] text-slate-900 dark:text-white">{s.value}</b>
-                    <small className="text-[11px] text-slate-500 dark:text-slate-400">{s.label}</small>
-                  </div>
+              <div className="flex items-center gap-3 rounded-2xl border border-slate-200/70 bg-white/90 px-3.5 py-2.5 shadow-sm backdrop-blur dark:border-slate-800 dark:bg-sumi-900/80">
+                <span className="flex h-9 w-9 items-center justify-center rounded-xl text-lg bg-red-50 text-red-600 dark:bg-red-950/40">📚</span>
+                <div className="leading-tight">
+                  <b className="block text-[13px] text-slate-900 dark:text-white">{allLessons.length} <LocalizedText k="lessonCountUnit" fallback="bài học" /></b>
+                  <small className="text-[11px] text-slate-500 dark:text-slate-400">N5・N4・N3 & FPT</small>
                 </div>
-              ))}
+              </div>
+              <div className="flex items-center gap-3 rounded-2xl border border-slate-200/70 bg-white/90 px-3.5 py-2.5 shadow-sm backdrop-blur dark:border-slate-800 dark:bg-sumi-900/80">
+                <span className="flex h-9 w-9 items-center justify-center rounded-xl text-lg bg-indigo-50 text-indigo-600 dark:bg-indigo-950/40">⏱️</span>
+                <div className="leading-tight">
+                  <b className="block text-[13px] text-slate-900 dark:text-white">~15 <LocalizedText k="minsPerLesson" fallback="phút/bài" /></b>
+                  <small className="text-[11px] text-slate-500 dark:text-slate-400"><LocalizedText k="biteSizedLearning" fallback="học ngắn gọn" /></small>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 rounded-2xl border border-slate-200/70 bg-white/90 px-3.5 py-2.5 shadow-sm backdrop-blur dark:border-slate-800 dark:bg-sumi-900/80">
+                <span className="flex h-9 w-9 items-center justify-center rounded-xl text-lg bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40">📈</span>
+                <div className="leading-tight">
+                  <b className="block text-[13px] text-slate-900 dark:text-white">{progressPercent}%</b>
+                  <small className="text-[11px] text-slate-500 dark:text-slate-400"><LocalizedText k="completedOfLevel" fallback="hoàn thành" /> {userLevel}</small>
+                </div>
+              </div>
             </div>
 
             <div className="mt-7 flex flex-wrap items-center gap-3">
@@ -161,7 +177,7 @@ export default async function PracticePage() {
                   href={`/app/practice/${nextLesson.slug}`}
                   className="inline-flex min-h-12 items-center gap-2 rounded-full bg-red-600 px-7 text-sm font-black text-white shadow-lg shadow-red-600/30 transition hover:bg-red-700 active:scale-[0.98]"
                 >
-                  Bắt đầu học ngay <span aria-hidden>→</span>
+                  <LocalizedText k="btnStartNow" fallback="Bắt đầu học ngay" /> <span aria-hidden>→</span>
                 </Link>
               )}
               <a
@@ -169,7 +185,7 @@ export default async function PracticePage() {
                 className="inline-flex min-h-12 items-center gap-3 rounded-full border border-slate-200 bg-white/90 py-1 pl-1 pr-5 text-sm font-semibold text-slate-700 shadow-sm backdrop-blur dark:border-slate-700 dark:bg-sumi-900/80 dark:text-slate-200"
               >
                 <span className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-xs dark:bg-sumi-800">▶</span>
-                Xem danh sách bài học
+                <LocalizedText k="btnViewLessonList" fallback="Xem danh sách bài học" />
               </a>
             </div>
           </div>
@@ -184,12 +200,18 @@ export default async function PracticePage() {
             <div className="flex items-center gap-4">
               <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-red-100 text-4xl dark:bg-red-950/50" aria-hidden>🏮</span>
               <div className="min-w-0 flex-1">
-                <small className="text-[10px] font-bold tracking-[0.2em] text-slate-500 dark:text-slate-400">TIẾN ĐỘ LỘ TRÌNH JLPT {userLevel}</small>
+                <small className="text-[10px] font-bold tracking-[0.2em] text-slate-500 dark:text-slate-400">
+                  <LocalizedText k="pathProgressLabel" fallback="TIẾN ĐỘ LỘ TRÌNH JLPT" /> {userLevel}
+                </small>
                 <h2 className="text-xl font-black text-slate-900 dark:text-white sm:text-2xl">
-                  {progressPercent === 100 ? `Hoàn thành khóa ${userLevel}!` : "Tiếp tục hành trình học tập."}
+                  {progressPercent === 100 ? (
+                    <LocalizedText k="courseCompletedTitle" fallback={`Hoàn thành khóa ${userLevel}!`} />
+                  ) : (
+                    <LocalizedText k="continueJourneyTitle" fallback="Tiếp tục hành trình học tập." />
+                  )}
                 </h2>
                 <p className="mt-0.5 text-xs text-slate-600 dark:text-slate-400">
-                  Bạn đã hoàn thành <b>{completedCount}/{lessons.length}</b> bài học.
+                  <LocalizedText k="youCompleted" fallback="Bạn đã hoàn thành" /> <b>{completedCount}/{lessons.length}</b> <LocalizedText k="lessonCountUnit" fallback="bài học" />.
                 </p>
                 <div className="mt-3 flex items-center gap-3">
                   <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-rose-100 dark:bg-sumi-800">
@@ -206,13 +228,17 @@ export default async function PracticePage() {
                   {userLevel}
                 </span>
                 <div className="min-w-0">
-                  <b className="block text-sm text-slate-900 dark:text-white">Bài tiếp theo</b>
-                  <small className="mb-2 block truncate text-xs text-slate-500 dark:text-slate-400">{cleanLessonTitle(nextLesson.title)}</small>
+                  <b className="block text-sm text-slate-900 dark:text-white">
+                    <LocalizedText k="nextLesson" fallback="Bài tiếp theo" />
+                  </b>
+                  <small className="mb-2 block truncate text-xs text-slate-500 dark:text-slate-400">
+                    <LocalizedLessonTitle slug={nextLesson.slug} fallback={cleanLessonTitle(nextLesson.title)} />
+                  </small>
                   <Link
                     href={`/app/practice/${nextLesson.slug}`}
                     className="inline-flex min-h-9 items-center gap-1.5 rounded-full bg-red-600 px-5 text-xs font-black text-white shadow-md shadow-red-600/25 hover:bg-red-700"
                   >
-                    Học ngay →
+                    <LocalizedText k="btnLearnNow" fallback="Học ngay" /> →
                   </Link>
                 </div>
               </div>

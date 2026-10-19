@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useSoundAndTheme } from "@/components/SoundAndThemeContext";
+import { useNativeLanguage } from "@/components/LanguageContext";
 
 export interface DbAchievement {
   id: string;
@@ -225,6 +226,7 @@ export function AchievementsClient({
   currentStreak,
 }: AchievementsClientProps) {
   const { playClick, playCorrect, showToast } = useSoundAndTheme();
+  const { t, nativeLanguage } = useNativeLanguage();
 
   const [ownedList, setOwnedList] = useState<DbUserAchievement[]>(initialOwned);
   const [isSyncing, setIsSyncing] = useState(false);
@@ -232,6 +234,16 @@ export function AchievementsClient({
   const [activeTab, setActiveTab] = useState<"ALL" | "UNLOCKED" | "LOCKED">("ALL");
   const [selectedCategory, setSelectedCategory] = useState<string>("ALL");
   const [searchQuery, setSearchQuery] = useState("");
+
+  const getCategoryLabel = (category: string, defaultLabel: string) => {
+    switch (category) {
+      case "JOURNEY": return t("catJourney");
+      case "LEARNING": return t("catLearning");
+      case "CHALLENGE": return t("catChallenge");
+      case "SPECIAL": return t("catSpecial");
+      default: return defaultLabel;
+    }
+  };
 
   // Map owned achievements by key for fast lookup
   const ownedKeyMap = new Map<string, DbUserAchievement>();
@@ -258,17 +270,17 @@ export function AchievementsClient({
       if (data.unlocked && data.unlocked.length > 0) {
         playCorrect();
         showToast({
-          title: `🎉 Chúc mừng! Bạn mở khóa ${data.unlocked.length} huy hiệu mới!`,
+          title: `🎉 ${data.unlocked.length} badges unlocked!`,
           type: "success",
         });
       } else {
         showToast({
-          title: "Đã đồng bộ huy hiệu. Chưa có huy hiệu mới nào được mở thêm.",
+          title: "Synced achievements successfully.",
           type: "info",
         });
       }
     } catch {
-      showToast({ title: "Lỗi kết nối khi đồng bộ huy hiệu.", type: "error" });
+      showToast({ title: "Failed to sync achievements.", type: "error" });
     } finally {
       setIsSyncing(false);
     }
@@ -280,7 +292,7 @@ export function AchievementsClient({
     return {
       ...b,
       isUnlocked: !!ownedInfo,
-      unlockedAt: ownedInfo?.unlockedAt ? new Date(ownedInfo.unlockedAt).toLocaleDateString("vi-VN") : null,
+      unlockedAt: ownedInfo?.unlockedAt ? new Date(ownedInfo.unlockedAt).toLocaleDateString(nativeLanguage === "vi" ? "vi-VN" : "en-US") : null,
     };
   });
 
@@ -319,7 +331,7 @@ export function AchievementsClient({
         {/* CARD 1: UNLOCKED COUNT */}
         <div className="flex flex-col justify-between rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200/80 dark:bg-sumi-900 dark:ring-slate-800">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-400">HUY HIỆU ĐÃ MỞ</span>
+            <span className="text-xs font-bold text-slate-400">{t("badgeUnlockedCount")}</span>
             <span className="text-xl">🏆</span>
           </div>
           <div className="mt-4">
@@ -339,36 +351,36 @@ export function AchievementsClient({
         {/* CARD 2: TOTAL XP FROM BADGES */}
         <div className="flex flex-col justify-between rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200/80 dark:bg-sumi-900 dark:ring-slate-800">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-400">TỔNG XP HUY HIỆU</span>
+            <span className="text-xs font-bold text-slate-400">{t("badgeTotalXpHeader")}</span>
             <span className="text-xl">⭐</span>
           </div>
           <div className="mt-4">
             <span className="text-3xl font-black text-amber-500">+{totalEarnedXP} XP</span>
-            <p className="mt-1 text-xs text-slate-400">Tích lũy từ danh hiệu</p>
+            <p className="mt-1 text-xs text-slate-400">{t("badgeEarnedFromTitles")}</p>
           </div>
         </div>
 
         {/* CARD 3: STREAK */}
         <div className="flex flex-col justify-between rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200/80 dark:bg-sumi-900 dark:ring-slate-800">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-400">CHUỖI STREAK</span>
+            <span className="text-xs font-bold text-slate-400">{t("badgeStreakHeader")}</span>
             <span className="text-xl">🔥</span>
           </div>
           <div className="mt-4">
-            <span className="text-3xl font-black text-orange-600 dark:text-orange-400">{currentStreak} Ngày</span>
-            <p className="mt-1 text-xs text-slate-400">Học tập liên tục</p>
+            <span className="text-3xl font-black text-orange-600 dark:text-orange-400">{currentStreak} {t("statsDaySuffix")}</span>
+            <p className="mt-1 text-xs text-slate-400">{t("badgeContinuousStudy")}</p>
           </div>
         </div>
 
         {/* CARD 4: SYNC ACTION */}
         <div className="flex flex-col justify-between rounded-3xl bg-gradient-to-br from-slate-900 to-sumi-900 p-6 text-white shadow-md">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-amber-300">ĐỒNG BỘ THÀNH TỰU</span>
+            <span className="text-xs font-bold text-amber-300">{t("badgeSyncTitle")}</span>
             <span className="text-xl">✨</span>
           </div>
           <div className="mt-4 space-y-3">
             <p className="text-xs text-slate-300 leading-relaxed">
-              Kiểm tra dữ liệu tiến độ mới nhất để nhận tự động các huy hiệu vừa đủ điều kiện!
+              {t("badgeSyncDesc")}
             </p>
             <button
               type="button"
@@ -376,7 +388,7 @@ export function AchievementsClient({
               onClick={handleSyncAchievements}
               className="w-full rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 py-2.5 text-xs font-extrabold text-white shadow hover:brightness-110 active:scale-95 transition flex items-center justify-center gap-2"
             >
-              {isSyncing ? <span>Đang đồng bộ...</span> : <span>Kiểm Tra & Nhận Huy Hiệu 🔄</span>}
+              {isSyncing ? <span>{t("badgeSyncing")}</span> : <span>{t("badgeCheckAndClaim")}</span>}
             </button>
           </div>
         </div>
@@ -395,7 +407,7 @@ export function AchievementsClient({
                 : "text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
             }`}
           >
-            Tất Cả ({totalBadgesCount})
+            {t("filterAll")} ({totalBadgesCount})
           </button>
           <button
             type="button"
@@ -406,7 +418,7 @@ export function AchievementsClient({
                 : "text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
             }`}
           >
-            Đã Mở ({unlockedCount})
+            {t("filterUnlocked")} ({unlockedCount})
           </button>
           <button
             type="button"
@@ -417,7 +429,7 @@ export function AchievementsClient({
                 : "text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
             }`}
           >
-            Chưa Mở ({totalBadgesCount - unlockedCount})
+            {t("filterLocked")} ({totalBadgesCount - unlockedCount})
           </button>
         </div>
 
@@ -428,16 +440,16 @@ export function AchievementsClient({
             onChange={(e) => setSelectedCategory(e.target.value)}
             className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-bold text-slate-700 outline-none focus:border-red-400 dark:border-slate-700 dark:bg-sumi-850 dark:text-slate-200"
           >
-            <option value="ALL">Tất cả danh mục</option>
-            <option value="JOURNEY">Hành trình Shinkansen</option>
-            <option value="LEARNING">Bài học & Kỹ năng</option>
-            <option value="CHALLENGE">Thách thức & XP</option>
-            <option value="SPECIAL">Đặc biệt & Giao tiếp</option>
+            <option value="ALL">{t("catAll")}</option>
+            <option value="JOURNEY">{t("catJourney")}</option>
+            <option value="LEARNING">{t("catLearning")}</option>
+            <option value="CHALLENGE">{t("catChallenge")}</option>
+            <option value="SPECIAL">{t("catSpecial")}</option>
           </select>
 
           <input
             type="text"
-            placeholder="Tìm huy hiệu..."
+            placeholder={t("searchBadges")}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full sm:w-48 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-medium text-slate-800 placeholder-slate-400 outline-none focus:border-red-400 dark:border-slate-700 dark:bg-sumi-850 dark:text-slate-200"
@@ -478,7 +490,7 @@ export function AchievementsClient({
               <div className="flex-1 space-y-1.5 min-w-0">
                 <div className="flex items-center justify-between gap-2">
                   <span className="text-[11px] font-bold text-slate-400 truncate">
-                    {badge.categoryLabel}
+                    {getCategoryLabel(badge.category, badge.categoryLabel)}
                   </span>
                   <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-black text-amber-800 dark:bg-amber-950 dark:text-amber-300 shrink-0">
                     +{badge.xpReward} XP
@@ -496,11 +508,11 @@ export function AchievementsClient({
                 <div className="pt-1 text-[11px] font-semibold">
                   {badge.isUnlocked ? (
                     <span className="text-emerald-600 dark:text-emerald-400">
-                      ✓ Đã mở khóa ({badge.unlockedAt || "Đã đạt"})
+                      {t("badgeStatusUnlocked")} ({badge.unlockedAt || ""})
                     </span>
                   ) : (
                     <span className="text-slate-400">
-                      🔒 Chưa đạt · Bấm xem yêu cầu
+                      {t("badgeStatusNotAchieved")}
                     </span>
                   )}
                 </div>
@@ -511,9 +523,9 @@ export function AchievementsClient({
       ) : (
         <div className="rounded-3xl bg-white p-12 text-center shadow-sm ring-1 ring-slate-200/80 dark:bg-sumi-900 dark:ring-slate-800 space-y-3">
           <span className="text-4xl">🔍</span>
-          <h3 className="font-bold text-slate-900 dark:text-white text-lg">Không Tìm Thấy Huy Hiệu Phù Hợp</h3>
+          <h3 className="font-bold text-slate-900 dark:text-white text-lg">{t("noBadgesFound")}</h3>
           <p className="text-xs text-slate-400 max-w-sm mx-auto">
-            Hãy thử tìm kiếm với từ khóa khác hoặc chuyển danh mục bộ lọc.
+            {t("tryDifferentBadgeSearch")}
           </p>
         </div>
       )}
@@ -540,7 +552,7 @@ export function AchievementsClient({
                   {selectedBadge.icon}
                 </div>
                 <div>
-                  <span className="text-xs font-bold text-slate-400">{selectedBadge.categoryLabel}</span>
+                  <span className="text-xs font-bold text-slate-400">{getCategoryLabel(selectedBadge.category, selectedBadge.categoryLabel)}</span>
                   <h3 className="text-lg font-bold text-slate-900 dark:text-white">{selectedBadge.title}</h3>
                 </div>
               </div>
@@ -556,7 +568,7 @@ export function AchievementsClient({
 
             <div className="space-y-4 text-sm">
               <div>
-                <b className="text-slate-900 dark:text-white block mb-1">Mô tả huy hiệu:</b>
+                <b className="text-slate-900 dark:text-white block mb-1">{t("badgeDetailDesc")}</b>
                 <p className="text-slate-600 dark:text-slate-300 leading-relaxed text-xs sm:text-sm">
                   {selectedBadge.description}
                 </p>
@@ -564,17 +576,17 @@ export function AchievementsClient({
 
               <div className="rounded-2xl bg-slate-50 p-4 dark:bg-sumi-850 space-y-2 text-xs">
                 <div className="flex justify-between font-semibold">
-                  <span className="text-slate-500">Phần thưởng XP:</span>
+                  <span className="text-slate-500">{t("badgeRewardXp")}</span>
                   <span className="text-amber-600 dark:text-amber-400 font-bold">+{selectedBadge.xpReward} XP</span>
                 </div>
                 <div className="flex justify-between font-semibold">
-                  <span className="text-slate-500">Trạng thái:</span>
+                  <span className="text-slate-500">{t("badgeStatus")}</span>
                   <span className={selectedBadge.isUnlocked ? "text-emerald-600 font-bold" : "text-slate-400"}>
-                    {selectedBadge.isUnlocked ? "✓ Đã mở khóa" : "🔒 Chưa mở khóa"}
+                    {selectedBadge.isUnlocked ? t("badgeStatusUnlocked") : t("badgeStatusLocked")}
                   </span>
                 </div>
                 <div>
-                  <b className="text-slate-700 dark:text-slate-300 block mt-1">Điều kiện đạt được:</b>
+                  <b className="text-slate-700 dark:text-slate-300 block mt-1">{t("badgeRequirement")}</b>
                   <p className="text-slate-500 mt-0.5">{selectedBadge.requirementHint}</p>
                 </div>
               </div>
@@ -587,7 +599,7 @@ export function AchievementsClient({
                   onClick={() => setSelectedBadge(null)}
                   className="rounded-xl bg-gradient-to-r from-red-600 to-rose-500 px-5 py-2.5 text-xs font-bold text-white shadow hover:brightness-110 transition"
                 >
-                  {selectedBadge.actionLabel || "Đến Thực Hiện →"}
+                  {selectedBadge.actionLabel || t("badgeGoDoAction")}
                 </Link>
               )}
               <button
@@ -595,7 +607,7 @@ export function AchievementsClient({
                 onClick={() => setSelectedBadge(null)}
                 className="rounded-xl border border-slate-200 px-4 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-sumi-800"
               >
-                Đóng
+                {t("badgeClose")}
               </button>
             </div>
           </div>

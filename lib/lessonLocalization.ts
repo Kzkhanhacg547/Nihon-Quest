@@ -889,6 +889,265 @@ export const LESSON_I18N_MAP: Record<string, Record<"en" | "vi", LocalizedLesson
   },
 };
 
+export const UNIT_I18N_MAP: Record<string, Record<number, Record<"en" | "vi", { title: string; description: string }> & Partial<Record<NativeLanguage, { title: string; description: string }>>>> = {
+  N5: {
+    1: {
+      vi: { title: "Unit 01: Nhập Môn, Kana & Chào Hỏi", description: "Bảng chữ cái Hiragana, Katakana, biến âm, ảo âm, văn hóa chào hỏi & làm quen giao tiếp" },
+      en: { title: "Unit 01: Fundamentals, Kana & Greetings", description: "Hiragana, Katakana, voiced sounds, combined sounds, greetings & basic conversational Japanese" },
+      "zh-CN": { title: "第1单元：假名入门、发音与问候", description: "平假名、片假名、浊音、拗音、问候礼仪与基础交流" },
+      "zh-TW": { title: "第1單元：假名入門、發音與問候", description: "平假名、片假名、濁音、拗音、問候禮儀與基礎交流" },
+      ko: { title: "1단원: 입문, 가나 & 기본 인사", description: "히라가나, 가타카나, 탁음, 요음, 인사 문화 및 기초 회화" },
+      es: { title: "Unidad 01: Introducción, Kana y Saludos", description: "Alfabeto Hiragana, Katakana, sonidos modificados, saludos y primeras conversaciones" },
+      fr: { title: "Unité 01 : Fondations, Kana & Salutations", description: "Hiragana, Katakana, sons voisés, diphtongues, salutations et politesse" },
+      de: { title: "Einheit 01: Grundlagen, Kana & Begrüßung", description: "Hiragana, Katakana, Lautvarianten, Begrüßungen und einfache Gespräche" },
+      id: { title: "Unit 01: Pengantar, Kana & Salam", description: "Alfabet Hiragana, Katakana, bunyi modifikasi, salam dan percakapan dasar" },
+      th: { title: "ยูนิต 01: บทนำ, คานะ & คำทักทาย", description: "ฮิรางานะ คาตาคานะ เสียงขุ่น เสียงควบ การทักทายและบทสนทนาพื้นฐาน" },
+      ru: { title: "Раздел 01: Введение, кана и приветствия", description: "Хирагана, катакана, звонкие звуки, приветствия и базовая коммуникация" },
+      pt: { title: "Unidade 01: Introdução, Kana e Saudações", description: "Alfabeto Hiragana, Katakana, sons modificados, cumprimentos e conversação básica" },
+    },
+    2: {
+      vi: { title: "Unit 02: Đồ Vật, Nơi Chốn & Hoạt Động", description: "Chỉ thị từ Kore/Sore/Are, địa điểm, thời gian, động từ di chuyển & các cặp tính từ sơ cấp" },
+      en: { title: "Unit 02: Objects, Places & Daily Activities", description: "Demonstratives Kore/Sore/Are, locations, time, movement verbs & basic adjective pairs" },
+      "zh-CN": { title: "第2单元：物品、场所与日常活动", description: "指示词 Kore/Sore/Are、地点、时间、移动动词与初级形容词" },
+      "zh-TW": { title: "第2單元：物品、場所與日常活動", description: "指示詞 Kore/Sore/Are、地點、時間、移動動詞與初級形容詞" },
+      ko: { title: "2단원: 사물, 장소 & 일상 활동", description: "지시대명사 Kore/Sore/Are, 장소, 시간, 이동 동사 및 기초 형용사" },
+      es: { title: "Unidad 02: Objetos, Lugares y Actividades", description: "Demostrativos Kore/Sore/Are, lugares, horas, verbos de movimiento y adjetivos" },
+      fr: { title: "Unité 02 : Objets, Lieux & Activités Quotidiennes", description: "Démonstratifs Kore/Sore/Are, lieux, heure, verbes de mouvement et adjectifs" },
+      de: { title: "Einheit 02: Gegenstände, Orte & Tagesablauf", description: "Demonstrativpronomen Kore/Sore/Are, Orte, Uhrzeit, Bewegungsverben und Adjektive" },
+      id: { title: "Unit 02: Benda, Tempat & Kegiatan Harian", description: "Kata tunjuk Kore/Sore/Are, tempat, waktu, kata kerja bergerak dan kata sifat dasar" },
+      th: { title: "ยูนิต 02: สิ่งของ, สถานที่ & กิจวัตรประจำวัน", description: "คำชี้เฉพาะ Kore/Sore/Are สถานที่ เวลา กริยาการเคลื่อนที่และคำคุณศัพท์พื้นฐาน" },
+      ru: { title: "Раздел 02: Предметы, места и повседневные действия", description: "Указательные местоимения Kore/Sore/Are, места, время, глаголы движения и прилагательные" },
+      pt: { title: "Unidade 02: Objetos, Lugares e Atividades Diárias", description: "Pronomes demonstrativos Kore/Sore/Are, locais, horários, verbos de movimento e adjetivos" },
+    },
+    3: {
+      vi: { title: "Unit 03: Tồn Tại, So Sánh & Thể Te", description: "Tồn tại Arimasu/Imasu, số đếm, so sánh hơn nhất, nguyện vọng & bí quyết chia Thể Te" },
+      en: { title: "Unit 03: Existence, Comparisons & Te-Form", description: "Arimasu/Imasu existence, counters, comparisons, desires & Te-form verb conjugations" },
+      "zh-CN": { title: "第3单元：存在句、比较级与Te形转换", description: "存在句 Arimasu/Imasu、量词、比较级、愿望与Te形动词活用秘诀" },
+      "zh-TW": { title: "第3單元：存在句、比較級與Te形轉換", description: "存在句 Arimasu/Imasu、量詞、比較級、願望與Te形動詞活用秘訣" },
+      ko: { title: "3단원: 존재문, 비교 & Te형 활용", description: "존재문 Arimasu/Imasu, 수사, 비교급, 희망 표현 및 Te형 동사 활용" },
+      es: { title: "Unidad 03: Existencia, Comparaciones y Forma Te", description: "Existencia Arimasu/Imasu, contadores, comparativos, deseos y conjugación en forma Te" },
+      fr: { title: "Unité 03 : Existence, Comparaisons & Forme en Te", description: "Existence Arimasu/Imasu, compteurs, comparatifs, souhaits et conjugaison en forme Te" },
+      de: { title: "Einheit 03: Existenz, Vergleiche & Te-Form", description: "Existenz Arimasu/Imasu, Zählwörter, Vergleiche, Wünsche und Konjugation der Te-Form" },
+      id: { title: "Unit 03: Keberadaan, Perbandingan & Bentuk Te", description: "Keberadaan Arimasu/Imasu, kata bantu bilangan, perbandingan, keinginan & konjugasi bentuk Te" },
+      th: { title: "ยูนิต 03: การบอกการมีอยู่, การเปรียบเทียบ & รูปเตะ (Te-form)", description: "การมีอยู่ Arimasu/Imasu ลักษณนาม การเปรียบเทียบ ความต้องการและผันกริยารูปเตะ" },
+      ru: { title: "Раздел 03: Наличие, сравнения и форма Te", description: "Конструкции наличия Arimasu/Imasu, счётные суффиксы, сравнения, желания и форма Te" },
+      pt: { title: "Unidade 03: Existência, Comparações e Forma Te", description: "Existência Arimasu/Imasu, contadores, comparações, desejos e conjugação da forma Te" },
+    },
+    4: {
+      vi: { title: "Unit 04: Thể Nai, Ta, Thể Thường & Định Ngữ", description: "Mẫu câu cấm đoán, bắt buộc làm, thể từ điển, kinh nghiệm từng trải & mệnh đề bổ ngữ danh từ" },
+      en: { title: "Unit 04: Nai-form, Ta-form, Plain Form & Modifiers", description: "Prohibitions, obligations, dictionary form, past experiences & noun modification clauses" },
+      "zh-CN": { title: "第4单元：Nai形、Ta形、简体与定语从句", description: "禁止、必须、辞书形、过去经历表达与名词修饰从句" },
+      "zh-TW": { title: "第4單元：Nai形、Ta形、簡體與定語從句", description: "禁止、必須、辭書形、過去經歷表達與名詞修飾從句" },
+      ko: { title: "4단원: Nai형, Ta형, 보통체 & 명사 수식절", description: "금지, 의무 표현, 사전형, 경험 표현 및 명사 수식절 마스터" },
+      es: { title: "Unidad 04: Forma Nai, Forma Ta, Coloquial y Relativas", description: "Prohibiciones, obligaciones, forma diccionario, experiencias y oraciones de relativo" },
+      fr: { title: "Unité 04 : Formes Nai, Ta, Neutre & Propositions Relatives", description: "Interdiction, obligation, forme du dictionnaire, passé d'expérience et subordonnées relatives" },
+      de: { title: "Einheit 04: Nai-Form, Ta-Form, Grundform & Relativsätze", description: "Verbote, Pflichten, Wörterbuchform, Erfahrungen und attributive Nebensätze" },
+      id: { title: "Unit 04: Bentuk Nai, Bentuk Ta, Bentuk Biasa & Frasa Modifikasi", description: "Larangan, keharusan, bentuk kamus, pengalaman masa lalu dan klausa penjelas kata benda" },
+      th: { title: "ยูนิต 04: รูปไน, รูปตะ, รูปธรรมดา & ประโยคขยายคำนาม", description: "ประโยคห้าม ประโยคบังคับ รูปพจนานุกรม การบอกประสบการณ์และอนุประโยคขยายคำนาม" },
+      ru: { title: "Раздел 04: Формы Nai, Ta, простой стиль и определительные придаточные", description: "Запреты, обязательства, словарная форма, опыт прошлого и придаточные определительные" },
+      pt: { title: "Unidade 04: Forma Nai, Forma Ta, Modo Informal e Orações Relativas", description: "Proibições, obrigações, forma de dicionário, experiências passadas e orações relativas" },
+    },
+    5: {
+      vi: { title: "Unit 05: Kanji Master & Mock Test JLPT N5", description: "100+ Kanji cốt lõi, 10 trợ từ then chốt, phản xạ 5 thể động từ, đọc hiểu & đề thi thử toàn diện" },
+      en: { title: "Unit 05: Kanji Master & Mock Test JLPT N5", description: "100+ Core Kanji, 10 key particles, 5 verb form reflexes, reading comprehension & mock test" },
+      "zh-CN": { title: "第5单元：汉字大师与JLPT N5全真模拟", description: "100+核心汉字、10大关键助词、5大动词变形反射、阅读理解与全真模拟考" },
+      "zh-TW": { title: "第5單元：漢字大師與JLPT N5全真模擬", description: "100+核心漢字、10大關鍵助詞、5大動詞變形反射、閱讀理解與全真模擬考" },
+      ko: { title: "5단원: 한자 마스터 & JLPT N5 모의고사", description: "핵심 한자 100선, 10대 조사, 5대 동사 변형 순발력 훈련, 독해 및 실전 모의고사" },
+      es: { title: "Unidad 05: Maestro Kanji y Examen de Prueba JLPT N5", description: "100+ Kanji clave, 10 partículas esenciales, 5 formas verbales, comprensión de lectura y simulación" },
+      fr: { title: "Unité 05 : Maître Kanji & Examen Blanc JLPT N5", description: "100+ Kanji clés, 10 particules majeures, réflexes des 5 formes verbales, lecture et examen blanc" },
+      de: { title: "Einheit 05: Kanji-Meister & JLPT N5 Probetest", description: "100+ Kern-Kanji, 10 Schlüsselpartikeln, 5 Verbformen, Leseverstehen & Probetest" },
+      id: { title: "Unit 05: Master Kanji & Simulasi Ujian JLPT N5", description: "100+ Kanji inti, 10 partikel kunci, refleks 5 bentuk kata kerja, pemahaman membaca & simulasi ujian" },
+      th: { title: "ยูนิต 05: ปรมาจารย์คันจิ & ข้อสอบจำลอง JLPT N5", description: "คันจิหลัก 100+ ตัว 10 คำช่วยสำคัญ ผันกริยา 5 รูปแบบ การอ่านจับใจความและข้อสอบจำลอง" },
+      ru: { title: "Раздел 05: Мастер Кандзи и Пробный Экзамен JLPT N5", description: "100+ базовых кандзи, 10 ключевых частиц, 5 глагольных форм, чтение и полный тест" },
+      pt: { title: "Unidade 05: Mestre em Kanji e Simulado JLPT N5", description: "100+ Kanji essenciais, 10 partículas-chave, reflexos das 5 formas verbais, leitura e simulado completo" },
+    },
+    6: {
+      vi: { title: "Unit 06: Chuyên Đề Bổ Trợ Giao Tiếp Sơ Cấp (Part 1–9)", description: "9 chuyên đề thực hành từ vựng, ngữ pháp và hội thoại giao tiếp sơ cấp mở rộng" },
+      en: { title: "Unit 06: Practical Elementary Conversational Modules (Part 1–9)", description: "9 practical supplementary modules covering extended vocabulary, grammar & everyday dialogues" },
+      "zh-CN": { title: "第6单元：初级实用会话强化专题 (Part 1–9)", description: "9大实用补充专题：涵盖拓展词汇、语法深化与日常生活会话" },
+      "zh-TW": { title: "第6單元：初級實用會話強化專題 (Part 1–9)", description: "9大實用補充專題：涵蓋拓展詞彙、語法深化與日常生活會話" },
+      ko: { title: "6단원: 초급 실전 회화 보충 특강 (Part 1–9)", description: "어휘, 문법 및 실생활 회화를 확장 학습하는 9개 실전 보충 모듈" },
+      es: { title: "Unidad 06: Módulos Prácticos de Conversación Elemental (Parte 1–9)", description: "9 módulos complementarios de vocabulario extendido, gramática y situaciones cotidianas" },
+      fr: { title: "Unité 06 : Modules Pratiques de Conversation Élémentaire (Parties 1–9)", description: "9 modules complémentaires axés sur le vocabulaire étendu, la grammaire et les échanges du quotidien" },
+      de: { title: "Einheit 06: Praktische Konversationsmodule für Anfänger (Teil 1–9)", description: "9 vertiefende Ergänzungsmodule für Wortschatz, Grammatik und alltägliche Dialoge" },
+      id: { title: "Unit 06: Modul Praktis Percakapan Dasar (Bagian 1–9)", description: "9 modul pendukung praktis meliputi kosakata lanjutan, tata bahasa dan percakapan harian" },
+      th: { title: "ยูนิต 06: โมดูลเสริมการสนทนาขั้นต้นในชีวิตจริง (ตอนที่ 1–9)", description: "9 โมดูลเสริมคำศัพท์ ไวยากรณ์ และบทสนทนาสถานการณ์จริงในชีวิตประจำวัน" },
+      ru: { title: "Раздел 06: Практические модули базовой разговорной речи (Части 1–9)", description: "9 дополнительных тем для расширения словаря, грамматики и диалогов на каждый день" },
+      pt: { title: "Unidade 06: Módulos Práticos de Conversação Básica (Partes 1–9)", description: "9 módulos complementares com vocabulário estendido, gramática e conversação diária" },
+    },
+  },
+  N4: {
+    1: {
+      vi: { title: "Unit 01: Biến Thể Động Từ & Thể Trạng Thái", description: "Thể てしまう, やすい/にくい, すぎる và các biến thể động từ sơ trung cấp" },
+      en: { title: "Unit 01: Advanced Verb Variations & State Forms", description: "Expressing unintentional action (てしまう), ease/difficulty (やすい/にくい), excess (すぎる) & state" },
+      "zh-CN": { title: "第1单元：动词衍生变化与状态表达", description: "てしまう、やすい/にくい、すぎる以及初中级复合动词衍生形式" },
+      "zh-TW": { title: "第1單元：動詞衍生變化與狀態表達", description: "てしまう、やすい/にくい、すぎる以及初中級複合動詞衍生形式" },
+      ko: { title: "1단원: 동사 파생 활용 & 상태 표현", description: "てしまう, やすい/にくい, すぎる 및 초중급 동사 복합 표현 완전 정복" },
+      es: { title: "Unidad 01: Variaciones Verbales y Estados", description: "Acciones involuntarias (てしまう), facilidad/dificultad (やすい/にくい) y exceso (すぎる)" },
+      fr: { title: "Unité 01 : Variations Verbales & Formes d'État", description: "Action involontaire (てしまう), facilité/difficulté (やすい/にくい) et excès (すぎる)" },
+      de: { title: "Einheit 01: Erweiterte Verbformen & Zustände", description: "Unbeabsichtigte Handlungen (てしまう), Leichtigkeit/Schwierigkeit (やすい/にくい), Übermaß (すぎる)" },
+      id: { title: "Unit 01: Variasi Kata Kerja & Bentuk Keadaan", description: "Tindakan tak sengaja (てしまう), mudah/sulit (やすい/にくい), berlebihan (すぎる)" },
+      th: { title: "ยูนิต 01: การผันกริยาขั้นสูง & การบอกสภาพ", description: "การกระทำโดยไม่ตั้งใจ (てしまう), ความง่าย/ยาก (やすい/にくい), การกระทำเกินพอดี (すぎる)" },
+      ru: { title: "Раздел 01: Вариации глаголов и формы состояния", description: "Непреднамеренные действия (てしまう), легко/сложно (やすい/にくい), избыток (すぎる)" },
+      pt: { title: "Unidade 01: Variações Verbais e Formas de Estado", description: "Ações involuntárias (てしまう), facilidade/dificuldade (やすい/にくい) e excesso (すぎる)" },
+    },
+    2: {
+      vi: { title: "Unit 02: Câu Điều Kiện & Giả Định", description: "Bốn dạng câu giả định: ば, たら, なら, と — phân biệt và sử dụng đúng ngữ cảnh" },
+      en: { title: "Unit 02: Conditionals & Hypotheses (ば, たら, なら, と)", description: "Mastering the 4 conditional forms: distinctions, nuanced usage, and natural contexts" },
+      "zh-CN": { title: "第2单元：条件句与假设判断 (ば, たら, なら, と)", description: "掌握四大经典假设条件形：辨析语境差异与自然表达" },
+      "zh-TW": { title: "第2單元：條件句與假設判斷 (ば, たら, なら, と)", description: "掌握四大經典假設條件形：辨析語境差異與自然表達" },
+      ko: { title: "2단원: 조건문 & 가정 표현 (ば, たら, なら, と)", description: "일본어 4대 조건형 완벽 비교: 문맥별 뉘앙스 차이와 자연스러운 활용" },
+      es: { title: "Unidad 02: Condicionales e Hipótesis (ば, たら, なら, と)", description: "Las 4 formas condicionales: diferencias de matiz y uso natural en contexto" },
+      fr: { title: "Unité 02 : Conditionnels & Hypothèses (ば, たら, なら, と)", description: "Maîtrise des 4 formes conditionnelles : nuances, contextes et distinctions clés" },
+      de: { title: "Einheit 02: Konditionale & Hypothesen (ば, たら, なら, と)", description: "Die 4 Bedingungsformen: Nuancen, Unterschiede und authentische Anwendung" },
+      id: { title: "Unit 02: Kalimat Pengandaian (ば, たら, なら, と)", description: "Menguasai 4 bentuk pengandaian: perbedaan nuansa dan penggunaan alami" },
+      th: { title: "ยูนิต 02: ประโยคเงื่อนไขและสมมติ (ば, たら, なら, と)", description: "เจาะลึก 4 รูปแบบเงื่อนไข: ความแตกต่างของการใช้งานและบริบทที่เหมาะสม" },
+      ru: { title: "Раздел 02: Условные конструкции (ば, たら, なら, と)", description: "4 формы условия: тонкие смысловые различия и естественные контексты" },
+      pt: { title: "Unidade 02: Condicionais e Hipóteses (ば, たら, なら, と)", description: "As 4 formas condicionais: distinções de nuances e uso natural em conversas" },
+    },
+    3: {
+      vi: { title: "Unit 03: Bị Động, Sai Khiến & Xin Phép", description: "Thể Bị động (受身), Thể Sai khiến và Mẫu câu xin phép nơi công sở" },
+      en: { title: "Unit 03: Passive (受身), Causative & Permission", description: "Passive form (受身形), causative verbs, respectful permissions & polite requests" },
+      "zh-CN": { title: "第3单元：被动形 (受身)、使役形与敬语请求", description: "被动句 (受身形)、使役动词、职场请假与礼貌请求句型" },
+      "zh-TW": { title: "第3單元：被動形 (受身)、使役形與敬語請求", description: "被動句 (受身形)、使役動詞、職場請假與禮貌請求句型" },
+      ko: { title: "3단원: 수동태 (受身), 사역형 & 정중한 허가 요청", description: "수동태 (受身形), 사역형 동사, 비즈니스 허가 및 정중한 부탁 표현" },
+      es: { title: "Unidad 03: Pasiva (受身), Causativa y Permisos", description: "Forma pasiva (受身形), verbos causativos, permisos corteses y peticiones formales" },
+      fr: { title: "Unité 03 : Passif (受身), Causatif & Demandes Polies", description: "Forme passive (受身形), verbes causatifs, autorisations et requêtes formelles" },
+      de: { title: "Einheit 03: Passiv (受身), Kausativ & Höfliche Bitten", description: "Passivform (受身形), Kausativverben, höfliche Erlaubnisfragen und Bitten" },
+      id: { title: "Unit 03: Bentuk Pasif (受身), Kausatif & Izin Sopan", description: "Bentuk pasif (受身形), kata kerja kausatif, memohon izin dan permintaan sopan" },
+      th: { title: "ยูนิต 03: กริยาถูกกระทำ (受身), กริยาให้ทำ & การขออนุญาต", description: "รูปถูกกระทำ รูปให้ทำ การขออนุญาตอย่างสุภาพและการสื่อสารในที่ทำงาน" },
+      ru: { title: "Раздел 03: Пассив (受身), каузатив и вежливые просьбы", description: "Пассивный залог (受身形), побудительный залог, испрашивание разрешения" },
+      pt: { title: "Unidade 03: Voz Passiva (受身), Causativa e Permissões", description: "Forma passiva (受身形), verbos causativos, permissões corteses e solicitações formais" },
+    },
+    4: {
+      vi: { title: "Unit 04: Cho Nhận & Diễn Đạt Ý Định", description: "Mẫu câu cho nhận あげる/もらう/くれる, khuyên nhủ ほうがいい và suy đoán" },
+      en: { title: "Unit 04: Giving/Receiving (あげる/もらう/くれる) & Intentions", description: "Benefactive verbs (あげる/もらう/くれる), advice (〜ほうがいい), conjectures & intentions" },
+      "zh-CN": { title: "第4单元：授受动词 (あげる/もらう/くれる) 与意图表达", description: "授受动词、建议句型 〜ほうがいい、推测判断与意志形表达" },
+      "zh-TW": { title: "第4單元：授受動詞 (あげる/もらう/くれる) 與意圖表達", description: "授受動詞、建議句型 〜ほうがいい、推測判斷與意志形表達" },
+      ko: { title: "4단원: 수수동사 (あげる/もらう/くれる) & 의도 표현", description: "주고받기 동사 표현, 조언 〜ほうがいい, 추측 및 의지형 활용" },
+      es: { title: "Unidad 04: Dar/Recibir (あげる/もらう/くれる) e Intenciones", description: "Verbos de beneficio (あげる/もらう/くれる), consejos (〜ほうがいい) y conjeturas" },
+      fr: { title: "Unité 04 : Donner/Recevoir (あげる/もらう/くれる) & Intentions", description: "Verbes de don/réception, conseils (〜ほうがいい), suppositions et intentions" },
+      de: { title: "Einheit 04: Geben/Empfangen (あげる/もらう/くれる) & Absichten", description: "Geben und Nehmen, Ratschläge (〜ほうがいい), Vermutungen und Absichtsformen" },
+      id: { title: "Unit 04: Memberi/Menerima (あげる/もらう/くれる) & Niat", description: "Kata kerja memberi/menerima, saran (〜ほうがいい), dugaan dan bentuk niat" },
+      th: { title: "ยูนิต 04: การให้และการรับ (あげる/もらう/くれる) & การบอกความตั้งใจ", description: "กริยาการให้/รับ คำแนะนำ (〜ほうがいい) การคาดเดาและรูปตั้งใจ" },
+      ru: { title: "Раздел 04: Давать/Получать (あげる/もらう/くれる) и намерения", description: "Глаголы благодеяния, советы (〜ほうがいい), предположения и форма намерения" },
+      pt: { title: "Unidade 04: Dar/Receber (あげる/もらう/くれる) e Intenções", description: "Verbos de dar e receber, conselhos (〜ほうがいい), suposições e intenções" },
+    },
+    5: {
+      vi: { title: "Unit 05: Kanji N4 & Đề Thi Thử JLPT N4", description: "Kanji sơ trung cấp, tổng hợp ngữ pháp N4, đọc hiểu & đề thi thử JLPT N4 toàn diện" },
+      en: { title: "Unit 05: Kanji N4 & Comprehensive JLPT N4 Mock Test", description: "Intermediate Kanji, complete N4 grammar synthesis, reading & comprehensive mock test" },
+      "zh-CN": { title: "第5单元：Kanji N4与JLPT N4全真模拟考", description: "中初级核心汉字、N4语法全面总复习、实战读解与全真模拟" },
+      "zh-TW": { title: "第5單元：Kanji N4與JLPT N4全真模擬考", description: "中初級核心漢字、N4語法全面總複習、實戰讀解與全真模擬" },
+      ko: { title: "5단원: Kanji N4 & JLPT N4 실전 모의고사", description: "N4 필수 한자, N4 문법 총정리, 실전 독해 및 완성형 모의고사" },
+      es: { title: "Unidad 05: Kanji N4 y Examen de Simulación JLPT N4", description: "Kanji intermedio, síntesis gramatical N4, lectura y examen de prueba completo" },
+      fr: { title: "Unité 05 : Kanji N4 & Examen Blanc Complet JLPT N4", description: "Kanji intermédiaire, révision générale N4, compréhension écrite et examen blanc" },
+      de: { title: "Einheit 05: Kanji N4 & Umfassender JLPT N4 Probetest", description: "Mittelstufen-Kanji, N4-Grammatikkompendium, Leseverstehen & Probetest" },
+      id: { title: "Unit 05: Kanji N4 & Simulasi Lengkap JLPT N4", description: "Kanji tingkat menengah, rangkuman tata bahasa N4, membaca & simulasi ujian lengkap" },
+      th: { title: "ยูนิต 05: คันจิ N4 & ข้อสอบจำลอง JLPT N4 ฉบับสมบูรณ์", description: "คันจิ N4 สรุปไวยากรณ์ N4 ทั้งหมด การอ่านจับใจความและข้อสอบจำลองเต็มรูปแบบ" },
+      ru: { title: "Раздел 05: Кандзи N4 и Полный Пробный Экзамен JLPT N4", description: "Кандзи N4, полный обзор грамматики N4, чтение текстов и симуляция экзамена" },
+      pt: { title: "Unidade 05: Kanji N4 e Simulado Completo JLPT N4", description: "Kanji intermediário, síntese gramatical do N4, leitura e simulado preparatório" },
+    },
+  },
+  N3: {
+    1: {
+      vi: { title: "Unit 01: Giao Tiếp Công Sở & Khẳng Định Logic", description: "Văn hóa Horenso công sở, に関して, わけがない, に違いない và khẳng định chắc chắn" },
+      en: { title: "Unit 01: Workplace Communication & Logical Certainty", description: "Horenso workplace culture, に関して, わけがない, に違いない & logical inferences" },
+      "zh-CN": { title: "第1单元：职场商务沟通与逻辑推断", description: "日本职场报联相 (Horenso) 文化、に関して、わけがない、に違いない 与必然推论" },
+      "zh-TW": { title: "第1單元：職場商務溝通與邏輯推斷", description: "日本職場報聯相 (Horenso) 文化、に関して、わけがない、に違いない 與必然推論" },
+      ko: { title: "1단원: 비즈니스 소통 & 논리적 확신 표현", description: "비즈니스 호렌소(報連相) 문화, に関して, わけがない, に違いない 및 강한 확신" },
+      es: { title: "Unidad 01: Comunicación Laboral y Certeza Lógica", description: "Cultura Horenso en la oficina, に関して, わけがない, に違いない y certeza lógica" },
+      fr: { title: "Unité 01 : Communication Professionnelle & Déduction", description: "Culture Horenso en entreprise, に関して, わけがない, に違いない et certitudes" },
+      de: { title: "Einheit 01: Geschäftskommunikation & Logische Gewissheit", description: "Horenso-Arbeitskultur, に関して, わけがない, に違いない und logische Schlussfolgerungen" },
+      id: { title: "Unit 01: Komunikasi Tempat Kerja & Kepastian Logis", description: "Budaya Horenso di kantor, に関して, わけがない, に違いない & kepastian mutlak" },
+      th: { title: "ยูนิต 01: การสื่อสารในที่ทำงาน & การอนุมานเชิงตรรกะ", description: "วัฒนธรรมโฮเรนโซ に関して, わけがない, に違いない และการยืนยันอย่างมั่นใจ" },
+      ru: { title: "Раздел 01: Деловое общение и логическая уверенность", description: "Корпоративная культура хорэнсо, に関して, わけがない, に違いない и строгие выводы" },
+      pt: { title: "Unidade 01: Comunicação Corporativa e Certeza Lógica", description: "Cultura Horenso no trabalho, に関して, わけがない, に違いない e inferências lógicas" },
+    },
+    2: {
+      vi: { title: "Unit 02: Thời Điểm, Nguyên Nhân & Mức Độ", description: "たとたん, うちに, おかげで, せいで, に比べて và diễn đạt mức độ so sánh" },
+      en: { title: "Unit 02: Timing, Causes & Comparative Degrees", description: "Instant actions (たとたん), intervals (うちに), reasons (おかげで/せいで), comparisons (に比べて)" },
+      "zh-CN": { title: "第2单元：时间节点、因果归因与程度比较", description: "即时动作 たとたん、时机 うちに、积极/消极因果 おかげで/せいで、比较 に比べて" },
+      "zh-TW": { title: "第2單元：時間節點、因果歸因與程度比較", description: "即時動作 たとたん、時機 うちに、積極/消極因果 おかげで/せいで、比較 に比べて" },
+      ko: { title: "2단원: 시점, 인과 관계 & 정도 비교", description: "즉각 동작 たとたん, 시기 うちに, 원인 おかげで/せいで, 상대 비교 に比べて" },
+      es: { title: "Unidad 02: Momentos, Causas y Grados Comparativos", description: "Inmediatez (たとたん), lapsos (うちに), causas (おかげで/せいで), comparación (に比べて)" },
+      fr: { title: "Unité 02 : Temporalité, Causes & Degrés Comparatifs", description: "Immédiateté (たとたん), intervalle (うちに), causes (おかげで/せいで), comparaison (に比べて)" },
+      de: { title: "Einheit 02: Zeitpunkte, Ursachen & Vergleichsstufen", description: "Plötzlichkeit (たとたん), Zeitfenster (うちに), Gründe (おかげで/せいで), Vergleiche (に比べて)" },
+      id: { title: "Unit 02: Waktu, Penyebab & Derajat Perbandingan", description: "Spontanitas (たとたん), kesempatan (うちに), sebab (おかげで/せいで), perbandingan (に比べて)" },
+      th: { title: "ยูนิต 02: จุดเวลา, สาเหตุ & ระดับการเปรียบเทียบ", description: "การกระทำทันที たとたん, ช่วงเวลา うちに, สาเหตุ おかげで/せいで, การเปรียบเทียบ に比べて" },
+      ru: { title: "Раздел 02: Моменты времени, причины и степени сравнения", description: "Мгновенность (たとたん), интервал (うちに), причины (おかげで/せいで), сравнение (に比べて)" },
+      pt: { title: "Unidade 02: Momentos, Causas e Graus Comparativos", description: "Ações imediatas (たとたん), intervalos (うちに), causas (おかげで/せいで), comparações (に比べて)" },
+    },
+    3: {
+      vi: { title: "Unit 03: Phủ Định, Trạng Thái & Kính Ngữ N3", description: "わけではない, つつある, っぱなし, thụ động sai khiến và kính ngữ giao tiếp N3" },
+      en: { title: "Unit 03: Partial Negation, Ongoing States & N3 Keigo", description: "Partial negation (わけではない), evolving trends (つつある), leaving as-is (っぱなし) & N3 Keigo" },
+      "zh-CN": { title: "第3单元：部分否定、动态状态与N3敬语进阶", description: "部分否定 わけではない、演变趋势 つつある、放置状态 っぱなし 与N3实战敬语" },
+      "zh-TW": { title: "第3單元：部分否定、動態狀態與N3敬語進階", description: "部分否定 わけではない、演變趨勢 つつある、放置狀態 っぱなし 與N3實戰敬語" },
+      ko: { title: "3단원: 부분 부정, 지속 상태 & N3 고급 경어", description: "부분 부정 わけではない, 추세 つつある, 방치 상태 っぱなし 및 N3 비즈니스 경어" },
+      es: { title: "Unidad 03: Negación Parcial, Estados y Keigo N3", description: "Negación parcial (わけではない), evolución (つつある), descuido (っぱなし) y Keigo N3" },
+      fr: { title: "Unité 03 : Négation Partielle, États & Keigo N3", description: "Négation partielle (わけではない), évolution (つつある), négligence (っぱなし) et Keigo N3" },
+      de: { title: "Einheit 03: Teilweise Verneinung, Zustände & N3-Keigo", description: "Partielle Verneinung (わけではない), Trends (つつある), Verlassenheit (っぱなし) & N3-Keigo" },
+      id: { title: "Unit 03: Negasi Parsial, Keadaan & Keigo N3", description: "Negasi sebagian (わけではない), tren (つつある), pembiaran (っぱなし) & Keigo N3" },
+      th: { title: "ยูนิต 03: การปฏิเสธบางส่วน, สภาพต่อเนื่อง & คำสุภาพ N3", description: "การปฏิเสธบางส่วน わけではない, แนวโน้ม つつある, การปล่อยทิ้งไว้ っぱなし และคำสุภาพ N3" },
+      ru: { title: "Раздел 03: Частичное отрицание, процессы и кэйго N3", description: "Частичное отрицание (わけではない), динамика (つつある), заброшенность (っぱなし) и кэйго N3" },
+      pt: { title: "Unidade 03: Negação Parcial, Estados Contínuos e Keigo N3", description: "Negação parcial (わけではない), tendências (つつある), negligência (っぱなし) e Keigo N3" },
+    },
+    4: {
+      vi: { title: "Unit 04: Kanji Master N3 (Xã Hội & Công Việc)", description: "Bộ Kanji N3 cốt lõi về chính trị, kinh tế, công sở, kỹ thuật và đăng ký" },
+      en: { title: "Unit 04: N3 Kanji Master (Society, Business & Tech)", description: "Core intermediate Kanji covering politics, economy, workplace, technology & procedures" },
+      "zh-CN": { title: "第4单元：N3汉字大师 (社会、商务与技术)", description: "中级核心汉字集训：政治、经济、企业办公、科技与手续流程" },
+      "zh-TW": { title: "第4單元：N3漢字大師 (社會、商務與技術)", description: "中級核心漢字集訓：政治、經濟、企業辦公、科技與手續流程" },
+      ko: { title: "4단원: N3 한자 마스터 (사회, 비즈니스 & 테크)", description: "중급 필수 한자: 정치, 경제, 회사 업무, 기술 및 행정 절차" },
+      es: { title: "Unidad 04: Maestro Kanji N3 (Sociedad y Empresa)", description: "Kanji intermedio de política, economía, oficina, tecnología y trámites" },
+      fr: { title: "Unité 04 : Maître Kanji N3 (Société, Affaires & Tech)", description: "Kanji intermédiaire : politique, économie, travail de bureau, technique et démarches" },
+      de: { title: "Einheit 04: N3-Kanji-Meister (Gesellschaft & Beruf)", description: "Mittelstufen-Kanji für Politik, Wirtschaft, Büroalltag, Technik und Behörden" },
+      id: { title: "Unit 04: Master Kanji N3 (Masyarakat & Bisnis)", description: "Kanji menengah inti seputar politik, ekonomi, kantor, teknologi & administrasi" },
+      th: { title: "ยูนิต 04: ปรมาจารย์คันจิ N3 (สังคม ธุรกิจ & เทคโนโลยี)", description: "คันจิระดับกลางครอบคลุมเรื่องการเมือง เศรษฐกิจ การทำงานในออฟฟิศและเทคโนโลยี" },
+      ru: { title: "Раздел 04: Мастер Кандзи N3 (Общество, бизнес и техника)", description: "Кандзи среднего уровня: политика, экономика, офисная работа, техника и процедуры" },
+      pt: { title: "Unidade 04: Mestre em Kanji N3 (Sociedade e Negócios)", description: "Kanji intermediário de política, economia, escritório, tecnologia e procedimentos" },
+    },
+    5: {
+      vi: { title: "Unit 05: Từ Vựng, Đọc Hiểu & Đề Thi Thử N3", description: "Động từ N3 tần suất cao, tính từ, đọc hiểu email công việc & đề thi thử JLPT N3" },
+      en: { title: "Unit 05: N3 Vocabulary, Professional Reading & Full Mock Test", description: "High-frequency N3 verbs, nuanced adjectives, business emails & complete JLPT N3 mock test" },
+      "zh-CN": { title: "第5单元：N3核心词汇、商务读解与全真模拟考", description: "高频动词、精细形容词、商务邮件读解与JLPT N3全真模拟测试" },
+      "zh-TW": { title: "第5單元：N3核心詞彙、商務讀解與全真模擬考", description: "高頻動詞、精細形容詞、商務郵件讀解與JLPT N3全真模擬測試" },
+      ko: { title: "5단원: N3 핵심 어휘, 실무 독해 & JLPT N3 종합 모의고사", description: "고빈도 동사, 미묘한 뉘앙스의 형용사, 비즈니스 이메일 독해 및 전과목 모의고사" },
+      es: { title: "Unidad 05: Vocabulario N3, Lectura Profesional y Simulación", description: "Verbos N3 frecuentes, adjetivos sutiles, emails de trabajo y examen de prueba JLPT N3" },
+      fr: { title: "Unité 05 : Vocabulaire N3, Lecture Pro & Examen Blanc", description: "Verbes fréquents N3, adjectifs nuancés, emails professionnels et examen blanc JLPT N3" },
+      de: { title: "Einheit 05: N3-Wortschatz, Berufsleseverstehen & Probetest", description: "Häufige N3-Verben, differenzierte Adjektive, Geschäfts-E-Mails und kompletter N3-Probetest" },
+      id: { title: "Unit 05: Kosakata N3, Membaca Dokumen & Simulasi Ujian", description: "Kata kerja frekuensi tinggi, kata sifat nuansa, email bisnis & simulasi ujian JLPT N3" },
+      th: { title: "ยูนิต 05: คำศัพท์ N3, การอ่านเชิงธุรกิจ & ข้อสอบจำลอง JLPT N3", description: "กริยาความถี่สูง คำคุณศัพท์บอกเฉดอารมณ์ การอ่านอีเมลงานและข้อสอบจำลอง N3 เต็มรูปแบบ" },
+      ru: { title: "Раздел 05: Словарь N3, деловое чтение и экзаменационный тест", description: "Частотные глаголы N3, тонкие прилагательные, деловые письма и полный пробный тест" },
+      pt: { title: "Unidade 05: Vocabulário N3, Leitura Profissional e Simulado", description: "Verbos N3 de alta frequência, adjetivos refinados, e-mails de trabalho e simulado JLPT N3" },
+    },
+  },
+};
+
+/**
+ * Localizes any Unit title across 12 languages.
+ */
+export function getLocalizedUnitTitle(level: string, unitNumber: number, lang: NativeLanguage, fallbackTitle: string): string {
+  if (lang === "vi") return fallbackTitle;
+  const match = UNIT_I18N_MAP[level]?.[unitNumber];
+  if (match) {
+    if (match[lang]?.title) return match[lang]!.title;
+    if (match.en?.title) return match.en.title;
+  }
+  return fallbackTitle;
+}
+
+/**
+ * Localizes any Unit description across 12 languages.
+ */
+export function getLocalizedUnitDesc(level: string, unitNumber: number, lang: NativeLanguage, fallbackDesc: string): string {
+  if (lang === "vi") return fallbackDesc;
+  const match = UNIT_I18N_MAP[level]?.[unitNumber];
+  if (match) {
+    if (match[lang]?.description) return match[lang]!.description;
+    if (match.en?.description) return match.en.description;
+  }
+  return fallbackDesc;
+}
+
 /**
  * Intelligent helper to localize any lesson title while guaranteeing 100% Japanese preservation.
  */
@@ -923,6 +1182,66 @@ export function getLocalizedLessonTitle(slug: string, lang: NativeLanguage, fall
       case "ru": return `Минна Урок ${num}${japanesePart}`;
       case "pt": return `Minna Lição ${num}${japanesePart}`;
       default: return `Minna Lesson ${num}${japanesePart}`;
+    }
+  }
+
+  // If N4 Lesson pattern
+  const n4Match = slug.match(/n4-lesson-(\d+)/i);
+  if (n4Match) {
+    const num = n4Match[1];
+    switch (lang) {
+      case "en": return `JLPT N4 · Lesson ${num}${japanesePart}`;
+      case "zh-CN": return `JLPT N4 · 第${num}课${japanesePart}`;
+      case "zh-TW": return `JLPT N4 · 第${num}課${japanesePart}`;
+      case "ko": return `JLPT N4 · 제${num}과${japanesePart}`;
+      case "es": return `JLPT N4 · Lección ${num}${japanesePart}`;
+      case "fr": return `JLPT N4 · Leçon ${num}${japanesePart}`;
+      case "de": return `JLPT N4 · Lektion ${num}${japanesePart}`;
+      case "id": return `JLPT N4 · Pelajaran ${num}${japanesePart}`;
+      case "th": return `JLPT N4 · บทที่ ${num}${japanesePart}`;
+      case "ru": return `JLPT N4 · Урок ${num}${japanesePart}`;
+      case "pt": return `JLPT N4 · Lição ${num}${japanesePart}`;
+      default: return `JLPT N4 · Lesson ${num}${japanesePart}`;
+    }
+  }
+
+  // If N3 Lesson pattern
+  const n3Match = slug.match(/n3-lesson-(\d+)/i);
+  if (n3Match) {
+    const num = n3Match[1];
+    switch (lang) {
+      case "en": return `JLPT N3 · Lesson ${num}${japanesePart}`;
+      case "zh-CN": return `JLPT N3 · 第${num}课${japanesePart}`;
+      case "zh-TW": return `JLPT N3 · 第${num}課${japanesePart}`;
+      case "ko": return `JLPT N3 · 제${num}과${japanesePart}`;
+      case "es": return `JLPT N3 · Lección ${num}${japanesePart}`;
+      case "fr": return `JLPT N3 · Leçon ${num}${japanesePart}`;
+      case "de": return `JLPT N3 · Lektion ${num}${japanesePart}`;
+      case "id": return `JLPT N3 · Pelajaran ${num}${japanesePart}`;
+      case "th": return `JLPT N3 · บทที่ ${num}${japanesePart}`;
+      case "ru": return `JLPT N3 · Урок ${num}${japanesePart}`;
+      case "pt": return `JLPT N3 · Lição ${num}${japanesePart}`;
+      default: return `JLPT N3 · Lesson ${num}${japanesePart}`;
+    }
+  }
+
+  // If N5 Lesson pattern
+  const n5Match = slug.match(/n5-lesson-(\d+)/i);
+  if (n5Match) {
+    const num = n5Match[1];
+    switch (lang) {
+      case "en": return `JLPT N5 · Lesson ${num}${japanesePart}`;
+      case "zh-CN": return `JLPT N5 · 第${num}课${japanesePart}`;
+      case "zh-TW": return `JLPT N5 · 第${num}課${japanesePart}`;
+      case "ko": return `JLPT N5 · 제${num}과${japanesePart}`;
+      case "es": return `JLPT N5 · Lección ${num}${japanesePart}`;
+      case "fr": return `JLPT N5 · Leçon ${num}${japanesePart}`;
+      case "de": return `JLPT N5 · Lektion ${num}${japanesePart}`;
+      case "id": return `JLPT N5 · Pelajaran ${num}${japanesePart}`;
+      case "th": return `JLPT N5 · บทที่ ${num}${japanesePart}`;
+      case "ru": return `JLPT N5 · Урок ${num}${japanesePart}`;
+      case "pt": return `JLPT N5 · Lição ${num}${japanesePart}`;
+      default: return `JLPT N5 · Lesson ${num}${japanesePart}`;
     }
   }
 
@@ -1030,3 +1349,4 @@ export function getLocalizedRoadmapLabel(key: string, lang: NativeLanguage, fall
   if (lang === "vi") return fallback;
   return MAP[key]?.[lang] || MAP[key]?.en || fallback;
 }
+

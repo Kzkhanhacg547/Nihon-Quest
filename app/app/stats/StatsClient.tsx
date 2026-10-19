@@ -3,6 +3,7 @@
 import React, { useMemo, useState } from "react";
 import Link from "next/link";
 import { useSoundAndTheme } from "@/components/SoundAndThemeContext";
+import { useNativeLanguage } from "@/components/LanguageContext";
 import type { DailyXpPoint, HeatmapDay, ReviewMetrics, PersonalRecords } from "@/lib/stats";
 
 export interface RecentActivityItem {
@@ -89,6 +90,7 @@ export function StatsClient({
   const [activeChartPoint, setActiveChartPoint] = useState<DailyXpPoint | null>(null);
   const [hoveredHeatmapDay, setHoveredHeatmapDay] = useState<HeatmapDay | null>(null);
   const { playClick } = useSoundAndTheme();
+  const { t, nativeLanguage } = useNativeLanguage();
 
   // Current active chart data
   const currentChartData = useMemo(() => {
@@ -125,15 +127,15 @@ export function StatsClient({
         <div className="relative z-10 flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
           <div className="max-w-2xl">
             <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3.5 py-1 text-xs font-bold tracking-wider text-rose-300 backdrop-blur-sm">
-              <span>📊 BÁO CÁO HỌC TẬP</span>
+              <span>📊 {t("statsBadgeReport")}</span>
               <span className="opacity-50">·</span>
               <span>JLPT {user.learningLevel}</span>
             </div>
             <h1 className="mt-3 text-3xl font-black tracking-tight sm:text-4xl lg:text-5xl">
-              Thống Kê <span className="text-red-500">Học Tập</span>
+              {t("statsTitleMain")} <span className="text-red-500">{t("statsTitleSub")}</span>
             </h1>
             <p className="mt-2 text-sm leading-relaxed text-slate-300 sm:text-base">
-              Theo dõi tiến độ, hiệu suất ôn tập và hành trình chinh phục tiếng Nhật của bạn.
+              {t("statsPageSubtitle")}
             </p>
           </div>
 
@@ -143,7 +145,7 @@ export function StatsClient({
               onClick={playClick}
               className="inline-flex min-h-11 items-center gap-2 rounded-2xl bg-gradient-to-r from-red-600 to-rose-500 px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-red-900/40 transition hover:brightness-110 active:scale-95"
             >
-              <span>📊 Đánh giá tiến bộ</span>
+              <span>📊 {t("statsEvaluateProgress")}</span>
               <span aria-hidden="true">→</span>
             </Link>
             <Link
@@ -151,14 +153,14 @@ export function StatsClient({
               onClick={playClick}
               className="inline-flex min-h-11 items-center gap-2 rounded-2xl border border-white/20 bg-white/10 px-5 py-2.5 text-sm font-bold text-white backdrop-blur-sm transition hover:bg-white/20 active:scale-95"
             >
-              <span>📖 Học bài tiếp theo</span>
+              <span>📖 {t("statsNextLesson")}</span>
             </Link>
             <Link
               href="/app/review"
               onClick={playClick}
               className="inline-flex min-h-11 items-center gap-2 rounded-2xl border border-white/20 bg-white/10 px-5 py-2.5 text-sm font-bold text-white backdrop-blur-sm transition hover:bg-white/20 active:scale-95"
             >
-              <span>🧠 Ôn tập SRS</span>
+              <span>🧠 {t("statsSrsReview")}</span>
             </Link>
           </div>
         </div>
@@ -166,26 +168,26 @@ export function StatsClient({
         {/* Quick Highlights Strip */}
         <div className="relative z-10 mt-8 grid grid-cols-2 gap-3 border-t border-white/10 pt-6 sm:grid-cols-4 sm:gap-4">
           <div className="rounded-2xl bg-white/5 p-3.5 backdrop-blur-sm border border-white/10">
-            <p className="text-xs font-semibold text-slate-400">Cấp độ hiện tại</p>
+            <p className="text-xs font-semibold text-slate-400">{t("statsCurrentLevel")}</p>
             <p className="mt-1 text-xl font-black text-white sm:text-2xl">Level {user.level}</p>
-            <p className="mt-0.5 text-[11px] text-amber-400 font-medium">{user.levelProgressPercent}% tới Level {user.level + 1}</p>
+            <p className="mt-0.5 text-[11px] text-amber-400 font-medium">{user.levelProgressPercent}% {t("statsToLevel")} {user.level + 1}</p>
           </div>
           <div className="rounded-2xl bg-white/5 p-3.5 backdrop-blur-sm border border-white/10">
-            <p className="text-xs font-semibold text-slate-400">Tổng kinh nghiệm</p>
+            <p className="text-xs font-semibold text-slate-400">{t("statsTotalXp")}</p>
             <p className="mt-1 text-xl font-black text-rose-400 sm:text-2xl">{user.totalXP.toLocaleString()} XP</p>
-            <p className="mt-0.5 text-[11px] text-slate-400 font-medium">Tích lũy từ bài học</p>
+            <p className="mt-0.5 text-[11px] text-slate-400 font-medium">{t("statsAccumulatedLessons")}</p>
           </div>
           <div className="rounded-2xl bg-white/5 p-3.5 backdrop-blur-sm border border-white/10">
-            <p className="text-xs font-semibold text-slate-400">Chuỗi học tập</p>
+            <p className="text-xs font-semibold text-slate-400">{t("statsCurrentStreak")}</p>
             <p className="mt-1 text-xl font-black text-orange-400 sm:text-2xl">
-              🔥 {user.currentStreak} {user.currentStreak === 1 ? "ngày" : "ngày"}
+              🔥 {user.currentStreak} {t("statsDaySuffix")}
             </p>
-            <p className="mt-0.5 text-[11px] text-slate-400 font-medium">Kỷ lục: {user.longestStreak} ngày</p>
+            <p className="mt-0.5 text-[11px] text-slate-400 font-medium">{t("statsRecordPrefix")} {user.longestStreak} {t("statsDaySuffix")}</p>
           </div>
           <div className="rounded-2xl bg-white/5 p-3.5 backdrop-blur-sm border border-white/10">
-            <p className="text-xs font-semibold text-slate-400">Thời gian học tập</p>
+            <p className="text-xs font-semibold text-slate-400">{t("statsStudyTime")}</p>
             <p className="mt-1 text-xl font-black text-emerald-400 sm:text-2xl">⏱️ {studyTimeFormatted}</p>
-            <p className="mt-0.5 text-[11px] text-slate-400 font-medium">Luyện tập thực tế</p>
+            <p className="mt-0.5 text-[11px] text-slate-400 font-medium">{t("statsRealPractice")}</p>
           </div>
         </div>
       </section>
@@ -193,15 +195,15 @@ export function StatsClient({
       {/* ================= 2. OVERVIEW CARDS ================= */}
       <section aria-labelledby="overview-title">
         <h2 id="overview-title" className="text-lg font-black text-slate-900 dark:text-white">
-          Tổng quan chỉ số
+          {t("statsOverviewTitle")}
         </h2>
-        <p className="text-xs text-slate-500 dark:text-slate-400">Dữ liệu được cập nhật theo thời gian thực từ tài khoản của bạn</p>
+        <p className="text-xs text-slate-500 dark:text-slate-400">{t("statsOverviewSub")}</p>
 
         <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4 lg:grid-cols-4">
           {/* Total XP */}
           <div className="group rounded-3xl border border-slate-200/80 bg-white p-4 sm:p-5 shadow-sm transition hover:shadow-md dark:border-slate-800 dark:bg-sumi-900">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-slate-500 dark:text-slate-400">Tổng XP</span>
+              <span className="text-xs font-bold text-slate-500 dark:text-slate-400">{t("statsTotalXpShort")}</span>
               <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-rose-50 text-rose-600 dark:bg-rose-950/50 dark:text-rose-400">
                 ✨
               </span>
@@ -210,20 +212,20 @@ export function StatsClient({
               {user.totalXP.toLocaleString()}
             </p>
             <span className="mt-1 inline-block text-xs font-semibold text-rose-600 dark:text-rose-400">
-              Điểm kinh nghiệm
+              {t("statsXpPoints")}
             </span>
           </div>
 
           {/* Current Level */}
           <div className="group rounded-3xl border border-slate-200/80 bg-white p-4 sm:p-5 shadow-sm transition hover:shadow-md dark:border-slate-800 dark:bg-sumi-900">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-slate-500 dark:text-slate-400">Cấp độ</span>
+              <span className="text-xs font-bold text-slate-500 dark:text-slate-400">{t("statsLevelLabel")}</span>
               <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-amber-50 text-amber-600 dark:bg-amber-950/50 dark:text-amber-400">
                 🏆
               </span>
             </div>
             <p className="mt-3 text-2xl font-black tracking-tight text-slate-900 dark:text-white sm:text-3xl">
-              Cấp {user.level}
+              Level {user.level}
             </p>
             <span className="mt-1 inline-block text-xs font-semibold text-amber-600 dark:text-amber-400">
               {user.currentLevelXP} / {user.nextLevelXP} XP
@@ -233,23 +235,23 @@ export function StatsClient({
           {/* Streak */}
           <div className="group rounded-3xl border border-slate-200/80 bg-white p-4 sm:p-5 shadow-sm transition hover:shadow-md dark:border-slate-800 dark:bg-sumi-900">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-slate-500 dark:text-slate-400">Chuỗi học</span>
+              <span className="text-xs font-bold text-slate-500 dark:text-slate-400">{t("statsStreakLabel")}</span>
               <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-orange-50 text-orange-600 dark:bg-orange-950/50 dark:text-orange-400">
                 🔥
               </span>
             </div>
             <p className="mt-3 text-2xl font-black tracking-tight text-slate-900 dark:text-white sm:text-3xl">
-              {user.currentStreak} ngày
+              {user.currentStreak} {t("statsDaySuffix")}
             </p>
             <span className="mt-1 inline-block text-xs font-semibold text-orange-600 dark:text-orange-400">
-              Kỷ lục: {user.longestStreak} ngày
+              {t("statsRecordPrefix")} {user.longestStreak} {t("statsDaySuffix")}
             </span>
           </div>
 
           {/* Study Time */}
           <div className="group rounded-3xl border border-slate-200/80 bg-white p-4 sm:p-5 shadow-sm transition hover:shadow-md dark:border-slate-800 dark:bg-sumi-900">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-slate-500 dark:text-slate-400">Thời gian học</span>
+              <span className="text-xs font-bold text-slate-500 dark:text-slate-400">{t("statsStudyTimeLabel")}</span>
               <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600 dark:bg-emerald-950/50 dark:text-emerald-400">
                 ⏱️
               </span>
@@ -258,14 +260,14 @@ export function StatsClient({
               {studyTimeFormatted}
             </p>
             <span className="mt-1 inline-block text-xs font-semibold text-emerald-600 dark:text-emerald-400">
-              Tổng thời gian làm bài
+              {t("statsTotalTimeDoing")}
             </span>
           </div>
 
           {/* Lessons Completed */}
           <div className="group rounded-3xl border border-slate-200/80 bg-white p-4 sm:p-5 shadow-sm transition hover:shadow-md dark:border-slate-800 dark:bg-sumi-900">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-slate-500 dark:text-slate-400">Bài học xong</span>
+              <span className="text-xs font-bold text-slate-500 dark:text-slate-400">{t("statsCompletedLessons")}</span>
               <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-600 dark:bg-indigo-950/50 dark:text-indigo-400">
                 📖
               </span>
@@ -274,14 +276,14 @@ export function StatsClient({
               {breakdown.lessons.completed}
             </p>
             <span className="mt-1 inline-block text-xs font-semibold text-indigo-600 dark:text-indigo-400">
-              / {breakdown.lessons.total} bài {user.learningLevel}
+              / {breakdown.lessons.total} {t("lessonsUnit")} {user.learningLevel}
             </span>
           </div>
 
           {/* Vocabulary Learned */}
           <div className="group rounded-3xl border border-slate-200/80 bg-white p-4 sm:p-5 shadow-sm transition hover:shadow-md dark:border-slate-800 dark:bg-sumi-900">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-slate-500 dark:text-slate-400">Từ vựng đã học</span>
+              <span className="text-xs font-bold text-slate-500 dark:text-slate-400">{t("statsLearnedVocab")}</span>
               <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-teal-50 text-teal-600 dark:bg-teal-950/50 dark:text-teal-400">
                 あ
               </span>
@@ -290,14 +292,14 @@ export function StatsClient({
               {breakdown.vocabulary.learned}
             </p>
             <span className="mt-1 inline-block text-xs font-semibold text-teal-600 dark:text-teal-400">
-              Lưu trong kho SRS
+              {t("statsSavedInSrs")}
             </span>
           </div>
 
           {/* Kana Mastered */}
           <div className="group rounded-3xl border border-slate-200/80 bg-white p-4 sm:p-5 shadow-sm transition hover:shadow-md dark:border-slate-800 dark:bg-sumi-900">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-slate-500 dark:text-slate-400">Kana thành thạo</span>
+              <span className="text-xs font-bold text-slate-500 dark:text-slate-400">{t("statsMasteredKana")}</span>
               <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-rose-50 text-rose-600 dark:bg-rose-950/50 dark:text-rose-400">
                 字
               </span>
@@ -313,7 +315,7 @@ export function StatsClient({
           {/* Achievements */}
           <div className="group rounded-3xl border border-slate-200/80 bg-white p-4 sm:p-5 shadow-sm transition hover:shadow-md dark:border-slate-800 dark:bg-sumi-900">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-slate-500 dark:text-slate-400">Thành tựu</span>
+              <span className="text-xs font-bold text-slate-500 dark:text-slate-400">{t("statsAchievementsLabel")}</span>
               <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-yellow-50 text-yellow-600 dark:bg-yellow-950/50 dark:text-yellow-400">
                 🎖️
               </span>
@@ -322,7 +324,7 @@ export function StatsClient({
               {achievementsCount.unlocked} <span className="text-base font-bold text-slate-400">/ {achievementsCount.total}</span>
             </p>
             <span className="mt-1 inline-block text-xs font-semibold text-yellow-600 dark:text-yellow-400">
-              Huy hiệu đạt được
+              {t("statsBadgesUnlocked")}
             </span>
           </div>
         </div>
@@ -333,16 +335,16 @@ export function StatsClient({
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h2 className="text-lg font-black text-slate-900 dark:text-white">
-              Biểu đồ kinh nghiệm (XP)
+              {t("statsChartTitle")}
             </h2>
             <p className="text-xs text-slate-500 dark:text-slate-400">
-              Tổng tích lũy: <strong className="text-slate-900 dark:text-white font-bold">{totalRangeXp.toLocaleString()} XP</strong> trong giai đoạn này
+              {t("statsTotalAccumulated")}: <strong className="text-slate-900 dark:text-white font-bold">{totalRangeXp.toLocaleString()} XP</strong> {t("statsInThisPeriod")}
             </p>
           </div>
 
           <div className="flex items-center gap-1.5 rounded-2xl bg-slate-100 p-1 dark:bg-sumi-800 self-start sm:self-auto">
             {(["7d", "30d", "90d"] as const).map((range) => {
-              const label = range === "7d" ? "7 ngày" : range === "30d" ? "30 ngày" : "90 ngày";
+              const label = range === "7d" ? `7 ${t("statsDaySuffix")}` : range === "30d" ? `30 ${t("statsDaySuffix")}` : `90 ${t("statsDaySuffix")}`;
               const on = chartRange === range;
               return (
                 <button
@@ -372,17 +374,17 @@ export function StatsClient({
             <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50/50 py-12 text-center dark:border-slate-800 dark:bg-sumi-950/40">
               <span className="text-3xl">🌱</span>
               <p className="mt-2 text-sm font-bold text-slate-700 dark:text-slate-200">
-                Chưa có dữ liệu XP trong {chartRange === "7d" ? "7 ngày" : chartRange === "30d" ? "30 ngày" : "90 ngày"} qua
+                {t("statsNoChartData")}
               </p>
               <p className="mt-1 text-xs text-slate-500 dark:text-slate-400 max-w-sm">
-                Hãy hoàn thành một bài học hoặc ôn tập thẻ nhớ để bắt đầu ghi lại biểu đồ hoạt động.
+                {t("statsNoChartDataSub")}
               </p>
               <Link
                 href="/app/practice"
                 onClick={playClick}
                 className="mt-4 inline-flex min-h-9 items-center gap-2 rounded-xl bg-red-600 px-4 text-xs font-bold text-white transition hover:bg-red-700"
               >
-                Vào học ngay →
+                {t("statsStartLearningNow")}
               </Link>
             </div>
           ) : (
@@ -392,13 +394,13 @@ export function StatsClient({
                 {activeChartPoint ? (
                   <div className="flex items-center gap-2 text-slate-900 dark:text-white font-semibold">
                     <span className="inline-block h-2 w-2 rounded-full bg-red-600" />
-                    <span>Ngày {activeChartPoint.fullDate} ({activeChartPoint.dayLabel}):</span>
+                    <span>{activeChartPoint.fullDate} ({activeChartPoint.dayLabel}):</span>
                     <strong className="text-red-600 dark:text-red-400 font-black">+{activeChartPoint.xp} XP</strong>
                   </div>
                 ) : (
-                  <span className="text-slate-400 italic text-[11px]">Rê chuột hoặc chạm vào cột để xem chi tiết từng ngày</span>
+                  <span className="text-slate-400 italic text-[11px]">{t("statsHoverChartTip")}</span>
                 )}
-                <span className="text-slate-400 text-[11px]">Đỉnh: {maxChartXp} XP</span>
+                <span className="text-slate-400 text-[11px]">{t("statsPeak")}: {maxChartXp} XP</span>
               </div>
 
               {/* Bar/Area chart visualisation */}
@@ -461,22 +463,22 @@ export function StatsClient({
         <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h2 className="text-lg font-black text-slate-900 dark:text-white">
-              Lịch học tập &amp; Điểm chuyên cần (Heatmap)
+              {t("statsHeatmapTitle")}
             </h2>
             <p className="text-xs text-slate-500 dark:text-slate-400">
-              Hoạt động rèn luyện trong 20 tuần gần đây
+              {t("statsHeatmapSub")}
             </p>
           </div>
 
           {/* Legend */}
           <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 pt-2 sm:pt-0">
-            <span>Ít</span>
+            <span>{t("statsLess")}</span>
             <span className="h-3 w-3 rounded-sm bg-slate-100 dark:bg-sumi-800" title="0 XP" />
             <span className="h-3 w-3 rounded-sm bg-rose-200 dark:bg-rose-950" title="1-20 XP" />
             <span className="h-3 w-3 rounded-sm bg-rose-400 dark:bg-rose-800" title="21-50 XP" />
             <span className="h-3 w-3 rounded-sm bg-red-500 dark:bg-red-600" title="51-100 XP" />
             <span className="h-3 w-3 rounded-sm bg-red-700 dark:bg-red-400" title=">100 XP" />
-            <span>Nhiều</span>
+            <span>{t("statsMore")}</span>
           </div>
         </div>
 
@@ -487,10 +489,10 @@ export function StatsClient({
             <div className="flex gap-1.5">
               {/* Day Labels Column */}
               <div className="flex flex-col justify-between pr-2 text-[10px] font-bold text-slate-400 h-[116px]">
-                <span>T2</span>
-                <span>T4</span>
-                <span>T6</span>
-                <span>CN</span>
+                <span>{t("statsDayMon")}</span>
+                <span>{t("statsDayWed")}</span>
+                <span>{t("statsDayFri")}</span>
+                <span>{t("statsDaySun")}</span>
               </div>
 
               {/* Weeks matrix */}
@@ -499,12 +501,15 @@ export function StatsClient({
                   // Show month label above first week of month
                   const firstDayOfWeek = week[0];
                   const showMonth = wIdx === 0 || firstDayOfWeek.dateNumber <= 7;
+                  const monthLabel = showMonth
+                    ? new Date(2026, firstDayOfWeek.month, 1).toLocaleDateString(nativeLanguage === "vi" ? "vi-VN" : "en-US", { month: "short" })
+                    : "";
 
                   return (
                     <div key={wIdx} className="flex flex-1 flex-col gap-1.5">
                       {/* Month header */}
                       <span className="h-4 text-[10px] font-bold text-slate-400 truncate">
-                        {showMonth ? MONTH_NAMES[firstDayOfWeek.month] : ""}
+                        {monthLabel}
                       </span>
 
                       {/* 7 Days of the Week */}
@@ -524,7 +529,7 @@ export function StatsClient({
                             onMouseLeave={() => setHoveredHeatmapDay(null)}
                             onTouchStart={() => setHoveredHeatmapDay(day)}
                             className={`h-3 w-full rounded-sm transition cursor-pointer hover:ring-2 ${bgLevel}`}
-                            title={`${day.dateKey}: +${day.xp} XP (${day.activityCount} hoạt động)`}
+                            title={`${day.dateKey}: +${day.xp} XP`}
                           />
                         );
                       })}
@@ -540,13 +545,13 @@ export function StatsClient({
         <div className="mt-3 min-h-6 text-xs text-slate-600 dark:text-slate-300 font-medium">
           {hoveredHeatmapDay ? (
             <div className="flex items-center gap-2">
-              <span className="font-bold text-slate-900 dark:text-white">Ngày {hoveredHeatmapDay.dateKey}:</span>
+              <span className="font-bold text-slate-900 dark:text-white">{hoveredHeatmapDay.dateKey}:</span>
               <span className="text-red-600 dark:text-red-400 font-extrabold">+{hoveredHeatmapDay.xp} XP</span>
               <span className="text-slate-400">·</span>
-              <span>{hoveredHeatmapDay.activityCount} bài học &amp; lượt ôn tập</span>
+              <span>{hoveredHeatmapDay.activityCount} {t("statsLessonsAndReviews")}</span>
             </div>
           ) : (
-            <span className="text-slate-400 text-[11px] italic">Di chuột lên từng ô để xem chi tiết hoạt động của ngày đó</span>
+            <span className="text-slate-400 text-[11px] italic">{t("statsHeatmapHoverTip")}</span>
           )}
         </div>
       </section>
@@ -554,9 +559,9 @@ export function StatsClient({
       {/* ================= 5. LEARNING PROGRESS BREAKDOWN ================= */}
       <section aria-labelledby="breakdown-title">
         <h2 id="breakdown-title" className="text-lg font-black text-slate-900 dark:text-white">
-          Tiến độ học tập theo chuyên mục
+          {t("statsBreakdownTitle")}
         </h2>
-        <p className="text-xs text-slate-500 dark:text-slate-400">Được đồng bộ chính xác với kho dữ liệu Kana, Từ vựng, Ngữ pháp và Bài học</p>
+        <p className="text-xs text-slate-500 dark:text-slate-400">{t("statsBreakdownSub")}</p>
 
         <div className="mt-4 grid gap-4 sm:grid-cols-2">
           {/* Kana */}
@@ -567,7 +572,7 @@ export function StatsClient({
                   あ
                 </span>
                 <div>
-                  <h3 className="text-base font-bold text-slate-900 dark:text-white">Bảng chữ cái (Kana)</h3>
+                  <h3 className="text-base font-bold text-slate-900 dark:text-white">{t("statsKanaAlphabet")}</h3>
                   <p className="text-xs text-slate-500 dark:text-slate-400">Hiragana &amp; Katakana</p>
                 </div>
               </div>
@@ -578,9 +583,9 @@ export function StatsClient({
 
             <div className="mt-5 space-y-2">
               <div className="flex justify-between text-xs font-semibold text-slate-600 dark:text-slate-300">
-                <span>Đã thành thạo</span>
+                <span>{t("statsMastered")}</span>
                 <span className="font-bold text-slate-900 dark:text-white">
-                  {breakdown.kana.mastered} / {breakdown.kana.total} ký tự
+                  {breakdown.kana.mastered} / {breakdown.kana.total}
                 </span>
               </div>
               <div className="h-3 w-full overflow-hidden rounded-full bg-slate-100 p-0.5 dark:bg-sumi-800">
@@ -592,9 +597,9 @@ export function StatsClient({
             </div>
 
             <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
-              <span className="text-xs text-slate-500">Luyện viết &amp; phát âm</span>
+              <span className="text-xs text-slate-500">{t("statsKanaActionSub")}</span>
               <Link href="/app/learn" onClick={playClick} className="text-xs font-bold text-rose-600 hover:underline dark:text-rose-400">
-                Vào Kana Lab →
+                {t("statsKanaActionBtn")}
               </Link>
             </div>
           </div>
@@ -607,20 +612,20 @@ export function StatsClient({
                   語
                 </span>
                 <div>
-                  <h3 className="text-base font-bold text-slate-900 dark:text-white">Từ vựng &amp; Hán tự</h3>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">Kho từ đã nạp vào SRS</p>
+                  <h3 className="text-base font-bold text-slate-900 dark:text-white">{t("statsVocabKanji")}</h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">{t("statsVocabSub")}</p>
                 </div>
               </div>
               <span className="text-sm font-black text-teal-600 dark:text-teal-400">
-                {breakdown.vocabulary.learned} từ
+                {breakdown.vocabulary.learned}
               </span>
             </div>
 
             <div className="mt-5 space-y-2">
               <div className="flex justify-between text-xs font-semibold text-slate-600 dark:text-slate-300">
-                <span>Tiến trình JLPT {user.learningLevel}</span>
+                <span>{t("statsProgressJlpt")} JLPT {user.learningLevel}</span>
                 <span className="font-bold text-slate-900 dark:text-white">
-                  {breakdown.vocabulary.learned} / {breakdown.vocabulary.total} từ
+                  {breakdown.vocabulary.learned} / {breakdown.vocabulary.total}
                 </span>
               </div>
               <div className="h-3 w-full overflow-hidden rounded-full bg-slate-100 p-0.5 dark:bg-sumi-800">
@@ -632,9 +637,9 @@ export function StatsClient({
             </div>
 
             <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
-              <span className="text-xs text-slate-500">Tra cứu từ vựng &amp; Kanji</span>
+              <span className="text-xs text-slate-500">{t("statsVocabActionSub")}</span>
               <Link href="/app/vocabulary" onClick={playClick} className="text-xs font-bold text-teal-600 hover:underline dark:text-teal-400">
-                Tra từ vựng →
+                {t("statsVocabActionBtn")}
               </Link>
             </div>
           </div>
@@ -647,8 +652,8 @@ export function StatsClient({
                   文
                 </span>
                 <div>
-                  <h3 className="text-base font-bold text-slate-900 dark:text-white">Ngữ pháp JLPT</h3>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">Cấu trúc mẫu câu &amp; ví dụ</p>
+                  <h3 className="text-base font-bold text-slate-900 dark:text-white">{t("statsGrammarTitle")}</h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">{t("statsGrammarSub")}</p>
                 </div>
               </div>
               <span className="text-sm font-black text-indigo-600 dark:text-indigo-400">
@@ -658,9 +663,9 @@ export function StatsClient({
 
             <div className="mt-5 space-y-2">
               <div className="flex justify-between text-xs font-semibold text-slate-600 dark:text-slate-300">
-                <span>Số điểm ngữ pháp</span>
+                <span>{t("statsGrammarCount")}</span>
                 <span className="font-bold text-slate-900 dark:text-white">
-                  {breakdown.grammar.learned} / {breakdown.grammar.total} mẫu câu
+                  {breakdown.grammar.learned} / {breakdown.grammar.total}
                 </span>
               </div>
               <div className="h-3 w-full overflow-hidden rounded-full bg-slate-100 p-0.5 dark:bg-sumi-800">
@@ -672,9 +677,9 @@ export function StatsClient({
             </div>
 
             <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
-              <span className="text-xs text-slate-500">Khám phá mẫu câu</span>
+              <span className="text-xs text-slate-500">{t("statsGrammarActionSub")}</span>
               <Link href="/app/grammar" onClick={playClick} className="text-xs font-bold text-indigo-600 hover:underline dark:text-indigo-400">
-                Học ngữ pháp →
+                {t("statsGrammarActionBtn")}
               </Link>
             </div>
           </div>
@@ -687,8 +692,8 @@ export function StatsClient({
                   ⛩️
                 </span>
                 <div>
-                  <h3 className="text-base font-bold text-slate-900 dark:text-white">Bài học lộ trình</h3>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">Chương trình chuẩn JLPT {user.learningLevel}</p>
+                  <h3 className="text-base font-bold text-slate-900 dark:text-white">{t("statsRoadmapLessons")}</h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">{t("statsRoadmapSub")} JLPT {user.learningLevel}</p>
                 </div>
               </div>
               <span className="text-sm font-black text-amber-600 dark:text-amber-400">
@@ -698,9 +703,9 @@ export function StatsClient({
 
             <div className="mt-5 space-y-2">
               <div className="flex justify-between text-xs font-semibold text-slate-600 dark:text-slate-300">
-                <span>Đã hoàn thành</span>
+                <span>{t("statsCompleted")}</span>
                 <span className="font-bold text-slate-900 dark:text-white">
-                  {breakdown.lessons.completed} / {breakdown.lessons.total} bài học
+                  {breakdown.lessons.completed} / {breakdown.lessons.total} {t("lessonsUnit")}
                 </span>
               </div>
               <div className="h-3 w-full overflow-hidden rounded-full bg-slate-100 p-0.5 dark:bg-sumi-800">
@@ -712,9 +717,9 @@ export function StatsClient({
             </div>
 
             <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
-              <span className="text-xs text-slate-500">Tiếp tục chặng học</span>
+              <span className="text-xs text-slate-500">{t("statsRoadmapActionSub")}</span>
               <Link href="/app/practice" onClick={playClick} className="text-xs font-bold text-amber-600 hover:underline dark:text-amber-400">
-                Làm bài tập →
+                {t("statsRoadmapActionBtn")}
               </Link>
             </div>
           </div>
@@ -726,10 +731,10 @@ export function StatsClient({
         <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h2 className="text-lg font-black text-slate-900 dark:text-white">
-              Hiệu suất Ôn tập (SRS Review Performance)
+              {t("statsSrsTitle")}
             </h2>
             <p className="text-xs text-slate-500 dark:text-slate-400">
-              Thuật toán lặp lại ngắt quãng SM-2 giúp ghi nhớ kiến thức dài hạn
+              {t("statsSrsSub")}
             </p>
           </div>
           <Link
@@ -737,7 +742,7 @@ export function StatsClient({
             onClick={playClick}
             className="mt-2 inline-flex min-h-9 items-center gap-2 rounded-xl bg-red-50 px-4 text-xs font-bold text-red-600 hover:bg-red-100 dark:bg-red-950/50 dark:text-red-300 sm:mt-0"
           >
-            Mở hàng đợi ôn tập →
+            {t("statsOpenReviewDeck")}
           </Link>
         </div>
 
@@ -745,17 +750,17 @@ export function StatsClient({
           <div className="mt-6 flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50/50 py-10 text-center dark:border-slate-800 dark:bg-sumi-950/40">
             <span className="text-3xl">🧠</span>
             <p className="mt-2 text-sm font-bold text-slate-700 dark:text-slate-200">
-              Chưa có đủ dữ liệu ôn tập (Not enough data yet)
+              {t("statsNoActivity")}
             </p>
             <p className="mt-1 text-xs text-slate-500 dark:text-slate-400 max-w-sm">
-              Khi bạn học từ vựng, Kana hoặc làm sai câu hỏi trong bài tập, hệ thống sẽ tự động đưa vào hàng đợi SRS để ôn tập.
+              {t("statsNoChartDataSub")}
             </p>
             <Link
               href="/app/vocabulary"
               onClick={playClick}
               className="mt-4 inline-flex min-h-9 items-center gap-2 rounded-xl bg-slate-900 px-4 text-xs font-bold text-white transition hover:bg-slate-800 dark:bg-white dark:text-slate-900"
             >
-              Xem từ vựng để lưu vào SRS
+              {t("statsVocabActionBtn")}
             </Link>
           </div>
         ) : (
@@ -767,8 +772,8 @@ export function StatsClient({
                   {reviewMetrics.accuracy !== null ? `${reviewMetrics.accuracy}%` : "—"}
                 </span>
               </div>
-              <p className="mt-3 text-sm font-bold text-slate-900 dark:text-white">Độ chính xác</p>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400">{reviewMetrics.totalReviewsDone} lượt trả lời</p>
+              <p className="mt-3 text-sm font-bold text-slate-900 dark:text-white">{t("statsAccuracy")}</p>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400">{reviewMetrics.totalReviewsDone} {t("statsReviewsAnswered")}</p>
             </div>
 
             {/* SRS Status Cards */}
@@ -777,24 +782,24 @@ export function StatsClient({
                 <span className="text-2xl font-black text-emerald-600 dark:text-emerald-400">
                   {reviewMetrics.masteredCount}
                 </span>
-                <p className="mt-1 text-xs font-bold text-emerald-900 dark:text-emerald-200">Đã làm chủ</p>
-                <p className="mt-0.5 text-[10px] text-emerald-700/70 dark:text-emerald-400/70">Nhớ vững vàng</p>
+                <p className="mt-1 text-xs font-bold text-emerald-900 dark:text-emerald-200">{t("statsMasteredStatus")}</p>
+                <p className="mt-0.5 text-[10px] text-emerald-700/70 dark:text-emerald-400/70">{t("statsMasteredSub")}</p>
               </div>
 
               <div className="rounded-2xl border border-blue-200/80 bg-blue-50/50 p-4 text-center dark:border-blue-900/60 dark:bg-blue-950/30">
                 <span className="text-2xl font-black text-blue-600 dark:text-blue-400">
                   {reviewMetrics.learningCount}
                 </span>
-                <p className="mt-1 text-xs font-bold text-blue-900 dark:text-blue-200">Đang học</p>
-                <p className="mt-0.5 text-[10px] text-blue-700/70 dark:text-blue-400/70">Đang lặp lại SRS</p>
+                <p className="mt-1 text-xs font-bold text-blue-900 dark:text-blue-200">{t("statsLearningStatus")}</p>
+                <p className="mt-0.5 text-[10px] text-blue-700/70 dark:text-blue-400/70">{t("statsLearningSub")}</p>
               </div>
 
               <div className="rounded-2xl border border-amber-200/80 bg-amber-50/50 p-4 text-center dark:border-amber-900/60 dark:bg-amber-950/30">
                 <span className="text-2xl font-black text-amber-600 dark:text-amber-400">
                   {reviewMetrics.needsReviewCount}
                 </span>
-                <p className="mt-1 text-xs font-bold text-amber-900 dark:text-amber-200">Cần ôn tập</p>
-                <p className="mt-0.5 text-[10px] text-amber-700/70 dark:text-amber-400/70">Đến hạn hôm nay</p>
+                <p className="mt-1 text-xs font-bold text-amber-900 dark:text-amber-200">{t("statsNeedsReviewStatus")}</p>
+                <p className="mt-0.5 text-[10px] text-amber-700/70 dark:text-amber-400/70">{t("statsNeedsReviewSub")}</p>
               </div>
             </div>
           </div>
@@ -806,25 +811,25 @@ export function StatsClient({
         {/* Personal Records */}
         <section className="rounded-3xl border border-slate-200/80 bg-white p-5 sm:p-7 shadow-sm dark:border-slate-800 dark:bg-sumi-900">
           <h2 className="text-lg font-black text-slate-900 dark:text-white">
-            Kỷ Lục Cá Nhân (Personal Records)
+            {t("statsPersonalRecords")}
           </h2>
-          <p className="text-xs text-slate-500 dark:text-slate-400">Những dấu mốc ấn tượng trên hành trình của bạn</p>
+          <p className="text-xs text-slate-500 dark:text-slate-400">{t("statsPersonalRecordsSub")}</p>
 
           <dl className="mt-5 divide-y divide-slate-100 border-t border-slate-100 text-sm dark:divide-slate-800 dark:border-slate-800">
             <div className="flex items-center justify-between py-3.5">
               <dt className="flex items-center gap-2 text-slate-600 dark:text-slate-300">
                 <span>🔥</span>
-                <span>Chuỗi học dài nhất</span>
+                <span>{t("statsLongestStreakLabel")}</span>
               </dt>
               <dd className="font-black text-orange-600 dark:text-orange-400">
-                {personalRecords.longestStreak} ngày liên tục
+                {personalRecords.longestStreak} {t("statsDaySuffix")}
               </dd>
             </div>
 
             <div className="flex items-center justify-between py-3.5">
               <dt className="flex items-center gap-2 text-slate-600 dark:text-slate-300">
                 <span>⚡</span>
-                <span>XP cao nhất trong 1 ngày</span>
+                <span>{t("statsHighestXpDay")}</span>
               </dt>
               <dd className="font-black text-rose-600 dark:text-rose-400">
                 {personalRecords.mostXpInOneDay.toLocaleString()} XP
@@ -837,27 +842,27 @@ export function StatsClient({
             <div className="flex items-center justify-between py-3.5">
               <dt className="flex items-center gap-2 text-slate-600 dark:text-slate-300">
                 <span>📖</span>
-                <span>Tổng số bài học đã hoàn thành</span>
+                <span>{t("statsTotalLessonsDone")}</span>
               </dt>
               <dd className="font-black text-slate-900 dark:text-white">
-                {personalRecords.totalLessonsCompleted} bài
+                {personalRecords.totalLessonsCompleted} {t("lessonsUnit")}
               </dd>
             </div>
 
             <div className="flex items-center justify-between py-3.5">
               <dt className="flex items-center gap-2 text-slate-600 dark:text-slate-300">
                 <span>🧠</span>
-                <span>Tổng số lượt ôn tập thẻ</span>
+                <span>{t("statsTotalCardsReviewed")}</span>
               </dt>
               <dd className="font-black text-slate-900 dark:text-white">
-                {personalRecords.totalReviewsDone} lượt
+                {personalRecords.totalReviewsDone} {t("statsReviewsAnswered")}
               </dd>
             </div>
 
             <div className="flex items-center justify-between py-3.5">
               <dt className="flex items-center gap-2 text-slate-600 dark:text-slate-300">
                 <span>⏱️</span>
-                <span>Tổng thời gian luyện tập</span>
+                <span>{t("statsTotalPracticeTime")}</span>
               </dt>
               <dd className="font-black text-emerald-600 dark:text-emerald-400">
                 {personalRecords.formattedStudyTime}
@@ -869,17 +874,17 @@ export function StatsClient({
         {/* Recent Activity Feed */}
         <section className="rounded-3xl border border-slate-200/80 bg-white p-5 sm:p-7 shadow-sm dark:border-slate-800 dark:bg-sumi-900">
           <h2 className="text-lg font-black text-slate-900 dark:text-white">
-            Hoạt động gần đây (Recent Activity)
+            {t("statsRecentActivity")}
           </h2>
-          <p className="text-xs text-slate-500 dark:text-slate-400">Nhật ký quá trình học tập thực tế</p>
+          <p className="text-xs text-slate-500 dark:text-slate-400">{t("statsRecentActivitySub")}</p>
 
           {recentActivities.length === 0 ? (
             <div className="mt-5 rounded-2xl border border-dashed border-slate-200 p-6 text-center dark:border-slate-800 bg-slate-50/50 dark:bg-sumi-950/30">
               <p className="text-sm font-semibold text-slate-600 dark:text-slate-400">
-                Chưa có hoạt động nào được ghi nhận.
+                {t("statsNoActivity")}
               </p>
               <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                Hãy bắt đầu bài học đầu tiên để thấy hoạt động tại đây!
+                {t("statsNoActivitySub")}
               </p>
             </div>
           ) : (
@@ -933,17 +938,17 @@ export function StatsClient({
         <section className="rounded-3xl border border-dashed border-red-200 bg-red-50/50 p-8 text-center dark:border-red-900/60 dark:bg-red-950/20">
           <span className="text-4xl">🌸</span>
           <h3 className="mt-3 text-lg font-black text-slate-900 dark:text-white">
-            Hành trình vạn dặm bắt đầu từ một bước chân!
+            {t("statsJourneyBegins")}
           </h3>
           <p className="mx-auto mt-2 max-w-md text-sm text-slate-600 dark:text-slate-300">
-            Chào mừng bạn đến với Nihon Quest. Hãy hoàn thành bài học đầu tiên để bắt đầu xây dựng kho dữ liệu và biểu đồ học tập của riêng mình.
+            {t("statsWelcomeSub")}
           </p>
           <Link
             href="/app/practice"
             onClick={playClick}
             className="mt-5 inline-flex min-h-11 items-center gap-2 rounded-2xl bg-red-600 px-6 py-3 text-sm font-bold text-white shadow-md shadow-red-600/30 transition hover:bg-red-700 active:scale-95"
           >
-            Bắt đầu bài học đầu tiên ➔
+            {t("statsStartFirstLesson")}
           </Link>
         </section>
       )}
