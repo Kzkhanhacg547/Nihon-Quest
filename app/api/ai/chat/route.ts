@@ -481,7 +481,7 @@ VAI TRÒ VÀ NGUYÊN TẮC CỦA TRỢ LÝ HỌC TẬP (AI SENSEI):
           const clientModel = isValidGeminiModel ? requestedModel : undefined;
 
           const modelsToTry = Array.from(
-            new Set([clientModel, "gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-flash-8b"].filter(Boolean) as string[]),
+            new Set([clientModel, "gemini-2.5-flash", "gemini-flash-latest", "gemini-flash-lite-latest"].filter(Boolean) as string[]),
           );
 
           for (const modelName of modelsToTry) {
