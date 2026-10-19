@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { Modal } from "@/components/ui";
 import { KanaWriter } from "@/components/KanaWriter";
 import { useSoundAndTheme } from "@/components/SoundAndThemeContext";
+import { useNativeLanguage } from "@/components/LanguageContext";
 import { IcoArrow, IcoSpeaker } from "@/components/LearnIcons";
 import type { KanaRow } from "./KanaLab";
 
@@ -13,9 +14,9 @@ const MAIN: { id: Tab; label: string }[] = [
   { id: "HIRAGANA", label: "Hiragana" },
   { id: "KATAKANA", label: "Katakana" },
 ];
-const EXTRA: { id: Tab; label: string }[] = [
-  { id: "DAKUTEN", label: "Biến âm が・ぱ" },
-  { id: "COMBO", label: "Âm ghép きゃ" },
+const EXTRA: { id: Tab; labelKey: string; fallback: string }[] = [
+  { id: "DAKUTEN", labelKey: "tabDakutenLabel", fallback: "Biến âm が・ぱ" },
+  { id: "COMBO", labelKey: "tabComboLabel", fallback: "Âm ghép きゃ" },
 ];
 const LABEL: Record<Tab, string> = { HIRAGANA: "Hiragana", KATAKANA: "Katakana", DAKUTEN: "Biến âm", COMBO: "Âm ghép Yōon" };
 const BLURB: Record<Tab, string> = {
@@ -62,6 +63,7 @@ export function LearnKanaPanel({ kana, practiced }: { kana: KanaRow[]; practiced
   const [writing, setWriting] = useState(false);
   const [doneSet, setDoneSet] = useState<Set<string>>(new Set(practiced));
   const { playClick, speak } = useSoundAndTheme();
+  const { t } = useNativeLanguage();
 
   const samples = useMemo(() => pickSamples(kana, tab), [kana, tab]);
   const selected = samples.find((k) => k.id === selectedId) ?? samples[0] ?? null;
@@ -72,9 +74,9 @@ export function LearnKanaPanel({ kana, practiced }: { kana: KanaRow[]; practiced
     setTab(id);
     setSelectedId(null);
   };
-  const tabBtn = (t: { id: Tab; label: string }, cls: string) => (
-    <button key={t.id} type="button" aria-pressed={tab === t.id} className={`${cls} ${tab === t.id ? "is-active" : ""}`} onClick={() => pick(t.id)}>
-      {t.label}
+  const tabBtn = (id: Tab, label: string, cls: string) => (
+    <button key={id} type="button" aria-pressed={tab === id} className={`${cls} ${tab === id ? "is-active" : ""}`} onClick={() => pick(id)}>
+      {label}
     </button>
   );
 
@@ -83,14 +85,14 @@ export function LearnKanaPanel({ kana, practiced }: { kana: KanaRow[]; practiced
       <div className="lp-title">
         <span className="lp-title-ico t-red jp-text">あ</span>
         <div>
-          <h2>Học bảng chữ cái Kana</h2>
-          <p>Làm quen với Hiragana &amp; Katakana cùng cách đọc chuẩn.</p>
+          <h2>{t("learnKanaPanelTitle")}</h2>
+          <p>{t("learnKanaPanelDesc")}</p>
         </div>
       </div>
 
       <div role="group" aria-label="Chọn bảng kana">
-        <div className="lp-tabs">{MAIN.map((t) => tabBtn(t, "lp-tab"))}</div>
-        <div className="lp-subtabs">{EXTRA.map((t) => tabBtn(t, "lp-subtab"))}</div>
+        <div className="lp-tabs">{MAIN.map((item) => tabBtn(item.id, item.label, "lp-tab"))}</div>
+        <div className="lp-subtabs">{EXTRA.map((item) => tabBtn(item.id, t(item.labelKey) || item.fallback, "lp-subtab"))}</div>
       </div>
 
       <div className="lp-kana-grid" data-cols={cols}>
@@ -112,7 +114,7 @@ export function LearnKanaPanel({ kana, practiced }: { kana: KanaRow[]; practiced
         ))}
       </div>
 
-      <a href="#kana-full" className="lp-more">Xem toàn bộ bảng {LABEL[tab]} <IcoArrow width={12} height={12} /></a>
+      <a href="#kana-full" className="lp-more">{t("viewFullKanaTable")} {LABEL[tab]} <IcoArrow width={12} height={12} /></a>
 
       {selected && (
         <div className="lp-preview">
@@ -125,9 +127,9 @@ export function LearnKanaPanel({ kana, practiced }: { kana: KanaRow[]; practiced
             <small>{BLURB[tab]}</small>
             <div className="lp-preview-actions">
               <button type="button" className="lp-btn-red lp-btn-sm" onClick={() => { playClick(); setWriting(true); }}>
-                Luyện tập ngay <IcoArrow width={13} height={13} />
+                {t("practiceWritingKana")} <IcoArrow width={13} height={13} />
               </button>
-              <button type="button" className="lp-speaker" onClick={() => speak(selected.character)} aria-label="Nghe phát âm">
+              <button type="button" className="lp-speaker" onClick={() => speak(selected.character)} aria-label={t("listenPronunciation")}>
                 <IcoSpeaker width={16} height={16} />
               </button>
             </div>
@@ -136,7 +138,7 @@ export function LearnKanaPanel({ kana, practiced }: { kana: KanaRow[]; practiced
       )}
 
       {writing && selected && (
-        <Modal isOpen onClose={() => setWriting(false)} title={`Luyện viết — ${selected.character}`} maxWidth="2xl" closeOnBackdrop={false}>
+        <Modal isOpen onClose={() => setWriting(false)} title={`${t("practiceWritingKana")} — ${selected.character}`} maxWidth="2xl" closeOnBackdrop={false}>
           <KanaWriter
             key={selected.id}
             character={selected.character}

@@ -5,6 +5,7 @@ import { Modal } from "@/components/ui";
 import { KanaWriter } from "@/components/KanaWriter";
 import { useSoundAndTheme } from "@/components/SoundAndThemeContext";
 import { notifyProgressUpdated } from "@/components/UserProgressContext";
+import { useNativeLanguage } from "@/components/LanguageContext";
 
 export interface KanaRow {
   id: string;
@@ -35,11 +36,11 @@ const ROW_LABELS: Record<string, string> = {
 const VOWEL_COLUMNS = ["a", "i", "u", "e", "o"];
 const COMBO_COLUMNS = ["a", "u", "o"];
 
-const TABS: { id: TabId; label: string }[] = [
-  { id: "HIRAGANA", label: "Hiragana" },
-  { id: "KATAKANA", label: "Katakana" },
-  { id: "DAKUTEN", label: "Biến âm" },
-  { id: "COMBO", label: "Âm ghép Yōon" },
+const TABS: { id: TabId; labelKey?: string; fallback: string }[] = [
+  { id: "HIRAGANA", fallback: "Hiragana" },
+  { id: "KATAKANA", fallback: "Katakana" },
+  { id: "DAKUTEN", labelKey: "tabDakutenLabel", fallback: "Biến âm" },
+  { id: "COMBO", labelKey: "tabComboLabel", fallback: "Âm ghép Yōon" },
 ];
 
 const inTab = (k: KanaRow, tab: TabId, subScript?: "HIRAGANA" | "KATAKANA") => {
@@ -56,6 +57,7 @@ export function KanaLab({ kana, practiced }: { kana: KanaRow[]; practiced: strin
   const [doneSet, setDoneSet] = useState<Set<string>>(new Set(practiced));
   const [pendingKey, setPendingKey] = useState<string | null>(null);
   const { playClick, playCorrect, showToast, speak: globalSpeak } = useSoundAndTheme();
+  const { t } = useNativeLanguage();
 
   const activeKanaList = useMemo(
     () => kana.filter((k) => inTab(k, activeTab, subScript)),
@@ -122,14 +124,14 @@ export function KanaLab({ kana, practiced }: { kana: KanaRow[]; practiced: strin
       <div className="kl-banner">
         <div className="kl-banner-copy">
           <span className="kl-flag">● Kana Lab · 五十音図</span>
-          <h3>Bảng 50 Âm Tiếng Nhật Chuẩn (Gojūon)</h3>
+          <h3>{t("gojuonTitle")}</h3>
           <p>
-            Sắp xếp theo 5 nguyên âm <b>a · i · u · e · o</b>. Bấm “Viết” để tập từng nét với mũi tên hướng dẫn và chấm điểm tự động.
+            {t("gojuonDesc")}
           </p>
-          <a href="#kl-table" className="kl-banner-btn">Bắt đầu luyện tập →</a>
+          <a href="#kl-table" className="kl-banner-btn">{t("startPracticingBtn")}</a>
         </div>
-        <div className="kl-progress" role="img" aria-label={`Tiến độ hiện tại ${learned} trên ${total}`}>
-          <small>Tiến độ hiện tại</small>
+        <div className="kl-progress" role="img" aria-label={`${t("currentProgress")} ${learned} / ${total}`}>
+          <small>{t("currentProgress")}</small>
           <div className="kl-progress-row">
             <svg width="84" height="84" viewBox="0 0 84 84" aria-hidden="true">
               <circle cx="42" cy="42" r={R} className="kl-ring-bg" />
@@ -142,16 +144,16 @@ export function KanaLab({ kana, practiced }: { kana: KanaRow[]; practiced: strin
 
       <div id="kl-table" className="kl-bar">
         <div className="kl-tabs" role="tablist" aria-label="Chọn bảng kana">
-          {TABS.map((t) => (
+          {TABS.map((tabItem) => (
             <button
-              key={t.id}
+              key={tabItem.id}
               type="button"
               role="tab"
-              aria-selected={activeTab === t.id}
-              className={activeTab === t.id ? "is-active" : ""}
-              onClick={() => { playClick(); setActiveTab(t.id); }}
+              aria-selected={activeTab === tabItem.id}
+              className={activeTab === tabItem.id ? "is-active" : ""}
+              onClick={() => { playClick(); setActiveTab(tabItem.id); }}
             >
-              {t.label} <span>({counts[t.id]})</span>
+              {tabItem.labelKey ? (t(tabItem.labelKey) || tabItem.fallback) : tabItem.fallback} <span>({counts[tabItem.id]})</span>
             </button>
           ))}
         </div>
@@ -180,7 +182,7 @@ export function KanaLab({ kana, practiced }: { kana: KanaRow[]; practiced: strin
             aria-pressed={audioSpeed === 0.75}
             onClick={() => { playClick(); setAudioSpeed(audioSpeed === 1.0 ? 0.75 : 1.0); }}
           >
-            {audioSpeed === 0.75 ? "🐢 Đọc chậm 0.75×" : "🐰 Đọc chuẩn 1.0×"}
+            {audioSpeed === 0.75 ? t("slowSpeed") : t("normalSpeed")}
           </button>
         </div>
       </div>
@@ -197,15 +199,15 @@ export function KanaLab({ kana, practiced }: { kana: KanaRow[]; practiced: strin
                 const long = Array.from(k.character).length > 1;
                 return (
                   <div key={k.id} className={`kl-card ${isDone ? "is-done" : ""}`}>
-                    <span className="kl-badge">{isDone ? "✓ Đã thuộc" : "Chưa học"}</span>
+                    <span className="kl-badge">{isDone ? t("masteredBadge") : t("statusNotStarted")}</span>
                     <div className={`kl-glyph jp-text ${long ? "is-combo" : ""}`}>{k.character}</div>
                     <div className="kl-romaji">{k.romaji}</div>
                     <div className="kl-btns">
-                      <button type="button" onClick={() => speak(k.character)} aria-label={`Nghe phát âm ${k.romaji}`}>🔊 Nghe</button>
-                      <button type="button" className="is-primary" onClick={() => { playClick(); setWritingTarget(k); }} aria-label={`Luyện viết ${k.romaji}`}>✍ Viết</button>
+                      <button type="button" onClick={() => speak(k.character)} aria-label={`Nghe phát âm ${k.romaji}`}>🔊 {t("listenAction")}</button>
+                      <button type="button" className="is-primary" onClick={() => { playClick(); setWritingTarget(k); }} aria-label={`Luyện viết ${k.romaji}`}>✍ {t("writeAction")}</button>
                     </div>
                     <button type="button" className="kl-mark" onClick={() => markPracticed(k)} disabled={pendingKey === key} aria-pressed={isDone}>
-                      {isDone ? "Đã đánh dấu nhớ" : "+ Đánh dấu đã nhớ"}
+                      {isDone ? t("markedRemembered") : t("markRemembered")}
                     </button>
                   </div>
                 );

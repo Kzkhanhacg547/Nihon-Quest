@@ -407,7 +407,7 @@ export function AppNav({
               {langOpen && (
                 <div className="absolute right-0 top-12 z-50 w-52 rounded-2xl border border-slate-200 bg-white p-2 shadow-xl dark:border-slate-700 dark:bg-sumi-900 max-h-72 overflow-y-auto">
                   <div className="px-3 py-1 text-[10px] font-black uppercase text-slate-400">
-                    Ngôn ngữ mẹ đẻ ({SUPPORTED_LANGUAGES.length})
+                    {t("nativeLangTitle")} ({SUPPORTED_LANGUAGES.length})
                   </div>
                   {SUPPORTED_LANGUAGES.map((l) => (
                     <button
@@ -418,8 +418,8 @@ export function AppNav({
                         setNativeLanguage(l.code);
                         setLangOpen(false);
                         showToast({
-                          title: `Ngôn ngữ mẹ đẻ: ${l.nativeName} ${l.flag}`,
-                          description: `AI Sensei sẽ hướng dẫn và giải thích bằng ${l.nativeName}.`,
+                          title: `${t("langSwitchedToast")}${l.nativeName} ${l.flag}`,
+                          description: `${t("nativeLangSubtitle")}: ${l.nativeName}.`,
                           type: "info",
                         });
                       }}

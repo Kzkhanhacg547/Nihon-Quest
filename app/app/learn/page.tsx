@@ -12,6 +12,7 @@ import { IcoArrow, IcoBolt, IcoBook, IcoChart, IcoChevron, IcoClock, IcoHeadphon
 import { KanaLab } from "./KanaLab";
 import { LearnKanaPanel } from "./LearnKanaPanel";
 import { CulturePromo } from "./CulturePromo";
+import { LocalizedText } from "@/components/LocalizedText";
 import "./learn.css";
 
 export default async function LearnPage() {
@@ -69,25 +70,25 @@ export default async function LearnPage() {
             <div className="lp-hero-bg" aria-hidden="true" />
             <div className="lp-hero-inner">
               <div className="lp-hero-copy" data-intro>
-                <span className="lp-script">Bắt đầu từ hôm nay</span>
+                <span className="lp-script"><LocalizedText k="learnHeroScript" fallback="Bắt đầu từ hôm nay" /></span>
                 <h1>
-                  Lộ trình <em>học tập</em>
+                  <LocalizedText k="learnHeroTitle" fallback="Lộ trình" /> <em><LocalizedText k="learnHeroTitleEm" fallback="học tập" /></em>
                 </h1>
-                <p>Học kana, từ vựng, ngữ pháp theo lộ trình khoa học để chinh phục tiếng Nhật một cách tự tin và hiệu quả.</p>
+                <p><LocalizedText k="learnHeroDesc" fallback="Học kana, từ vựng, ngữ pháp theo lộ trình khoa học để chinh phục tiếng Nhật một cách tự tin và hiệu quả." /></p>
                 <Link href={startHref} className="lp-btn-red">
-                  <IcoTarget width={16} height={16} /> Bắt đầu học ngay <IcoArrow width={16} height={16} />
+                  <IcoTarget width={16} height={16} /> <LocalizedText k="learnStartNow" fallback="Bắt đầu học ngay" /> <IcoArrow width={16} height={16} />
                 </Link>
                 <ul className="lp-feats">
-                  <li><span><IcoRoute /></span>Lộ trình rõ ràng<br />theo từng cấp độ</li>
-                  <li><span><IcoClock /></span>Học mọi lúc<br />mọi nơi</li>
-                  <li><span><IcoChart /></span>Theo dõi tiến độ<br />cá nhân</li>
+                  <li><span><IcoRoute /></span><LocalizedText k="featClearRoadmap" fallback="Lộ trình rõ ràng theo từng cấp độ" /></li>
+                  <li><span><IcoClock /></span><LocalizedText k="featAnytimeAnywhere" fallback="Học mọi lúc mọi nơi" /></li>
+                  <li><span><IcoChart /></span><LocalizedText k="featPersonalProgress" fallback="Theo dõi tiến độ cá nhân" /></li>
                 </ul>
               </div>
 
               <Link href={startHref} className="lp-spot">
-                <span className="lp-spot-tag">● {current ? "Bài tiếp theo" : "Nổi bật hôm nay"}</span>
-                <b>{current ? current.title : "Khám phá bảng chữ cái Kana"}</b>
-                <small>{current ? current.description : "Nền tảng quan trọng để bắt đầu hành trình học tiếng Nhật."}</small>
+                <span className="lp-spot-tag">● {current ? <LocalizedText k="nextLesson" fallback="Bài tiếp theo" /> : <LocalizedText k="todaySpotlight" fallback="Nổi bật hôm nay" />}</span>
+                <b>{current ? current.title : <LocalizedText k="exploreKana" fallback="Khám phá bảng chữ cái Kana" />}</b>
+                <small>{current ? current.description : <LocalizedText k="exploreKanaDesc" fallback="Nền tảng quan trọng để bắt đầu hành trình học tiếng Nhật." />}</small>
                 <span className="lp-spot-go" aria-hidden="true"><IcoArrow width={16} height={16} /></span>
               </Link>
             </div>
@@ -103,18 +104,18 @@ export default async function LearnPage() {
                 <div className="lp-title">
                   <span className="lp-title-ico"><IcoRoute /></span>
                   <div>
-                    <h2>Lộ trình học tập của bạn</h2>
-                    <p>Tiếp tục hành trình JLPT {level} — chinh phục từng bài học một!</p>
+                    <h2><LocalizedText k="yourPathTitle" fallback="Lộ trình học tập của bạn" /></h2>
+                    <p><LocalizedText k="yourPathSubtitle" fallback={`Tiếp tục hành trình JLPT ${level} — chinh phục từng bài học một!`} /></p>
                   </div>
                 </div>
                 <div className="lp-overall" aria-label={`${levelLessonDone} trên ${levelLessonTotal} bài hoàn thành`}>
-                  <span><b>{levelLessonDone}/{levelLessonTotal}</b> bài hoàn thành</span>
+                  <span><b>{levelLessonDone}/{levelLessonTotal}</b> <LocalizedText k="lessonsCompletedUnit" fallback="bài hoàn thành" /></span>
                   <div className="lp-bar"><i style={{ width: `${overallPct}%` }} /></div>
                 </div>
               </div>
 
               <div className="lp-timeline">
-                {lessons.length === 0 && <div className="lp-empty">Chưa có bài học nào cho cấp độ {level}.</div>}
+                {lessons.length === 0 && <div className="lp-empty"><LocalizedText k="noLessonsForLevel" fallback={`Chưa có bài học nào cho cấp độ ${level}.`} /></div>}
                 {lessons.map((lesson, index) => {
                   const isDone = lesson.progress[0]?.status === "COMPLETED";
                   const isCurrent = !isDone && index === currentIndex;
@@ -130,7 +131,7 @@ export default async function LearnPage() {
                           <h3>{lesson.title}</h3>
                           <p>{lesson.description}</p>
                           <div className="lp-chips">
-                            <span>▤ {lesson._count.exercises} bài luyện tập</span>
+                            <span>▤ {lesson._count.exercises} <LocalizedText k="practiceExercisesUnit" fallback="bài luyện tập" /></span>
                             <span>✦ +{lesson.xpReward} XP</span>
                           </div>
                           <div className="lp-bar" role="progressbar" aria-label={`Tiến độ ${lesson.title}`} aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100}>
@@ -138,14 +139,14 @@ export default async function LearnPage() {
                           </div>
                         </div>
                         <div className="lp-status">
-                          <span className="lp-pill">{isDone ? "Đã hoàn thành" : isCurrent ? "Đang học" : "Chưa học"}</span>
+                          <span className="lp-pill">{isDone ? <LocalizedText k="statusCompleted" fallback="Đã hoàn thành" /> : isCurrent ? <LocalizedText k="statusInProgress" fallback="Đang học" /> : <LocalizedText k="statusNotStarted" fallback="Chưa học" />}</span>
                           {pct > 0 && <span className="lp-pct">{pct}%</span>}
                           {isCurrent ? (
-                            <Link href={`/app/practice/${lesson.slug}`} className="lp-continue">Tiếp tục <IcoArrow width={13} height={13} /></Link>
+                            <Link href={`/app/practice/${lesson.slug}`} className="lp-continue"><LocalizedText k="btnContinue" fallback="Tiếp tục" /> <IcoArrow width={13} height={13} /></Link>
                           ) : isDone ? (
                             <IcoChevron className="lp-go" />
                           ) : (
-                            <span className="lp-lock" title="Hoàn thành bài trước để mở"><IcoLock width={15} height={15} /><span className="sr-only">Hoàn thành bài trước để mở</span></span>
+                            <span className="lp-lock" title="Hoàn thành bài trước để mở"><IcoLock width={15} height={15} /><span className="sr-only"><LocalizedText k="lockTooltip" fallback="Hoàn thành bài trước để mở" /></span></span>
                           )}
                         </div>
                       </div>
@@ -159,18 +160,18 @@ export default async function LearnPage() {
             <aside className="lp-pane" data-reveal>
               <div className="lp-title">
                 <span className="lp-title-ico t-red"><IcoBolt /></span>
-                <h2>Truy cập nhanh</h2>
+                <h2><LocalizedText k="quickAccessTitle" fallback="Truy cập nhanh" /></h2>
               </div>
 
               <Link href="/app/vocabulary" className="lp-tool t-red">
                 <span className="lp-tool-icon jp-text">あ</span>
                 <div className="lp-tool-body">
-                  <h3>Từ vựng &amp; Hán tự</h3>
-                  <p>Tra cứu, học và ôn tập từ vựng kèm Hán tự theo từng chủ đề.</p>
+                  <h3><LocalizedText k="qaVocabTitle" fallback="Từ vựng & Hán tự" /></h3>
+                  <p><LocalizedText k="qaVocabDesc" fallback="Tra cứu, học và ôn tập từ vựng kèm Hán tự theo từng chủ đề." /></p>
                   <div className="lp-stats">
-                    <div><b>{vocabCount.toLocaleString("vi-VN")}</b><span>Từ vựng</span></div>
-                    <div><b>{kanjiCount.toLocaleString("vi-VN")}</b><span>Hán tự</span></div>
-                    <div><b>{availableLevels.length}</b><span>Cấp độ</span></div>
+                    <div><b>{vocabCount.toLocaleString("vi-VN")}</b><span><LocalizedText k="qaVocabUnit" fallback="Từ vựng" /></span></div>
+                    <div><b>{kanjiCount.toLocaleString("vi-VN")}</b><span><LocalizedText k="qaKanjiUnit" fallback="Hán tự" /></span></div>
+                    <div><b>{availableLevels.length}</b><span><LocalizedText k="qaLevelUnit" fallback="Cấp độ" /></span></div>
                   </div>
                 </div>
                 <IcoChevron className="chev" />
@@ -179,11 +180,11 @@ export default async function LearnPage() {
               <Link href="/app/grammar" className="lp-tool t-blue">
                 <span className="lp-tool-icon"><IcoBook /></span>
                 <div className="lp-tool-body">
-                  <h3>Sổ tay Ngữ pháp</h3>
-                  <p>Ngữ pháp {levelRange} với giải thích dễ hiểu và ví dụ thực tế.</p>
+                  <h3><LocalizedText k="qaGrammarTitle" fallback="Sổ tay Ngữ pháp" /></h3>
+                  <p><LocalizedText k="qaGrammarDesc" fallback={`Ngữ pháp ${levelRange} với giải thích dễ hiểu và ví dụ thực tế.`} /></p>
                   <div className="lp-stats">
-                    <div><b>{grammarCount.toLocaleString("vi-VN")}</b><span>Cấu trúc</span></div>
-                    <div><b>{grammarExampleCount.toLocaleString("vi-VN")}</b><span>Ví dụ</span></div>
+                    <div><b>{grammarCount.toLocaleString("vi-VN")}</b><span><LocalizedText k="qaGrammarUnit" fallback="Cấu trúc" /></span></div>
+                    <div><b>{grammarExampleCount.toLocaleString("vi-VN")}</b><span><LocalizedText k="qaExampleUnit" fallback="Ví dụ" /></span></div>
                   </div>
                 </div>
                 <IcoChevron className="chev" />
@@ -192,11 +193,11 @@ export default async function LearnPage() {
               <Link href="/app/sensei" className="lp-tool t-amber">
                 <span className="lp-tool-icon"><IcoHeadphones /></span>
                 <div className="lp-tool-body">
-                  <h3>Luyện nghe &amp; Hội thoại</h3>
-                  <p>Rèn kỹ năng nghe và phản xạ qua các tình huống thực tế.</p>
+                  <h3><LocalizedText k="qaListeningTitle" fallback="Luyện nghe & Hội thoại" /></h3>
+                  <p><LocalizedText k="qaListeningDesc" fallback="Rèn kỹ năng nghe và phản xạ qua các tình huống thực tế." /></p>
                   <div className="lp-stats">
-                    <div><b>{scenarioCount.toLocaleString("vi-VN")}</b><span>Kịch bản</span></div>
-                    <div><b>{lessonCount.toLocaleString("vi-VN")}</b><span>Bài học</span></div>
+                    <div><b>{scenarioCount.toLocaleString("vi-VN")}</b><span><LocalizedText k="qaScenarioUnit" fallback="Kịch bản" /></span></div>
+                    <div><b>{lessonCount.toLocaleString("vi-VN")}</b><span><LocalizedText k="qaLessonUnit" fallback="Bài học" /></span></div>
                   </div>
                 </div>
                 <IcoChevron className="chev" />
@@ -211,8 +212,8 @@ export default async function LearnPage() {
             <div className="lp-title">
               <span className="lp-title-ico t-red"><IcoTarget /></span>
               <div>
-                <h2>Luyện bảng chữ cái tương tác</h2>
-                <p>Thực hành, ghi nhớ và kiểm tra ngay với hệ thống bài tập trực quan.</p>
+                <h2><LocalizedText k="interactiveKanaTitle" fallback="Luyện bảng chữ cái tương tác" /></h2>
+                <p><LocalizedText k="interactiveKanaDesc" fallback="Thực hành, ghi nhớ và kiểm tra ngay với hệ thống bài tập trực quan." /></p>
               </div>
             </div>
             <KanaLab kana={kana} practiced={Array.from(done)} />

@@ -10,6 +10,7 @@ import { prisma } from "@/lib/prisma";
 import { AppNav } from "@/components/AppNav";
 import { JapanBackdrop } from "@/components/JapanIllustration";
 import { PathDecor, PathIcon, type DecorTheme, type PathIconName } from "@/components/Pathdecor";
+import { LocalizedText } from "@/components/LocalizedText";
 import {
   buildLearningPath,
   buildRemediationPlan,
@@ -251,7 +252,7 @@ export default async function LearningPathPage() {
             <div className="nqp-hero-copy">
               <span className="nqp-eyebrow">
                 <span className="nqp-eyebrow-ico"><PathIcon name="goal" /></span>
-                LỘ TRÌNH CÁ NHÂN HÓA · ĐỒNG BỘ BỀN VỮNG
+                <LocalizedText k="personalizedPathEyebrow" fallback="LỘ TRÌNH CÁ NHÂN HÓA · ĐỒNG BỘ BỀN VỮNG" />
               </span>
               <h1 className="nqp-title">
                 {titleHead}
@@ -261,7 +262,7 @@ export default async function LearningPathPage() {
 
               {current && (
                 <p className="nqp-next">
-                  <small>{current.status === "IN_PROGRESS" ? "Đang học dở" : "Mô-đun tiếp theo"}</small>
+                  <small>{current.status === "IN_PROGRESS" ? <LocalizedText k="inProgressLesson" fallback="Đang học dở" /> : <LocalizedText k="nextModule" fallback="Mô-đun tiếp theo" />}</small>
                   <b>{current.title}</b>
                 </p>
               )}
@@ -270,27 +271,27 @@ export default async function LearningPathPage() {
                 {current ? (
                   <Link className="nqp-btn-red" href={current.target}>
                     <span className="nqp-btn-ico"><PathIcon name="flame" /></span>
-                    {current.status === "IN_PROGRESS" ? "Tiếp tục học" : "Bắt đầu học"}
+                    {current.status === "IN_PROGRESS" ? <LocalizedText k="btnContinue" fallback="Tiếp tục học" /> : <LocalizedText k="btnStartLearn" fallback="Bắt đầu học" />}
                     <span aria-hidden="true">→</span>
                   </Link>
                 ) : (
                   <Link className="nqp-btn-red" href="/app/review">
                     <span className="nqp-btn-ico"><PathIcon name="flame" /></span>
-                    Hoàn thành lộ trình — Ôn tập SRS
+                    <LocalizedText k="pathCompletedSrsReview" fallback="Hoàn thành lộ trình — Ôn tập SRS" />
                     <span aria-hidden="true">→</span>
                   </Link>
                 )}
                 <Link className="nqp-btn-ghost" href="/app/test">
                   <span className="nqp-btn-ico"><PathIcon name="target" /></span>
-                  Kiểm tra 4 kỹ năng / Miễn học phần
+                  <LocalizedText k="skillsTestBtn" fallback="Kiểm tra 4 kỹ năng / Miễn học phần" />
                 </Link>
                 <Link className="nqp-btn-ghost" href="/app/analytics">
                   <span className="nqp-btn-ico"><PathIcon name="cap" /></span>
-                  Đánh giá tiến bộ
+                  <LocalizedText k="evalProgressBtn" fallback="Đánh giá tiến bộ" />
                 </Link>
                 <Link className="nqp-btn-ghost" href="/app/profile">
                   <span className="nqp-btn-ico"><PathIcon name="refresh" /></span>
-                  Thay đổi lộ trình
+                  <LocalizedText k="changePathBtn" fallback="Thay đổi lộ trình" />
                 </Link>
               </div>
             </div>
@@ -317,17 +318,17 @@ export default async function LearningPathPage() {
           <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
             <div>
               <h2 className="text-base font-black text-slate-900 dark:text-white">
-                🔄 Chu trình học khoa học 8 bước (N5 → N4 → N3)
+                🔄 <LocalizedText k="eightStepCycleTitle" fallback="Chu trình học khoa học 8 bước (N5 → N4 → N3)" />
               </h2>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                Đánh giá đầu vào → Xác định trình độ → Lộ trình cá nhân → Học kiến thức → Luyện tập → Kiểm tra → Ôn tập cách quãng → Đánh giá tiến bộ
+                <LocalizedText k="eightStepCycleDesc" fallback="Đánh giá đầu vào → Xác định trình độ → Lộ trình cá nhân → Học kiến thức → Luyện tập → Kiểm tra → Ôn tập cách quãng → Đánh giá tiến bộ" />
               </p>
             </div>
             <Link
               href="/app/test"
               className="rounded-xl border border-red-200 bg-rose-50 px-3 py-1.5 text-xs font-bold text-red-600 transition hover:bg-rose-100 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-300"
             >
-              ⚡ Thi vượt cấp / Miễn học phần →
+              ⚡ <LocalizedText k="testOutBtn" fallback="Thi vượt cấp / Miễn học phần" /> →
             </Link>
           </div>
           <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4 lg:grid-cols-8">
@@ -420,22 +421,22 @@ export default async function LearningPathPage() {
         <section className="nqp-stats" aria-label="Thống kê lộ trình">
           <div className="nqp-stat s-blue">
             <span className="nqp-stat-ico"><PathIcon name="cap" /></span>
-            <div><b>{modules.length}</b><small>Mô-đun kiến thức</small></div>
+            <div><b>{modules.length}</b><small><LocalizedText k="knowledgeModulesUnit" fallback="Mô-đun kiến thức" /></small></div>
           </div>
           <div className="nqp-stat s-violet">
             <span className="nqp-stat-ico"><PathIcon name="layers" /></span>
-            <div><b>{path.totalMinutes} phút</b><small>Tổng thời lượng</small></div>
+            <div><b>{path.totalMinutes}</b> <small><LocalizedText k="totalDurationUnit" fallback="Tổng thời lượng" /></small></div>
           </div>
           <div className="nqp-stat s-green">
             <span className="nqp-stat-ico"><PathIcon name="target" /></span>
             <div>
               <b>{path.modulesPerWeek}/tuần</b>
-              <small>Nhịp học ({path.answers.dailyMinutes} phút/ngày)</small>
+              <small><LocalizedText k="studyPaceUnit" fallback="Nhịp học" /> ({path.answers.dailyMinutes} <LocalizedText k="minsPerDay" fallback="phút/ngày" />)</small>
             </div>
           </div>
           <div className="nqp-stat s-amber">
             <span className="nqp-stat-ico"><PathIcon name="flame" /></span>
-            <div><b>~{path.estWeeks} tuần</b><small>Hoàn thành dự kiến</small></div>
+            <div><b>~{path.estWeeks} tuần</b><small><LocalizedText k="estCompletionUnit" fallback="Hoàn thành dự kiến" /></small></div>
           </div>
         </section>
 
@@ -445,9 +446,9 @@ export default async function LearningPathPage() {
             <div className="nqp-sec-title">
               <h2>
                 <span className="nqp-sakura" aria-hidden="true">✿</span>
-                Khóa kiến thức của bạn
+                <LocalizedText k="yourKnowledgeBlocks" fallback="Khóa kiến thức của bạn" />
               </h2>
-              <span>Tuân thủ thứ tự tiên quyết (cần đạt ≥ 60% bài trước để mở khóa bài sau, hoặc thi miễn học phần).</span>
+              <span><LocalizedText k="prerequisiteRuleNote" fallback="Tuân thủ thứ tự tiên quyết (cần đạt ≥ 60% bài trước để mở khóa bài sau, hoặc thi miễn học phần)." /></span>
             </div>
 
             <ol className="nqp-timeline">
