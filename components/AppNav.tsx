@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import { NihonQuestLogo } from "./NihonQuestLogo";
 import { SPEECH_RATES, useSoundAndTheme } from "./SoundAndThemeContext";
 import { useUserProgress } from "./UserProgressContext";
-import { useNativeLanguage } from "./LanguageContext";
+import { useNativeLanguage, SUPPORTED_LANGUAGES } from "./LanguageContext";
 import { NotificationDropdown } from "./NotificationDropdown";
 import { UserAvatar } from "./UserAvatar";
 import { guessVoiceGender, voiceGenderLabel } from "@/lib/voiceGender";
@@ -150,21 +150,25 @@ export function AppNav({
   const [moreOpen, setMoreOpen] = useState(false);
   const [speedOpen, setSpeedOpen] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
+  const [langOpen, setLangOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const moreRef = useRef<HTMLDivElement | null>(null);
   const speedRef = useRef<HTMLDivElement | null>(null);
   const accountRef = useRef<HTMLDivElement | null>(null);
+  const langRef = useRef<HTMLDivElement | null>(null);
   const drawerRef = useRef<HTMLDivElement | null>(null);
 
   useDismiss(moreRef, moreOpen, () => setMoreOpen(false));
   useDismiss(speedRef, speedOpen, () => setSpeedOpen(false));
   useDismiss(accountRef, accountOpen, () => setAccountOpen(false));
+  useDismiss(langRef, langOpen, () => setLangOpen(false));
 
   // Đổi trang thì đóng mọi menu
   useEffect(() => {
     setMoreOpen(false);
     setSpeedOpen(false);
     setAccountOpen(false);
+    setLangOpen(false);
     setMobileOpen(false);
   }, [pathname]);
 
@@ -370,33 +374,61 @@ export function AppNav({
               )}
             </div>
 
-            {/* Native Language Toggle */}
-            <button
-              type="button"
-              onClick={() => {
-                playClick();
-                const nextLang = nativeLanguage === "vi" ? "en" : "vi";
-                setNativeLanguage(nextLang);
-                showToast({
-                  title: nextLang === "en" ? "Native Language: English 🇬🇧" : "Ngôn ngữ mẹ đẻ: Tiếng Việt 🇻🇳",
-                  description:
-                    nextLang === "en"
-                      ? "AI Sensei will explain Japanese in English."
-                      : "AI Sensei sẽ hướng dẫn và giải thích bằng Tiếng Việt.",
-                  type: "info",
-                });
-              }}
-              className="inline-flex h-9 sm:h-10 items-center gap-1 rounded-full border border-slate-200 bg-white px-2.5 sm:px-3 text-xs font-black text-slate-700 shadow-sm transition hover:border-slate-300 active:scale-95 dark:border-slate-700 dark:bg-sumi-900 dark:text-slate-200"
-              title={
-                nativeLanguage === "vi"
-                  ? "Ngôn ngữ mẹ đẻ: Tiếng Việt (Bấm để chuyển sang English)"
-                  : "Native Language: English (Click to switch to Tiếng Việt)"
-              }
-              aria-label="Đổi ngôn ngữ mẹ đẻ"
-            >
-              <span>{nativeLanguage === "vi" ? "🇻🇳" : "🇬🇧"}</span>
-              <span className="hidden sm:inline font-bold">{nativeLanguage.toUpperCase()}</span>
-            </button>
+            {/* Native Language Dropdown Selector */}
+            <div className="relative" ref={langRef}>
+              <button
+                type="button"
+                onClick={() => {
+                  playClick();
+                  setLangOpen(!langOpen);
+                }}
+                className="inline-flex h-9 sm:h-10 items-center gap-1 rounded-full border border-slate-200 bg-white px-2.5 sm:px-3 text-xs font-black text-slate-700 shadow-sm transition hover:border-slate-300 active:scale-95 dark:border-slate-700 dark:bg-sumi-900 dark:text-slate-200"
+                title="Chọn ngôn ngữ mẹ đẻ (Native Language)"
+                aria-label="Chọn ngôn ngữ mẹ đẻ"
+                aria-expanded={langOpen}
+              >
+                <span>{SUPPORTED_LANGUAGES.find((l) => l.code === nativeLanguage)?.flag || "🇻🇳"}</span>
+                <span className="hidden sm:inline font-bold">
+                  {SUPPORTED_LANGUAGES.find((l) => l.code === nativeLanguage)?.short || nativeLanguage.toUpperCase()}
+                </span>
+                <Icon name="chevron" className="hidden h-3 w-3 text-slate-400 sm:block" />
+              </button>
+
+              {langOpen && (
+                <div className="absolute right-0 top-12 z-50 w-52 rounded-2xl border border-slate-200 bg-white p-2 shadow-xl dark:border-slate-700 dark:bg-sumi-900 max-h-72 overflow-y-auto">
+                  <div className="px-3 py-1 text-[10px] font-black uppercase text-slate-400">
+                    Ngôn ngữ mẹ đẻ ({SUPPORTED_LANGUAGES.length})
+                  </div>
+                  {SUPPORTED_LANGUAGES.map((l) => (
+                    <button
+                      key={l.code}
+                      type="button"
+                      onClick={() => {
+                        playClick();
+                        setNativeLanguage(l.code);
+                        setLangOpen(false);
+                        showToast({
+                          title: `Ngôn ngữ mẹ đẻ: ${l.nativeName} ${l.flag}`,
+                          description: `AI Sensei sẽ hướng dẫn và giải thích bằng ${l.nativeName}.`,
+                          type: "info",
+                        });
+                      }}
+                      className={`w-full px-3 py-2 text-left text-xs rounded-xl flex items-center justify-between transition ${
+                        nativeLanguage === l.code
+                          ? "bg-red-50 dark:bg-sumi-800 font-extrabold text-red-600 dark:text-red-400"
+                          : "text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-sumi-800"
+                      }`}
+                    >
+                      <span className="flex items-center gap-2">
+                        <span className="text-sm">{l.flag}</span>
+                        <span>{l.nativeName}</span>
+                      </span>
+                      {nativeLanguage === l.code && <span className="text-red-600 dark:text-red-400 font-bold">✓</span>}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
 
             <IconButton
               label={resolvedTheme === "dark" ? "Chuyển sang giao diện sáng" : "Chuyển sang giao diện tối"}

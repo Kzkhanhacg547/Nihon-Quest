@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { signOut } from "next-auth/react";
 import { useSoundAndTheme, SPEECH_RATES } from "@/components/SoundAndThemeContext";
 import { notifyProgressUpdated } from "@/components/UserProgressContext";
-import { useNativeLanguage } from "@/components/LanguageContext";
+import { useNativeLanguage, SUPPORTED_LANGUAGES } from "@/components/LanguageContext";
 import { guessVoiceGender, voiceGenderLabel } from "@/lib/voiceGender";
 import { AvatarEditor } from "../profile/AvatarEditor";
 
@@ -489,39 +489,33 @@ export function SettingsClient({ initial }: { initial: SettingsInitialData }) {
                       </p>
                     </div>
                   </div>
-                  <div className="flex flex-wrap gap-2.5">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        playClick();
-                        setNativeLanguage("vi");
-                        showToast({ title: "Ngôn ngữ mẹ đẻ: Tiếng Việt 🇻🇳", type: "info" });
-                      }}
-                      className={`min-h-11 rounded-xl px-4 text-xs font-black transition flex items-center gap-2 ${
-                        nativeLanguage === "vi"
-                          ? "bg-rose-600 text-white shadow-sm"
-                          : "border border-slate-200 bg-white text-slate-700 hover:border-rose-300 dark:border-slate-700 dark:bg-sumi-950 dark:text-slate-300"
-                      }`}
-                    >
-                      <span className="text-base">🇻🇳</span>
-                      <span>Tiếng Việt (Mặc định)</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        playClick();
-                        setNativeLanguage("en");
-                        showToast({ title: "Native Language: English 🇬🇧", type: "info" });
-                      }}
-                      className={`min-h-11 rounded-xl px-4 text-xs font-black transition flex items-center gap-2 ${
-                        nativeLanguage === "en"
-                          ? "bg-rose-600 text-white shadow-sm"
-                          : "border border-slate-200 bg-white text-slate-700 hover:border-rose-300 dark:border-slate-700 dark:bg-sumi-950 dark:text-slate-300"
-                      }`}
-                    >
-                      <span className="text-base">🇬🇧</span>
-                      <span>English (Tiếng Anh)</span>
-                    </button>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                    {SUPPORTED_LANGUAGES.map((lang) => (
+                      <button
+                        key={lang.code}
+                        type="button"
+                        onClick={() => {
+                          playClick();
+                          setNativeLanguage(lang.code);
+                          showToast({
+                            title: `Ngôn ngữ mẹ đẻ: ${lang.nativeName} ${lang.flag}`,
+                            description: `AI Sensei và hệ thống sẽ giải thích tiếng Nhật qua ${lang.nativeName}.`,
+                            type: "info",
+                          });
+                        }}
+                        className={`min-h-11 rounded-xl p-2.5 text-xs font-bold transition flex items-center justify-between gap-1.5 ${
+                          nativeLanguage === lang.code
+                            ? "bg-rose-600 text-white shadow-sm ring-2 ring-rose-400"
+                            : "border border-slate-200 bg-white text-slate-700 hover:border-rose-300 dark:border-slate-700 dark:bg-sumi-950 dark:text-slate-300"
+                        }`}
+                      >
+                        <span className="flex items-center gap-1.5 truncate">
+                          <span className="text-base">{lang.flag}</span>
+                          <span className="truncate">{lang.nativeName}</span>
+                        </span>
+                        {nativeLanguage === lang.code && <span>✓</span>}
+                      </button>
+                    ))}
                   </div>
                 </div>
 
@@ -769,9 +763,14 @@ export function SettingsClient({ initial }: { initial: SettingsInitialData }) {
 
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 py-4">
                   <div>
-                    <p className="text-sm font-bold text-slate-900 dark:text-white">📧 Nhắc nhở học tập qua Email</p>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">
-                      Gửi thư thông báo duy trì Streak, số thẻ SRS đến hạn và lời khuyên từ Sensei vào hộp thư của bạn
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-bold text-slate-900 dark:text-white">📧 Nhắc nhở học tập qua Email (Hệ thống tự động)</p>
+                      <span className="text-[10px] bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 font-bold px-2 py-0.5 rounded-full">
+                        Tự động 8:00 AM
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                      Hệ thống tự động quét và gửi email định kỳ mỗi sáng vào 8:00 AM khi có thẻ từ vựng SRS đến hạn hoặc Streak có nguy cơ bị ngắt quãng.
                     </p>
                   </div>
                   <div className="flex items-center gap-3 self-end sm:self-auto">

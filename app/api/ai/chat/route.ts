@@ -2,9 +2,12 @@ import { getServerSession } from "next-auth";
 import { NextRequest, NextResponse } from "next/server";
 import { authOptions } from "@/lib/auth-options";
 import { prisma } from "@/lib/prisma";
-import { generateNaturalJapaneseResponse } from "@/lib/naturalSenseiEngine";
+import { generateNaturalJapaneseResponse, getLanguageName } from "@/lib/naturalSenseiEngine";
 import { getUserProgress } from "@/lib/progress-service";
+import { getUserLearningMistakes, formatMistakesForAiPrompt } from "@/lib/learningMistakes";
 import { rateLimitAsync, rateLimited } from "@/lib/rateLimit";
+import type { NativeLanguage } from "@/components/LanguageContext";
+import { SUPPORTED_LANGUAGES } from "@/components/LanguageContext";
 
 const VALID_KEY_PATTERN = /^(gsk_[A-Za-z0-9_-]{16,128}|sk-or-[A-Za-z0-9_-]{16,128}|AIza[A-Za-z0-9_-]{20,80})$/;
 
@@ -50,11 +53,15 @@ export async function POST(req: NextRequest) {
     apiKey?: string;
     scenarioId?: string;
     history?: { role: "user" | "assistant"; content: string }[];
-    nativeLanguage?: "vi" | "en";
+    nativeLanguage?: NativeLanguage;
   };
 
-  const nativeLanguage = clientLang === "en" ? "en" : "vi";
-  const userProgress = await getUserProgress(uid).catch(() => null);
+  const isSupportedLang = clientLang && SUPPORTED_LANGUAGES.some((l) => l.code === clientLang);
+  const nativeLanguage: NativeLanguage = isSupportedLang ? (clientLang as NativeLanguage) : "vi";
+  const [userProgress, userMistakes] = await Promise.all([
+    getUserProgress(uid).catch(() => null),
+    getUserLearningMistakes(uid).catch(() => null),
+  ]);
 
   if (!message || typeof message !== "string" || message.trim().length === 0) {
     return NextResponse.json({ error: "Message is required" }, { status: 400 });
@@ -134,7 +141,11 @@ export async function POST(req: NextRequest) {
               { role: "user", content: message.trim() },
             ];
 
-      const nativeLangName = nativeLanguage === "en" ? "English" : "Tiếng Việt";
+      const nativeLangName = getLanguageName(nativeLanguage);
+      const mistakesSnippet = userMistakes
+        ? formatMistakesForAiPrompt(userMistakes, nativeLangName)
+        : "";
+
       const progressSnippet = userProgress
         ? `\nTHÔNG TIN TIẾN TRÌNH HỌC TẬP THỰC TẾ CỦA HỌC VIÊN:
 - Trình độ JLPT hiện tại: ${userProgress.learningLevel} (Cấp độ Level ${userProgress.level})
@@ -143,8 +154,8 @@ export async function POST(req: NextRequest) {
 - Bài học đã hoàn thành: ${userProgress.stats.completedLessonsCount}/${userProgress.stats.totalLessonsInLevel} bài học
 - Thẻ từ vựng SRS cần ôn tập hôm nay: ${userProgress.stats.dueReviewCount} thẻ
 - Tỷ lệ làm bài chính xác: ${userProgress.stats.reviewAccuracy ?? 100}%
-- Ngôn ngữ mẹ đẻ (Native Language) của học viên: ${nativeLangName}.`
-        : `\nNgôn ngữ mẹ đẻ của học viên: ${nativeLangName}.`;
+- Ngôn ngữ mẹ đẻ (Native Language) của học viên: ${nativeLangName} (${nativeLanguage}).`
+        : `\nNgôn ngữ mẹ đẻ của học viên: ${nativeLangName} (${nativeLanguage}).`;
 
       const baseInstruction =
         scenarioId === "business_horenso"
@@ -153,13 +164,14 @@ export async function POST(req: NextRequest) {
             ? `Bạn là Aoi-chan, bạn thân người Nhật. Hãy trò chuyện như người thật bằng tiếng Nhật thể ngắn (タメ口), dùng thán từ tự nhiên (マジで？, そうなんだ, やばい, めっちゃ). Kèm dịch nghĩa bằng ${nativeLangName} bên dưới.`
             : scenarioId === "travel_restaurant"
               ? `Bạn là nhân viên nhà hàng / hướng dẫn viên du lịch Nhật Bản. Hãy trò chuyện nhã nhặn, tự nhiên kèm dịch nghĩa bằng ${nativeLangName}.`
-              : `Bạn là Kawaii AI Sensei (Aoi Sensei 🌸 / Ren Sensei 🦊) - trợ lý học tập cá nhân tận tâm và thông minh tại Nihon Quest.`;
+              : `Bạn là Kawaii AI Sensei (Aoi Sensei 🌸 / Ren Sensei 🦊) - trợ lý học tập cá nhân tận tâm, thấu hiểu tiến trình và sư phạm thông minh tại Nihon Quest.`;
 
-      const systemPrompt = `${baseInstruction}${progressSnippet}
+      const systemPrompt = `${baseInstruction}${progressSnippet}${mistakesSnippet}
 VAI TRÒ VÀ NGUYÊN TẮC CỦA TRỢ LÝ HỌC TẬP (AI SENSEI):
 1. Bạn là TRỢ LÝ ĐỒNG HÀNH THÔNG MINH, KHÔNG PHẢI chatbot vô hồn:
    - Hãy quan tâm đến tiến trình học tập của học viên: khen ngợi khi có streak tốt, nhắc nhở nhẹ nhàng nếu có thẻ SRS đang đến hạn ôn tập (${userProgress?.stats.dueReviewCount ?? 0} thẻ).
    - Khi học viên hỏi "hôm nay học gì", "gợi ý học", "tiến độ thế nào", hãy đưa ra lời khuyên cụ thể, thực tế theo đúng dữ liệu học tập bên trên.
+   - Khi học viên hỏi về "lỗi sai", "tại sao sai", "khắc phục", hoặc cần ôn luyện, hãy trực tiếp dựa vào THÔNG TIN CHI TIẾT VỀ LỖI SAI VÀ ĐIỂM YẾU ở trên để chỉ dẫn cặn kẽ, giải thích cội nguồn nhầm lẫn và cho bài tập thực hành sửa sai ngay!
    - Giải thích từ vựng, ngữ pháp, trợ từ cặn kẽ và dịch nghĩa rõ ràng bằng ngôn ngữ mẹ đẻ của học viên (${nativeLangName}).
 2. Phong cách:
    - Thân thiện, đáng yêu, ấm áp (Kawaii Sensei), dùng emoji phù hợp 🌸✨🎌.
@@ -331,6 +343,7 @@ VAI TRÒ VÀ NGUYÊN TẮC CỦA TRỢ LÝ HỌC TẬP (AI SENSEI):
           scenarioId,
           userMessage: message,
           userProgress,
+          mistakes: userMistakes,
           nativeLanguage,
         });
       }
@@ -340,6 +353,7 @@ VAI TRÒ VÀ NGUYÊN TẮC CỦA TRỢ LÝ HỌC TẬP (AI SENSEI):
         scenarioId,
         userMessage: message,
         userProgress,
+        mistakes: userMistakes,
         nativeLanguage,
       });
     }
@@ -348,6 +362,7 @@ VAI TRÒ VÀ NGUYÊN TẮC CỦA TRỢ LÝ HỌC TẬP (AI SENSEI):
       scenarioId,
       userMessage: message,
       userProgress,
+      mistakes: userMistakes,
       nativeLanguage,
     });
   }
