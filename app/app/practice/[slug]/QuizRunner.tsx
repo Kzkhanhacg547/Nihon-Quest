@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui";
 import { useSoundAndTheme } from "@/components/SoundAndThemeContext";
 import { notifyProgressUpdated } from "@/components/UserProgressContext";
+import { useNativeLanguage } from "@/components/LanguageContext";
 import { SpeakButton } from "./LessonSections";
 import { IconArrowRight, IconCheck, IconClose, IconRefresh } from "./LessonIcons";
 
@@ -49,59 +50,102 @@ const normalize = (value: string) => value.trim().toLowerCase();
 /** Must stay in sync with PASS_THRESHOLD in app/api/lessons/complete/route.ts. */
 const PASS_PERCENT = 60;
 
-function exerciseKind(contentType?: string | null) {
-  if (contentType === "VOCAB") return "Từ vựng";
-  if (contentType === "GRAMMAR") return "Ngữ pháp";
-  return "Luyện tập";
+function exerciseKind(contentType?: string | null, t?: (k: string) => string) {
+  if (contentType === "VOCAB") return t ? t("navVocab") : "Từ vựng";
+  if (contentType === "GRAMMAR") return t ? t("navGrammar") : "Ngữ pháp";
+  return t ? t("groupPractice") : "Luyện tập";
 }
 
 // Grammatical explanation helper for Japanese questions
-function getGrammarExplanation(question: string, correctAnswer: string, prompt?: string | null) {
+function getGrammarExplanation(question: string, correctAnswer: string, prompt?: string | null, lang: string = "vi") {
+  const isZh = lang === "zh-CN" || lang === "zh-TW";
+  const isEn = lang === "en";
+
   if (prompt && prompt.trim().length > 5) {
     return {
-      title: "Giải thích ngữ cảnh",
+      title: isZh ? "语法要点与语境解析" : isEn ? "Context & Grammar Explanation" : "Giải thích ngữ cảnh",
       breakdown: prompt,
-      rule: "Ghi nhớ cấu trúc mẫu câu tương ứng trong ngữ cảnh này.",
+      rule: isZh
+        ? "牢记在此情境中使用的对应核心句型结构与语法。"
+        : isEn
+        ? "Remember the sentence pattern used in this context."
+        : "Ghi nhớ cấu trúc mẫu câu tương ứng trong ngữ cảnh này.",
     };
   }
 
   // Detect grammatical patterns
   if (correctAnswer.includes("は") && (correctAnswer.includes("です") || correctAnswer.includes("ではありません"))) {
     return {
-      title: "Cấu trúc Danh từ & Trợ từ 「は」(wa)",
-      breakdown: "「は」 đóng vai trò trợ từ chỉ chủ đề của câu. 「です」 là đuôi câu khẳng định lịch sự.",
-      rule: "A は B です (A là B) · A は B ではありません (A không phải là B)",
+      title: isZh ? "名词与主题助词「は」(wa) 句型" : isEn ? "Noun & Topic Particle 「は」(wa)" : "Cấu trúc Danh từ & Trợ từ 「は」(wa)",
+      breakdown: isZh
+        ? "「は」作为主题助词提示句子主语/主题。「です」为礼貌体肯定句尾判定词。"
+        : isEn
+        ? "「は」 marks the topic of the sentence. 「です」 is the polite copula."
+        : "「は」 đóng vai trò trợ từ chỉ chủ đề của câu. 「です」 là đuôi câu khẳng định lịch sự.",
+      rule: isZh
+        ? "A は B です (A是B) · A は B ではありません (A不是B)"
+        : isEn
+        ? "A は B です (A is B) · A は B ではありません (A is not B)"
+        : "A は B です (A là B) · A は B ではありません (A không phải là B)",
     };
   }
 
   if (correctAnswer.includes("を") && correctAnswer.includes("ます")) {
     return {
-      title: "Trợ từ Tân ngữ 「を」(o)",
-      breakdown: "「を」 kết nối giữa đối tượng tác động (tân ngữ) và hành động (động từ).",
-      rule: "Danh từ + を + Động từ (Ví dụ: 水を飲みます - Uống nước)",
+      title: isZh ? "宾语助词「を」(o) 句型" : isEn ? "Object Particle 「を」(o)" : "Trợ từ Tân ngữ 「を」(o)",
+      breakdown: isZh
+        ? "「を」连接动作的对象（宾语）与动作本身（动词）。"
+        : isEn
+        ? "「を」 links the direct object to the transitive verb."
+        : "「を」 kết nối giữa đối tượng tác động (tân ngữ) và hành động (động từ).",
+      rule: isZh
+        ? "名词 + を + 动词 (例：水を飲みます - 喝水)"
+        : isEn
+        ? "Noun + を + Verb (e.g. 水を飲みます - drink water)"
+        : "Danh từ + を + Động từ (Ví dụ: 水を飲みます - Uống nước)",
     };
   }
 
   if (correctAnswer.includes("に") || correctAnswer.includes("へ")) {
     return {
-      title: "Trợ từ Điểm đến & Thời gian 「に / へ」",
-      breakdown: "「に / へ」 chỉ hướng chuyển động tới địa điểm, hoặc thời điểm cụ thể diễn ra hành động.",
-      rule: "Địa điểm + に/へ + 行きます (Đi tới đâu) · Thời gian + に + Hành động",
+      title: isZh ? "方向与时间助词「に / へ」" : isEn ? "Destination & Time Particles 「に / へ」" : "Trợ từ Điểm đến & Thời gian 「に / へ」",
+      breakdown: isZh
+        ? "「に / へ」表示移动方向目的地，或具体的动作发生时间点。"
+        : isEn
+        ? "「に / へ」 indicates direction/destination or specific point in time."
+        : "「に / へ」 chỉ hướng chuyển động tới địa điểm, hoặc thời điểm cụ thể diễn ra hành động.",
+      rule: isZh
+        ? "地点 + に/へ + 行きます (去某地) · 时间点 + に + 动词"
+        : isEn
+        ? "Place + に/へ + 行きます (go somewhere) · Time + に + Verb"
+        : "Địa điểm + に/へ + 行きます (Đi tới đâu) · Thời gian + に + Hành động",
     };
   }
 
   if (correctAnswer.includes("これ") || correctAnswer.includes("それ") || correctAnswer.includes("あれ")) {
     return {
-      title: "Đại từ chỉ định Ko-So-A-Do",
-      breakdown: "これ (vật ở gần người nói) · それ (vật ở gần người nghe) · あれ (vật ở xa cả hai).",
-      rule: "これ / それ / あれ + は + Danh từ + です",
+      title: isZh ? "指示代词 Ko-So-A-Do 体系" : isEn ? "Demonstrative Pronouns Ko-So-A-Do" : "Đại từ chỉ định Ko-So-A-Do",
+      breakdown: isZh
+        ? "これ (靠近说话人) · それ (靠近听话人) · あれ (远距离指示)。"
+        : isEn
+        ? "これ (near speaker) · それ (near listener) · あれ (far from both)."
+        : "これ (vật ở gần người nói) · それ (vật ở gần người nghe) · あれ (vật ở xa cả hai).",
+      rule: "これ / それ / あれ + は + 名词 + です",
     };
   }
 
   return {
-    title: "Phân tích câu trả lời đúng",
-    breakdown: `Đáp án chính xác là "${correctAnswer}". Hãy chú ý sự phù hợp giữa câu hỏi và ngữ cảnh đối thoại.`,
-    rule: "Ôn tập lại từ vựng và mẫu câu này để củng cố phản xạ.",
+    title: isZh ? "正确答案解析" : isEn ? "Correct Answer Breakdown" : "Phân tích câu trả lời đúng",
+    breakdown: isZh
+      ? `正确答案为 "${correctAnswer}"。请注意问题与对话语境的契合度。`
+      : isEn
+      ? `The correct answer is "${correctAnswer}". Pay close attention to context matching.`
+      : `Đáp án chính xác là "${correctAnswer}". Hãy chú ý sự phù hợp giữa câu hỏi và ngữ cảnh đối thoại.`,
+    rule: isZh
+      ? "温故知新，强化此句型和词汇的反应速度。"
+      : isEn
+      ? "Review this vocabulary and pattern to build reflexes."
+      : "Ôn tập lại từ vựng và mẫu câu này để củng cố phản xạ.",
   };
 }
 
@@ -114,6 +158,7 @@ export function QuizRunner({
 }) {
   const router = useRouter();
   const { playClick, playCorrect, playIncorrect, playFanfare, showToast, speak } = useSoundAndTheme();
+  const { t, nativeLanguage } = useNativeLanguage();
 
   // Hàng đợi câu hỏi (chỉ số vào lesson.exercises). "Hỏi khác" đẩy câu hiện tại xuống cuối hàng.
   const [queue, setQueue] = useState<number[]>(() => lesson.exercises.map((_, i) => i));
@@ -335,7 +380,7 @@ export function QuizRunner({
     if (!isFinished) {
       return (
         <p className="rounded-2xl bg-slate-50 p-5 text-center text-sm text-slate-500 dark:bg-sumi-800/60 dark:text-slate-400">
-          Bài học này chưa có câu hỏi luyện tập.
+          {t("lessonNoDialogue") || "Bài học này chưa có câu hỏi luyện tập."}
         </p>
       );
     }
@@ -346,7 +391,6 @@ export function QuizRunner({
     const correctCount = answersLog.filter((a) => a.isCorrect).length;
     const wrongAnswers = answersLog.filter((a) => !a.isCorrect);
     const passed = summaryData.passed;
-    // Ngưỡng đạt được server áp dụng; hiển thị sai sẽ khiến người học tưởng đã qua.
     const needed = Math.max(0, Math.ceil((PASS_PERCENT / 100) * totalQuestions) - correctCount);
 
     return (
@@ -360,37 +404,34 @@ export function QuizRunner({
         >
           <div className="mb-2 text-5xl">{passed ? "🎉" : "📖"}</div>
           <h3 className="text-xl font-black text-slate-900 dark:text-white">
-            {passed ? "Xuất sắc! お疲れ様でした!" : "Chưa đạt yêu cầu — học lại nhé!"}
+            {passed ? t("quizPassedTitle") : t("quizFailedTitle")}
           </h3>
           <p className="mt-1 text-xs text-slate-600 dark:text-slate-400">
             {passed ? (
               <>
-                Bạn vừa hoàn thành:{" "}
+                {t("quizPassedDesc")}{" "}
                 <span className="font-bold text-slate-900 dark:text-white">{lesson.title}</span>
               </>
             ) : (
-              <>
-                Cần đúng ít nhất <b className="text-amber-700 dark:text-amber-300">{PASS_PERCENT}%</b> để mở bài
-                tiếp theo. Còn thiếu <b>{needed}</b> câu nữa.
-              </>
+              t("quizFailedDesc", { passPercent: PASS_PERCENT, needed })
             )}
           </p>
 
           <div className="mt-4 grid grid-cols-3 gap-2">
             <div className="rounded-xl border border-slate-200/80 bg-white p-3 dark:border-slate-700 dark:bg-sumi-800/80">
-              <span className="text-[11px] font-bold text-slate-500">Đúng</span>
+              <span className="text-[11px] font-bold text-slate-500">{t("quizCorrectStat")}</span>
               <p className="mt-0.5 text-lg font-black text-emerald-600">
                 {correctCount} / {totalQuestions}
               </p>
             </div>
             <div className="rounded-xl border border-slate-200/80 bg-white p-3 dark:border-slate-700 dark:bg-sumi-800/80">
-              <span className="text-[11px] font-bold text-slate-500">Chính xác</span>
+              <span className="text-[11px] font-bold text-slate-500">{t("quizAccuracyStat")}</span>
               <p className={`mt-0.5 text-lg font-black ${passed ? "text-indigo-600 dark:text-indigo-400" : "text-amber-600 dark:text-amber-400"}`}>
                 {summaryData.score}%
               </p>
             </div>
             <div className="rounded-xl border border-slate-200/80 bg-white p-3 dark:border-slate-700 dark:bg-sumi-800/80">
-              <span className="text-[11px] font-bold text-slate-500">Kinh nghiệm</span>
+              <span className="text-[11px] font-bold text-slate-500">{t("quizXpStat")}</span>
               <p className="mt-0.5 text-lg font-black text-amber-500">+{summaryData.xpAwarded} XP</p>
             </div>
           </div>
@@ -400,23 +441,23 @@ export function QuizRunner({
           <div className="space-y-2 rounded-2xl border border-rose-200 bg-rose-50/80 p-4 text-left dark:border-red-900 dark:bg-red-950/30">
             <div className="flex items-center justify-between gap-2">
               <span className="text-xs font-black text-rose-700 dark:text-rose-300">
-                📚 {wrongAnswers.length} nội dung cần ôn lại trong SRS
+                📚 {wrongAnswers.length} {t("vocabNeedPractice")}
               </span>
               <Link href="/app/review">
                 <Button variant="torii" size="sm" className="px-3 py-1 text-xs">
-                  Ôn ngay
+                  {t("quizSrsReviewNow")}
                 </Button>
               </Link>
             </div>
             <p className="text-[11px] leading-relaxed text-slate-600 dark:text-slate-400">
-              Các câu chưa chính xác đã được lưu vào hàng đợi Spaced Repetition (SRS) để nhắc bạn ôn đúng thời điểm.
+              {t("quizSrsSavedNotice")}
             </p>
           </div>
         )}
 
         {/* Học lại — luôn có, kể cả khi đã đạt */}
         <div className="space-y-2 rounded-2xl border border-slate-200 bg-white p-4 text-left dark:border-slate-800 dark:bg-sumi-900">
-          <span className="text-xs font-bold text-slate-500 dark:text-slate-400">Luyện lại</span>
+          <span className="text-xs font-bold text-slate-500 dark:text-slate-400">{t("quizRetryWrong")}</span>
           <div className="flex flex-col gap-2 pt-1 sm:flex-row">
             {wrongAnswers.length > 0 && (
               <Button
@@ -425,7 +466,7 @@ export function QuizRunner({
                 onClick={() => startRetry(true)}
                 className="flex-1 font-black"
               >
-                <IconRefresh width={16} height={16} /> Học lại {wrongAnswers.length} câu sai
+                <IconRefresh width={16} height={16} /> {t("quizRetryWrong")} ({wrongAnswers.length})
               </Button>
             )}
             <Button
@@ -434,7 +475,7 @@ export function QuizRunner({
               onClick={() => startRetry(false)}
               className="flex-1 font-bold"
             >
-              <IconRefresh width={16} height={16} /> Làm lại toàn bộ
+              <IconRefresh width={16} height={16} /> {t("quizRetryAll")}
             </Button>
           </div>
         </div>
@@ -442,28 +483,28 @@ export function QuizRunner({
         {passed ? (
           nextLesson ? (
             <div className="space-y-2 rounded-2xl border border-slate-200 bg-white p-4 text-left dark:border-slate-800 dark:bg-sumi-900">
-              <span className="text-xs font-bold text-slate-500 dark:text-slate-400">Bài học tiếp theo</span>
+              <span className="text-xs font-bold text-slate-500 dark:text-slate-400">{t("nextLesson")}</span>
               <h4 className="text-base font-black text-slate-900 dark:text-white">{nextLesson.title}</h4>
               <Link href={`/app/practice/${nextLesson.slug}`} className="block pt-1">
                 <Button variant="torii" size="md" className="w-full">
-                  Tiếp tục bài học <IconArrowRight width={16} height={16} />
+                  {t("quizNextLesson")} <IconArrowRight width={16} height={16} />
                 </Button>
               </Link>
             </div>
           ) : (
             <div className="space-y-2 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-left dark:border-emerald-800 dark:bg-emerald-950/40">
               <span className="text-xs font-black text-emerald-700 dark:text-emerald-400">
-                🏆 Bạn đã hoàn thành tất cả bài học {lesson.level ?? ""}!
+                🏆 {t("pathCompletedToday")} {lesson.level ?? ""}!
               </span>
               <p className="text-xs text-slate-600 dark:text-slate-300">
-                Khám phá bản đồ Shinkansen hoặc thử thách hội thoại Survival Mode để áp dụng kiến thức thực tế.
+                {t("pathCompletedDesc")}
               </p>
               <div className="flex gap-2 pt-1">
                 <Link href="/app/journey" className="flex-1">
-                  <Button variant="gold" size="sm" className="w-full">Khám phá Nhật Bản 🗾</Button>
+                  <Button variant="gold" size="sm" className="w-full">{t("shinkansenJourney")} 🗾</Button>
                 </Link>
                 <Link href="/app/survival" className="flex-1">
-                  <Button variant="secondary" size="sm" className="w-full">Survival 🍜</Button>
+                  <Button variant="secondary" size="sm" className="w-full">{t("navSurvival")} 🍜</Button>
                 </Link>
               </div>
             </div>
@@ -472,18 +513,17 @@ export function QuizRunner({
           /* Chưa đạt: không mở đường sang bài tiếp theo. */
           <div className="space-y-2 rounded-2xl border border-amber-300 bg-amber-50 p-4 text-left dark:border-amber-800/70 dark:bg-amber-950/25">
             <span className="text-xs font-black text-amber-800 dark:text-amber-300">
-              🔒 Bài học tiếp theo đang khóa
+              🔒 {t("nextLesson")} {t("moduleLocked")}
             </span>
             <p className="text-xs leading-relaxed text-slate-700 dark:text-slate-300">
-              Đạt {PASS_PERCENT}% để mở khóa và nhận +{lesson.xpReward} XP. Ôn lại phần từ vựng/ngữ pháp phía
-              bên trái rồi làm lại phần trên nhé.
+              {t("quizFailedDesc", { passPercent: PASS_PERCENT, needed: 1 })}
             </p>
           </div>
         )}
 
         <div className="flex gap-3">
           <Link href="/app/practice" className="flex-1">
-            <Button variant="secondary" size="sm" className="w-full">← Danh sách bài học</Button>
+            <Button variant="secondary" size="sm" className="w-full">← {t("quizBackToPractice")}</Button>
           </Link>
           <Link href="/app" className="flex-1">
             <Button variant="outline" size="sm" className="w-full">Dashboard ⛩️</Button>
@@ -500,7 +540,7 @@ export function QuizRunner({
   const liveCorrect = answersLog.filter((a) => a.isCorrect).length;
   const isCurrentCorrect = hasChecked && normalize(selectedAnswer) === normalize(currentExercise.correctAnswer);
   const explanation = hasChecked
-    ? getGrammarExplanation(currentExercise.question, currentExercise.correctAnswer, currentExercise.prompt)
+    ? getGrammarExplanation(currentExercise.question, currentExercise.correctAnswer, currentExercise.prompt, nativeLanguage)
     : null;
   const canSkip = !hasChecked && queue.length > 1;
 
@@ -510,10 +550,10 @@ export function QuizRunner({
       <div>
         <div className="mb-1.5 flex items-center justify-between gap-2 text-xs font-bold text-slate-600 dark:text-slate-300">
           <span>
-            Câu {currentNumber} / {attemptTotal}
+            {t("testQuestionIndex")} {currentNumber} / {attemptTotal}
           </span>
           <span className="shrink-0 rounded-md border border-amber-200 bg-amber-50 px-2 py-0.5 text-[11px] text-amber-700 dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-300">
-            Cần ≥ {PASS_PERCENT}% để qua
+            ≥ {PASS_PERCENT}%
           </span>
         </div>
         <div
@@ -526,13 +566,9 @@ export function QuizRunner({
         >
           <div className="h-full rounded-full bg-red-600 transition-all duration-300" style={{ width: `${progressPercent}%` }} />
         </div>
-        {/* Điểm tạm tính để người học biết còn đủ điều kiện qua bài hay không */}
+        {/* Điểm tạm tính */}
         <p className="mt-1.5 text-[11px] text-slate-500 dark:text-slate-400">
-          Đã đúng {liveCorrect} câu · cần tối thiểu{" "}
-          <b className="text-amber-600 dark:text-amber-400">
-            {Math.ceil((PASS_PERCENT / 100) * attemptTotal)}
-          </b>{" "}
-          câu để đạt {PASS_PERCENT}%
+          {liveCorrect}/{attemptTotal} · {PASS_PERCENT}%
         </p>
       </div>
 
@@ -541,7 +577,7 @@ export function QuizRunner({
         <div className="flex items-center justify-between gap-3">
           <span className="inline-flex items-center gap-2 rounded-md border border-rose-100 bg-rose-50 px-2 py-0.5 text-xs font-bold text-red-600 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-300">
             <i className="h-3 w-0.5 rounded bg-red-500" aria-hidden />
-            {exerciseKind(currentExercise.contentType)}
+            {exerciseKind(currentExercise.contentType, t)}
           </span>
           <SpeakButton onClick={() => speak(currentExercise.question)} label="Nghe phát âm câu hỏi" />
         </div>
@@ -644,7 +680,7 @@ export function QuizRunner({
             <div className="min-w-0 flex-1">
               <div className="flex items-center justify-between gap-2">
                 <p className={`font-black ${isCurrentCorrect ? "text-emerald-700 dark:text-emerald-300" : "text-red-700 dark:text-red-300"}`}>
-                  {isCurrentCorrect ? "Chính xác!" : "Chưa chính xác"}
+                  {isCurrentCorrect ? t("quizCorrect") : t("quizIncorrect")}
                 </p>
                 {isCurrentCorrect && (
                   <span className="shrink-0 rounded-lg border border-amber-200 bg-amber-50 px-2 py-0.5 text-xs font-black text-amber-700 dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-300">
@@ -654,7 +690,7 @@ export function QuizRunner({
               </div>
               {!isCurrentCorrect && (
                 <p className="mt-0.5 text-sm">
-                  Đáp án đúng: <span className="jp-text font-black">{currentExercise.correctAnswer}</span>
+                  {t("correctAnswerLabel") || "Đáp án đúng:"} <span className="jp-text font-black">{currentExercise.correctAnswer}</span>
                 </p>
               )}
               {explanation && (
@@ -672,7 +708,7 @@ export function QuizRunner({
       <div className={`grid gap-3 ${canSkip ? "grid-cols-[minmax(0,1fr)_minmax(0,1.6fr)]" : "grid-cols-1"}`}>
         {canSkip && (
           <Button variant="outline" size="lg" onClick={handleSkip} className="font-bold">
-            <IconRefresh width={16} height={16} /> Hỏi khác
+            <IconRefresh width={16} height={16} /> {t("quizSkip")}
           </Button>
         )}
         {!hasChecked ? (
@@ -683,16 +719,16 @@ export function QuizRunner({
             onClick={handleCheckAnswer}
             className="font-black"
           >
-            Kiểm tra đáp án
+            {t("quizCheck")}
           </Button>
         ) : (
           <Button variant="torii" size="lg" loading={submitting} onClick={handleNextQuestion} className="font-black">
             {queue.length > 1 ? (
               <>
-                Câu tiếp theo <IconArrowRight width={18} height={18} />
+                {t("quizContinue")} <IconArrowRight width={18} height={18} />
               </>
             ) : (
-              "Nộp bài & xem kết quả"
+              t("testSubmitBtn")
             )}
           </Button>
         )}

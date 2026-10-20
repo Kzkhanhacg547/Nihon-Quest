@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useCallback } from "react";
 import Image from "next/image";
 import { BASE64_IMAGES } from "@/lib/assets/base64Images";
 import Link from "next/link";
@@ -152,6 +152,34 @@ export function GrammarClient({ grammar, defaultLevel = "N5", displayName = "b·∫
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const { playClick } = useSoundAndTheme();
 
+  const getLevelTagline = useCallback(
+    (lv: Level) => {
+      switch (lv) {
+        case "N5":
+          return t("grammarN5Tagline") || LEVEL_META.N5.tagline;
+        case "N4":
+          return t("grammarN4Tagline") || LEVEL_META.N4.tagline;
+        case "N3":
+          return t("grammarN3Tagline") || LEVEL_META.N3.tagline;
+      }
+    },
+    [t]
+  );
+
+  const getLevelDesc = useCallback(
+    (lv: Level) => {
+      switch (lv) {
+        case "N5":
+          return t("grammarN5Desc") || LEVEL_META.N5.desc;
+        case "N4":
+          return t("grammarN4Desc") || LEVEL_META.N4.desc;
+        case "N3":
+          return t("grammarN3Desc") || LEVEL_META.N3.desc;
+      }
+    },
+    [t]
+  );
+
   const quickLinks = useMemo(() => [
     { label: t("grammarQuickVocab"), href: "/app/vocabulary#vocabulary", icon: "üìò", color: "from-blue-500 to-blue-600" },
     { label: t("grammarQuickKanji"), href: "/app/vocabulary#kanji", icon: "Âêç", color: "from-violet-500 to-purple-600" },
@@ -293,7 +321,7 @@ export function GrammarClient({ grammar, defaultLevel = "N5", displayName = "b·∫
                   <div className="flex h-full flex-col justify-end p-4">
                     <span className="text-3xl font-black leading-none">{lv}</span>
                     <span className="jp-text mt-1 text-sm font-bold text-white/90">{meta.jp}</span>
-                    <span className="mt-0.5 text-xs text-white/85">{meta.tagline}</span>
+                    <span className="mt-0.5 text-xs text-white/85">{getLevelTagline(lv)}</span>
                     <span className="mt-3 inline-flex min-h-9 items-center justify-between rounded-full bg-white px-4 text-xs font-bold text-slate-900">
                       {t("btnLearnNow")} <span aria-hidden="true">‚Üí</span>
                     </span>
@@ -312,8 +340,8 @@ export function GrammarClient({ grammar, defaultLevel = "N5", displayName = "b·∫
                     <span className="text-5xl font-black leading-none">{activeLevel}</span>
                     <span className="jp-text text-lg font-bold text-white/80">{LEVEL_META[activeLevel].jp}</span>
                   </div>
-                  <p className="mt-1 text-sm font-semibold text-red-400">{LEVEL_META[activeLevel].tagline}</p>
-                  <p className="mt-4 max-w-sm text-sm leading-relaxed text-white/75">{LEVEL_META[activeLevel].desc}</p>
+                  <p className="mt-1 text-sm font-semibold text-red-400">{getLevelTagline(activeLevel)}</p>
+                  <p className="mt-4 max-w-sm text-sm leading-relaxed text-white/75">{getLevelDesc(activeLevel)}</p>
                 </div>
                 <div className="mt-6 flex items-end justify-between gap-4">
                   <div className="flex gap-6">
@@ -376,7 +404,7 @@ export function GrammarClient({ grammar, defaultLevel = "N5", displayName = "b·∫
               {search && (
                 <button
                   onClick={() => setSearch("")}
-                  aria-label="Clear search"
+                  aria-label={t("commonClearSearch") || "Clear search"}
                   className="absolute right-0 top-1/2 grid h-11 w-11 -translate-y-1/2 place-items-center text-slate-400 transition hover:text-slate-600 dark:text-slate-400 dark:hover:text-slate-200"
                 >
                   ‚úï
@@ -386,7 +414,7 @@ export function GrammarClient({ grammar, defaultLevel = "N5", displayName = "b·∫
             <select
               value={sort}
               onChange={(e) => setSort(e.target.value as "level" | "title")}
-              aria-label="Sort"
+              aria-label={t("grammarSortLevel") || "Sort"}
               className="min-h-11 rounded-full border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 dark:border-slate-800 dark:bg-sumi-900 dark:text-slate-200"
             >
               <option value="level">{t("grammarSortLevel")}</option>
@@ -399,7 +427,7 @@ export function GrammarClient({ grammar, defaultLevel = "N5", displayName = "b·∫
         <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-sumi-900 lg:grid lg:h-[640px] lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
           {/* ---- C·ªôt tr√°i: b·ªô l·ªçc + danh s√°ch ---- */}
           <div className="flex min-h-0 flex-col lg:border-r lg:border-slate-200 lg:dark:border-slate-800">
-            <div className="flex gap-2 overflow-x-auto border-b border-slate-100 p-3 dark:border-slate-800" role="group" aria-label="Filter by level">
+            <div className="flex gap-2 overflow-x-auto border-b border-slate-100 p-3 dark:border-slate-800" role="group" aria-label={t("vocabColLevel") || "Filter by level"}>
               {[...LEVELS, "ALL" as const].map((lv) => {
                 const on = levelFilter === lv;
                 return (
@@ -490,7 +518,7 @@ export function GrammarClient({ grammar, defaultLevel = "N5", displayName = "b·∫
                         playClick();
                         setSelectedId(null);
                       }}
-                      aria-label="Close details"
+                      aria-label={t("commonClose") || "Close details"}
                       className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-white/15 text-white backdrop-blur transition hover:bg-white/25"
                     >
                       ‚úï

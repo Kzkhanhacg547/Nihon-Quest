@@ -3,18 +3,21 @@
 import { useState, useEffect } from "react";
 import { Button, Card, Badge } from "@/components/ui";
 import { useSoundAndTheme } from "@/components/SoundAndThemeContext";
+import { useNativeLanguage } from "@/components/LanguageContext";
 import { notifyProgressUpdated } from "@/components/UserProgressContext";
 import { kanaToRomaji } from "@/lib/romajiConverter";
 
 interface QuestionOption {
   textJa: string;
-  textVi: string;
+  textVi?: string;
+  translation?: string;
 }
 
 interface DungeonQuestion {
   id: string;
   situationJa: string;
-  situationVi: string;
+  situation?: string;
+  situationVi?: string;
   furigana: string;
   options: QuestionOption[];
   correctIndex: number;
@@ -32,6 +35,7 @@ interface DungeonTheme {
 
 export function SenseiDailyDungeon() {
   const { playClick, playCorrect, playIncorrect, speak } = useSoundAndTheme();
+  const { nativeLanguage, t, langInfo } = useNativeLanguage();
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -51,7 +55,7 @@ export function SenseiDailyDungeon() {
 
   const [showFurigana, setShowFurigana] = useState(true);
   const [showRomaji, setShowRomaji] = useState(true);
-  const [showViTranslation, setShowViTranslation] = useState(true);
+  const [showTranslation, setShowTranslation] = useState(true);
 
   // Phase
   const [phase, setPhase] = useState<"INTRO" | "PLAYING" | "SUBMITTING" | "RESULT">("INTRO");
@@ -63,14 +67,14 @@ export function SenseiDailyDungeon() {
 
   useEffect(() => {
     fetchDungeonData();
-  }, []);
+  }, [nativeLanguage]);
 
   const fetchDungeonData = async () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch("/api/ai/dungeon");
-      if (!res.ok) throw new Error("Không thể tải dữ liệu Daily Dungeon.");
+      const res = await fetch(`/api/ai/dungeon?lang=${nativeLanguage}`);
+      if (!res.ok) throw new Error(t("errorText"));
       const data = await res.json();
 
       setTheme(data.theme);
@@ -82,7 +86,7 @@ export function SenseiDailyDungeon() {
         setPhase("RESULT");
       }
     } catch (err: any) {
-      setError(err.message || "Lỗi tải dữ liệu");
+      setError(err.message || t("errorText"));
     } finally {
       setLoading(false);
     }
@@ -128,7 +132,6 @@ export function SenseiDailyDungeon() {
       setCurrentIndex((prev) => prev + 1);
       setSelectedOption(null);
     } else {
-      // Submit results
       submitDungeon();
     }
   };
@@ -171,7 +174,7 @@ export function SenseiDailyDungeon() {
       <Card className="p-8 text-center bg-white dark:bg-sumi-900 border border-slate-200 dark:border-slate-800 rounded-3xl">
         <div className="w-12 h-12 rounded-full border-4 border-sakura-500 border-t-transparent animate-spin mx-auto mb-3" />
         <p className="text-sm font-bold text-slate-600 dark:text-slate-300">
-          Đang kết nối ngục tối Aoi Sensei...
+          {t("dungeonConnecting")}
         </p>
       </Card>
     );
@@ -180,9 +183,9 @@ export function SenseiDailyDungeon() {
   if (error || !theme) {
     return (
       <Card className="p-6 text-center bg-white dark:bg-sumi-900 border border-slate-200 dark:border-slate-800 rounded-3xl">
-        <p className="text-sm font-bold text-rose-500">{error || "Không thể tải dữ liệu"}</p>
+        <p className="text-sm font-bold text-rose-500">{error || t("errorText")}</p>
         <Button onClick={fetchDungeonData} variant="sakura" size="sm" className="mt-4">
-          🔄 Thử lại
+          🔄 {t("retryBtn")}
         </Button>
       </Card>
     );
@@ -202,10 +205,10 @@ export function SenseiDailyDungeon() {
           <div className="space-y-2">
             <div className="flex items-center gap-2 flex-wrap">
               <span className="bg-amber-400/90 text-slate-950 text-xs font-black px-3 py-1 rounded-full uppercase tracking-wider">
-                🏯 Sensei&apos;s Daily Dungeon
+                🏯 {t("dungeonBannerTitle")}
               </span>
               <span className="bg-white/20 text-white text-xs font-bold px-3 py-1 rounded-full">
-                Thử thách hàng ngày
+                {t("dungeonBannerSub")}
               </span>
             </div>
 
@@ -222,13 +225,13 @@ export function SenseiDailyDungeon() {
             <div className="text-center">
               <span className="text-2xl font-black text-amber-300 block">🔥 {streak}</span>
               <span className="text-[10px] text-slate-200 uppercase font-black tracking-wider block mt-0.5">
-                Chuỗi ngày (Streak)
+                {t("dungeonStreakLabel")}
               </span>
             </div>
             <div className="w-px h-8 bg-white/20" />
             <div className="text-xs">
-              <span className="font-bold text-white block">Mục tiêu: 7 Ngày</span>
-              <span className="text-[10px] text-amber-200 block">🏆 Mở khóa &apos;Dungeon Master&apos;</span>
+              <span className="font-bold text-white block">{t("dungeonGoal7Days")}</span>
+              <span className="text-[10px] text-amber-200 block">🏆 &apos;Dungeon Master&apos;</span>
             </div>
           </div>
         </div>
@@ -241,10 +244,10 @@ export function SenseiDailyDungeon() {
             <span className="text-3xl">🌸</span>
             <div>
               <h4 className="font-black text-base text-slate-900 dark:text-white">
-                Chào mừng bạn đến với ngục tối hôm nay từ Aoi Sensei!
+                {t("dungeonWelcomeTitle")}
               </h4>
               <p className="text-xs text-slate-600 dark:text-slate-300 mt-1">
-                Hoàn thành 5 tình huống N3/N4 theo chủ đề ngày để nhận ngay <strong>+50 XP</strong> và tích lũy chuỗi <strong>7 ngày liên tiếp</strong> mở khóa danh hiệu độc quyền!
+                {t("dungeonWelcomeDesc")}
               </p>
             </div>
           </div>
@@ -252,28 +255,28 @@ export function SenseiDailyDungeon() {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="p-4 rounded-2xl bg-slate-50 dark:bg-sumi-800 border border-slate-200 dark:border-slate-700 text-center space-y-1">
               <span className="text-2xl block">🎯</span>
-              <h5 className="font-black text-xs text-slate-800 dark:text-slate-200">5 Tình Huống</h5>
-              <p className="text-[11px] text-slate-500">Phản xạ thực tế với người Nhật</p>
+              <h5 className="font-black text-xs text-slate-800 dark:text-slate-200">5 {t("testQuestionCount")}</h5>
+              <p className="text-[11px] text-slate-500">{t("dungeonBannerSub")}</p>
             </div>
             <div className="p-4 rounded-2xl bg-slate-50 dark:bg-sumi-800 border border-slate-200 dark:border-slate-700 text-center space-y-1">
-              <span className="text-2xl block">🇻🇳</span>
-              <h5 className="font-black text-xs text-slate-800 dark:text-slate-200">Có Dịch Nghĩa</h5>
-              <p className="text-[11px] text-slate-500">Kèm giải thích chi tiết từ Sensei</p>
+              <span className="text-2xl block">{langInfo.flag}</span>
+              <h5 className="font-black text-xs text-slate-800 dark:text-slate-200">{t("dungeonShowTranslation")}</h5>
+              <p className="text-[11px] text-slate-500">{t("quizExplanation")}</p>
             </div>
             <div className="p-4 rounded-2xl bg-slate-50 dark:bg-sumi-800 border border-slate-200 dark:border-slate-700 text-center space-y-1">
               <span className="text-2xl block">🔊</span>
-              <h5 className="font-black text-xs text-slate-800 dark:text-slate-200">Giọng Đọc Audio</h5>
-              <p className="text-[11px] text-slate-500">Hỗ trợ đọc hội thoại chuẩn xác</p>
+              <h5 className="font-black text-xs text-slate-800 dark:text-slate-200">{t("testAudioPlayer")}</h5>
+              <p className="text-[11px] text-slate-500">Native Japanese Audio</p>
             </div>
           </div>
 
           <div className="flex items-center justify-between pt-4 border-t border-slate-100 dark:border-slate-800 flex-wrap gap-4">
             <div className="text-xs text-slate-500 font-medium">
-              Chủ đề: <strong className="text-slate-900 dark:text-white font-bold">{theme.japaneseTitle}</strong>
+              Topic: <strong className="text-slate-900 dark:text-white font-bold">{theme.japaneseTitle}</strong>
             </div>
 
             <Button onClick={handleStart} variant="sakura" size="lg" className="px-8 font-black rounded-2xl shadow-lg">
-              🚀 Bắt Đầu Khiêu Chiến Ngục Tối
+              🚀 {t("dungeonStartBtn")}
             </Button>
           </div>
         </Card>
@@ -286,7 +289,7 @@ export function SenseiDailyDungeon() {
           <div className="flex items-center justify-between gap-4 pb-4 border-b border-slate-100 dark:border-slate-800">
             <div className="flex items-center gap-2">
               <Badge variant="sakura">
-                Câu {currentIndex + 1} / {questions.length}
+                {t("testQuestionIndex")} {currentIndex + 1} / {questions.length}
               </Badge>
               <span className="text-xs font-bold text-slate-500 dark:text-slate-400">
                 {theme.title}
@@ -303,7 +306,7 @@ export function SenseiDailyDungeon() {
                     : "text-slate-400 bg-slate-100 dark:bg-sumi-800"
                 }`}
               >
-                あ Furigana
+                あ {t("dungeonShowFurigana")}
               </button>
               <button
                 onClick={() => setShowRomaji(!showRomaji)}
@@ -313,17 +316,17 @@ export function SenseiDailyDungeon() {
                     : "text-slate-400 bg-slate-100 dark:bg-sumi-800"
                 }`}
               >
-                🔤 Romaji
+                🔤 {t("dungeonShowRomaji")}
               </button>
               <button
-                onClick={() => setShowViTranslation(!showViTranslation)}
+                onClick={() => setShowTranslation(!showTranslation)}
                 className={`px-2.5 py-2.5 min-h-11 rounded-xl text-xs font-bold transition ${
-                  showViTranslation
+                  showTranslation
                     ? "bg-indigo-50 text-indigo-600 dark:bg-indigo-950/60 dark:text-indigo-300 border border-indigo-200"
                     : "text-slate-400 bg-slate-100 dark:bg-sumi-800"
                 }`}
               >
-                🇻🇳 Dịch nghĩa
+                {langInfo.flag} {t("dungeonShowTranslation")}
               </button>
             </div>
           </div>
@@ -332,13 +335,13 @@ export function SenseiDailyDungeon() {
           <div className="p-5 rounded-2xl bg-gradient-to-br from-slate-50 to-indigo-50/30 dark:from-sumi-800 dark:to-sumi-800/60 border border-slate-200 dark:border-slate-700 space-y-3">
             <div className="flex items-center justify-between gap-3">
               <span className="text-xs font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-wider">
-                📌 TÌNH HUỐNG N3
+                📌 N3 SCENARIO
               </span>
               <button
                 onClick={() => speak(currentQ.situationJa)}
                 className="flex min-h-11 items-center gap-1.5 px-3 py-2 rounded-xl bg-white dark:bg-sumi-900 border border-indigo-200 dark:border-indigo-800 text-xs font-bold text-indigo-600 dark:text-indigo-300 hover:bg-indigo-50 transition shadow-2xs"
               >
-                🔊 Nghe câu hỏi
+                🔊 {t("testAudioPlayer")}
               </button>
             </div>
 
@@ -354,13 +357,13 @@ export function SenseiDailyDungeon() {
 
             {showRomaji && currentQ.furigana && (
               <p className="text-xs text-emerald-600 dark:text-emerald-400 font-mono italic leading-relaxed">
-                🔤 Phiên âm Romaji: {kanaToRomaji(currentQ.furigana)}
+                🔤 Romaji: {kanaToRomaji(currentQ.furigana)}
               </p>
             )}
 
-            {showViTranslation && (
+            {showTranslation && (
               <p className="text-xs text-slate-600 dark:text-slate-300 pt-2 border-t border-slate-200/60 dark:border-slate-700/60 italic font-medium">
-                🇻🇳 {currentQ.situationVi}
+                {langInfo.flag} {currentQ.situation || currentQ.situationVi}
               </p>
             )}
           </div>
@@ -368,7 +371,7 @@ export function SenseiDailyDungeon() {
           {/* Options Grid */}
           <div className="space-y-3">
             <p className="text-xs font-black uppercase text-slate-400 tracking-wider">
-              LỰA CHỌN CÂU TRẢ LỜI PHÙ HỢP:
+              {t("quizTitle")}:
             </p>
             <div className="grid grid-cols-1 gap-3">
               {currentQ.options.map((opt, idx) => {
@@ -404,9 +407,9 @@ export function SenseiDailyDungeon() {
                           🔤 {kanaToRomaji(opt.textJa)}
                         </p>
                       )}
-                      {showViTranslation && (
+                      {showTranslation && (
                         <p className="text-xs text-slate-500 dark:text-slate-400">
-                          {opt.textVi}
+                          {opt.translation || opt.textVi}
                         </p>
                       )}
                     </div>
@@ -419,7 +422,7 @@ export function SenseiDailyDungeon() {
                           speak(opt.textJa);
                         }}
                         className="p-1.5 rounded-lg bg-slate-100 dark:bg-sumi-800 hover:bg-sakura-50 text-slate-500 hover:text-sakura-600 transition"
-                        title="Nghe phát âm câu trả lời"
+                        title={t("testAudioPlayer")}
                       >
                         🔊
                       </button>
@@ -434,7 +437,7 @@ export function SenseiDailyDungeon() {
           {selectedOption !== null && (
             <div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/50 border border-amber-300 dark:border-amber-800/70 space-y-2 animate-fadeIn">
               <div className="flex items-center gap-2 text-xs font-black text-amber-800 dark:text-amber-300">
-                <span>🌸 AOI SENSEI GIẢI THÍCH:</span>
+                <span>🌸 AOI SENSEI:</span>
               </div>
               <p className="text-xs text-amber-900 dark:text-amber-200 leading-relaxed">
                 {currentQ.explanation}
@@ -446,7 +449,7 @@ export function SenseiDailyDungeon() {
           {selectedOption !== null && (
             <div className="flex justify-end pt-2">
               <Button onClick={handleNext} variant="sakura" size="md" className="px-6 font-bold rounded-xl shadow-md">
-                {currentIndex < questions.length - 1 ? "Câu Tiếp Theo ➔" : "🏁 Hoàn Thành Ngục Tối"}
+                {currentIndex < questions.length - 1 ? t("dungeonNextQuestion") : t("dungeonFinishChallenge")}
               </Button>
             </div>
           )}
@@ -462,13 +465,13 @@ export function SenseiDailyDungeon() {
 
           <div className="space-y-2">
             <Badge variant="matcha" className="px-3 py-1 text-xs">
-              ✓ Đã Hoàn Thành Ngục Tối Hôm Nay!
+              ✓ {t("dungeonCompletedToday")}
             </Badge>
             <h3 className="text-2xl font-black text-slate-900 dark:text-white">
-              Chúc mừng bạn đã chinh phục ngục tối!
+              {t("quizPassedTitle")}
             </h3>
             <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto">
-              Bạn đã xuất sắc vượt qua các thử thách tình huống thực tế N3 trong ngày hôm nay.
+              {t("srsSessionCompleteDesc")}
             </p>
           </div>
 
@@ -479,25 +482,25 @@ export function SenseiDailyDungeon() {
                 +{submitResult?.xpEarned || 50} XP
               </span>
               <span className="text-[11px] text-slate-500 dark:text-slate-400 font-bold block">
-                Thưởng Ngục Tối
+                {t("quizXpStat")}
               </span>
             </div>
 
             <div className="p-4 rounded-2xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 text-center space-y-1">
               <span className="text-2xl font-black text-rose-600 block">
-                🔥 {streak} Ngày
+                🔥 {streak} {t("streakUnit")}
               </span>
               <span className="text-[11px] text-slate-500 dark:text-slate-400 font-bold block">
-                Chuỗi Liên Tiếp (Streak)
+                {t("dungeonStreakLabel")}
               </span>
             </div>
 
             <div className="p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-center space-y-1">
-              <span className="text-2xl font-black text-emerald-600 block">
-                ✓ Xong
+              <span className="text-2xl block">
+                ✓
               </span>
               <span className="text-[11px] text-slate-500 dark:text-slate-400 font-bold block">
-                Nhiệm Vụ Hàng Ngày
+                {t("filterCompleted")}
               </span>
             </div>
           </div>
@@ -505,8 +508,8 @@ export function SenseiDailyDungeon() {
           {/* Achievement Progress Bar */}
           <div className="p-4 rounded-2xl bg-slate-50 dark:bg-sumi-800 border border-slate-200 dark:border-slate-700 max-w-md mx-auto text-left space-y-2">
             <div className="flex items-center justify-between text-xs font-bold">
-              <span className="text-slate-800 dark:text-slate-200">🏆 Danh hiệu &apos;Dungeon Master&apos;</span>
-              <span className="text-amber-600 font-black">{Math.min(streak, 7)} / 7 Ngày</span>
+              <span className="text-slate-800 dark:text-slate-200">🏆 &apos;Dungeon Master&apos;</span>
+              <span className="text-amber-600 font-black">{Math.min(streak, 7)} / 7 {t("streakUnit")}</span>
             </div>
             <div className="w-full h-3 rounded-full bg-slate-200 dark:bg-sumi-900 overflow-hidden">
               <div
@@ -514,16 +517,11 @@ export function SenseiDailyDungeon() {
                 style={{ width: `${Math.min(100, (streak / 7) * 100)}%` }}
               />
             </div>
-            {streak >= 7 && (
-              <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-bold text-center">
-                🎉 Bạn đã chính thức sở hữu danh hiệu Dungeon Master!
-              </p>
-            )}
           </div>
 
           <div className="pt-2">
             <Button onClick={fetchDungeonData} variant="secondary" size="md" className="font-bold">
-              🔄 Tải Lại Trạng Thái Ngục Tối
+              🔄 {t("retryBtn")}
             </Button>
           </div>
         </Card>

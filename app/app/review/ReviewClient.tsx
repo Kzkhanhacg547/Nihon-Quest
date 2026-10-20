@@ -9,21 +9,34 @@ import { useSoundAndTheme } from "@/components/SoundAndThemeContext";
 import { notifyProgressUpdated } from "@/components/UserProgressContext";
 import { getReviewFrontPrompt, type EnrichedReviewItem } from "@/lib/review/resolveReviewItem";
 import { updateSrs } from "@/lib/srs";
+import { useNativeLanguage } from "@/components/LanguageContext";
 
 type Grade = "AGAIN" | "HARD" | "GOOD" | "EASY";
 
 /**
  * Interval labels describe the SRS algorithm in lib/srs.ts, they are not
- * decoration. Previously these were hardcoded to values the scheduler never
- * produced, so the UI contradicted the schedule it actually ran.
+ * decoration. Localized dynamically into learner's native language.
  */
-function describeInterval(grade: Grade, ease: number, interval = 0, repetitions = 0): string {
+function describeInterval(
+  grade: Grade,
+  ease: number,
+  interval = 0,
+  repetitions = 0,
+  t?: (key: string, params?: Record<string, any>) => string
+): string {
   const next = updateSrs({ ease, interval, repetitions }, grade);
-  if (next.dueInDays <= 0) return "Ôn lại ngay";
-  if (next.dueInDays < 1) return "Trong 1 ngày nữa";
-  if (next.dueInDays < 7) return `~${Math.round(next.dueInDays)} ngày nữa`;
-  if (next.dueInDays < 30) return `~${Math.round(next.dueInDays / 7)} tuần nữa`;
-  return `~${Math.round(next.dueInDays / 30)} tháng nữa`;
+  if (next.dueInDays <= 0) return t ? t("srsDueImmediately") : "Ôn lại ngay";
+  if (next.dueInDays < 1) return t ? t("srsDueIn1Day") : "Trong 1 ngày nữa";
+  if (next.dueInDays < 7) {
+    const days = Math.round(next.dueInDays);
+    return t ? t("srsDueInDays", { days }) : `~${days} ngày nữa`;
+  }
+  if (next.dueInDays < 30) {
+    const weeks = Math.round(next.dueInDays / 7);
+    return t ? t("srsDueInWeeks", { weeks }) : `~${weeks} tuần nữa`;
+  }
+  const months = Math.round(next.dueInDays / 30);
+  return t ? t("srsDueInMonths", { months }) : `~${months} tháng nữa`;
 }
 
 const GRADES: readonly {
@@ -185,6 +198,7 @@ export function ReviewSettingsButton() {
 export function ReviewClient({ initial, backgrounds = [] }: { initial: EnrichedReviewItem[]; backgrounds?: string[] }) {
   const router = useRouter();
   const { playClick, playCorrect, playIncorrect, playFanfare, showToast } = useSoundAndTheme();
+  const { t } = useNativeLanguage();
 
   const [items, setItems] = useState<EnrichedReviewItem[]>(initial);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -209,7 +223,7 @@ export function ReviewClient({ initial, backgrounds = [] }: { initial: EnrichedR
         });
 
         if (!res.ok) {
-          showToast({ title: "Lỗi lưu đánh giá, vui lòng thử lại.", type: "error" });
+          showToast({ title: t("errorText"), type: "error" });
           setSubmitting(false);
           return;
         }
@@ -255,12 +269,9 @@ export function ReviewClient({ initial, backgrounds = [] }: { initial: EnrichedR
             showToast({
               title:
                 xpAwarded > 0
-                  ? `🏆 Phiên ôn tập hoàn tất! +${xpAwarded} XP`
-                  : "🏆 Phiên ôn tập hoàn tất!",
-              description:
-                xpAwarded > 0
-                  ? "Chúc mừng bạn đã bảo vệ kiến thức khỏi đường cong quên lãng!"
-                  : "Phần thưởng hôm nay đã được nhận. Tiếp tục ôn tập để giữ vững trí nhớ!",
+                  ? `${t("srsSessionComplete")} +${xpAwarded} XP`
+                  : t("srsSessionComplete"),
+              description: t("srsSessionCompleteDesc"),
               type: "achievement",
             });
             notifyProgressUpdated();
@@ -270,11 +281,11 @@ export function ReviewClient({ initial, backgrounds = [] }: { initial: EnrichedR
           }
         }
       } catch {
-        showToast({ title: "Có lỗi xảy ra khi kết nối máy chủ.", type: "error" });
+        showToast({ title: t("errorText"), type: "error" });
       }
       setSubmitting(false);
     },
-    [currentItem, submitting, items, currentIndex, playClick, playCorrect, playIncorrect, playFanfare, showToast, router]
+    [currentItem, submitting, items, currentIndex, playClick, playCorrect, playIncorrect, playFanfare, showToast, router, t]
   );
 
   // Xem thẻ trước / sau mà không chấm điểm (không đổi lịch SRS)
@@ -318,18 +329,18 @@ export function ReviewClient({ initial, backgrounds = [] }: { initial: EnrichedR
       <div className="rv-empty">
         <EmptyState
           icon="🧠✨"
-          title="Tất cả kiến thức đã được ghi nhớ vững chắc!"
-          body="Hiện tại không có thẻ nào đến hạn quên. Hệ thống SRS sẽ tự động tính toán chu kỳ và nhắc nhở bạn đúng thời điểm vàng."
+          title={t("srsEmptyTitle")}
+          body={t("srsEmptyBody")}
           action={
             <div className="flex gap-3 justify-center flex-wrap">
               <Link href="/app/practice">
                 <Button variant="torii" size="md" className="font-bold">
-                  Tiếp tục bài học N5
+                  {t("continueLesson")}
                 </Button>
               </Link>
               <Link href="/app">
                 <Button variant="secondary" size="md" className="font-bold">
-                  Về Dashboard
+                  Dashboard
                 </Button>
               </Link>
             </div>
@@ -505,7 +516,7 @@ export function ReviewClient({ initial, backgrounds = [] }: { initial: EnrichedR
           >
             <Icon name={g.icon} size={26} strokeWidth={2.1} />
             <b>{g.label}</b>
-            <small>{describeInterval(g.grade, currentItem.ease, currentItem.interval, currentItem.repetitions)}</small>
+            <small>{describeInterval(g.grade, currentItem.ease, currentItem.interval, currentItem.repetitions, t)}</small>
           </button>
         ))}
       </div>

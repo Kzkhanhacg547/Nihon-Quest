@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import Link from "next/link";
 import { useSoundAndTheme } from "@/components/SoundAndThemeContext";
+import { useNativeLanguage } from "@/components/LanguageContext";
 import { notifyProgressUpdated } from "@/components/UserProgressContext";
 import {
   TEST_MODES,
@@ -23,14 +24,6 @@ interface TestClientProps {
   catalogDocCount?: number;
 }
 
-const EXAM_CATEGORY_TABS = [
-  { id: "ALL", label: "Tất cả đề thi", icon: "🗂️" },
-  { id: "PLACEMENT_LEVEL", label: "Đầu vào & Vượt cấp (4 kỹ năng)", icon: "🧭" },
-  { id: "FPT_JPD", label: "Giáo trình FPT (JPD113–133)", icon: "🎓" },
-  { id: "SKILL_TEST", label: "Từ vựng・Kanji・Ngữ pháp・Nghe・Đọc", icon: "🎯" },
-  { id: "JLPT_MOCK", label: "Đề thi thử & Đề JLPT gốc", icon: "🏛️" },
-] as const;
-
 export function TestClient({
   userLevel,
   userXP: initialXP,
@@ -38,7 +31,38 @@ export function TestClient({
   initialExams,
   catalogDocCount = 249,
 }: TestClientProps) {
+  const { nativeLanguage, t } = useNativeLanguage();
   const { playClick, playCorrect, speak, speakingText, showToast } = useSoundAndTheme();
+
+  const examCategoryTabs = useMemo(
+    () => [
+      { id: "ALL", label: t("testTabAll") || "Tất cả đề thi", icon: "🗂️" },
+      { id: "PLACEMENT_LEVEL", label: t("testTabPlacement") || "Đầu vào & Vượt cấp (4 kỹ năng)", icon: "🧭" },
+      { id: "FPT_JPD", label: t("testTabFpt") || "Giáo trình FPT (JPD113–133)", icon: "🎓" },
+      { id: "SKILL_TEST", label: t("testTabSkills") || "Từ vựng・Kanji・Ngữ pháp・Nghe・Đọc", icon: "🎯" },
+      { id: "JLPT_MOCK", label: t("testTabMock") || "Đề thi thử & Đề JLPT gốc", icon: "🏛️" },
+    ],
+    [t]
+  );
+
+  const getSkillLabel = useCallback(
+    (skill: SkillKey) => {
+      switch (skill) {
+        case "LISTENING":
+          return t("testSkillListening") || "Nghe hiểu (Listening)";
+        case "READING":
+          return t("testSkillReading") || "Đọc hiểu (Reading)";
+        case "WRITING":
+          return t("testSkillWriting") || "Viết câu (Writing)";
+        case "SPEAKING":
+          return t("testSkillSpeaking") || "Nói phản xạ (Speaking)";
+        default:
+          return (SKILL_META as Record<string, { label: string }>)[skill as string]?.label || (skill as string);
+      }
+    },
+    [t]
+  );
+
   const [selectedMode, setSelectedMode] = useState<string>("DIAGNOSTIC");
   const [currentStep, setCurrentStep] = useState<"SELECT" | "TESTING" | "RESULT">("SELECT");
   const [selectedCategory, setSelectedCategory] = useState<string>("ALL");
@@ -469,14 +493,14 @@ export function TestClient({
             <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
               <div>
                 <h3 className="text-base font-black text-slate-900 dark:text-white">
-                  📊 Ma Trận Đánh Giá 4 Kỹ Năng & Cam Kết Minh Bạch
+                  {t("testMatrixTitle") || "📊 Ma Trận Đánh Giá 4 Kỹ Năng & Cam Kết Minh Bạch"}
                 </h3>
                 <p className="text-xs text-slate-500 dark:text-slate-400">
-                  Không chỉ dừng ở 4 bài thi cố định — hệ thống hỗ trợ {examCatalog.length} bộ đề từ Đầu vào, Vượt cấp N5–N3, Giáo trình FPT (JPD113–133), Chuyên đề kỹ năng đến Đề thi JLPT gốc.
+                  {t("testMatrixDesc") || `Hỗ trợ ${examCatalog.length} bộ đề từ Đầu vào, Vượt cấp N5–N3, Giáo trình FPT, Chuyên đề kỹ năng đến Đề thi JLPT gốc.`}
                 </p>
               </div>
               <span className="rounded-full bg-indigo-50 px-3 py-1 text-xs font-bold text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-300">
-                Hỗ trợ Thi vượt cấp / Miễn học phần
+                {t("testTabPlacement") || "Hỗ trợ Thi vượt cấp / Miễn học phần"}
               </span>
             </div>
 
@@ -494,7 +518,7 @@ export function TestClient({
                         {m.jpLabel}
                       </span>
                     </div>
-                    <h4 className="mt-2 text-sm font-black text-slate-900 dark:text-white">{m.label}</h4>
+                    <h4 className="mt-2 text-sm font-black text-slate-900 dark:text-white">{getSkillLabel(key)}</h4>
                     <p className="mt-1 text-xs leading-relaxed text-slate-500 dark:text-slate-400">{m.desc}</p>
                   </div>
                 );
@@ -509,7 +533,7 @@ export function TestClient({
           {/* DYNAMIC EXAM FILTER BAR */}
           <div className="flex flex-col justify-between gap-3 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-sumi-900 lg:flex-row lg:items-center">
             <div className="flex flex-wrap items-center gap-1.5">
-              {EXAM_CATEGORY_TABS.map((tab) => {
+              {examCategoryTabs.map((tab) => {
                 const active = selectedCategory === tab.id;
                 return (
                   <button
@@ -533,7 +557,7 @@ export function TestClient({
             </div>
 
             <div className="flex items-center gap-1.5">
-              <span className="text-[11px] font-bold text-slate-400">Cấp độ:</span>
+              <span className="text-[11px] font-bold text-slate-400">{t("pathLevelLabel") || "Cấp độ"}:</span>
               {(["ALL", "N5", "N4", "N3"] as const).map((lvl) => (
                 <button
                   key={lvl}
@@ -548,7 +572,7 @@ export function TestClient({
                       : "bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-sumi-800 dark:text-slate-300"
                   }`}
                 >
-                  {lvl === "ALL" ? "Tất cả" : lvl}
+                  {lvl === "ALL" ? (t("filterAll") || "Tất cả") : lvl}
                 </button>
               ))}
             </div>
@@ -639,7 +663,7 @@ export function TestClient({
                       onClick={() => startTest(mode.slug)}
                       className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-red-600 to-rose-500 px-4 py-2 text-xs font-extrabold text-white shadow transition hover:brightness-110 active:scale-95"
                     >
-                      Bắt đầu đánh giá
+                      {t("testStartBtn") || "Bắt đầu đánh giá"}
                       <span>→</span>
                     </button>
                   </div>
@@ -657,10 +681,10 @@ export function TestClient({
           <div className="sticky top-20 z-30 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-slate-200/80 bg-white/95 px-6 py-4 shadow-lg backdrop-blur dark:border-slate-800 dark:bg-sumi-900/95">
             <div className="flex flex-wrap items-center gap-2.5">
               <span className="rounded-lg bg-red-100 px-3 py-1 text-xs font-black text-red-700 dark:bg-red-950/60 dark:text-red-300">
-                Câu {questionIndex + 1} / {questions.length}
+                {t("questionUnit") || "Câu"} {questionIndex + 1} / {questions.length}
               </span>
               <span className="rounded-lg bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-700 dark:bg-sumi-800 dark:text-slate-200">
-                {SKILL_META[currentQuestion.skill].icon} {SKILL_META[currentQuestion.skill].label} · {currentQuestion.level}
+                {SKILL_META[currentQuestion.skill].icon} {getSkillLabel(currentQuestion.skill)} · {currentQuestion.level}
               </span>
               {activeExam && (
                 <span className="hidden rounded-lg bg-indigo-50 px-2.5 py-1 text-[11px] font-bold text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300 md:inline-block">
@@ -682,7 +706,7 @@ export function TestClient({
                 onClick={finishTest}
                 className="rounded-xl bg-slate-900 px-4 py-2 text-xs font-bold text-white transition hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-white"
               >
-                Nộp Bài ({answeredCount}/{questions.length})
+                {t("testSubmitConfirm") || "Nộp Bài"} ({answeredCount}/{questions.length})
               </button>
             </div>
           </div>
@@ -692,10 +716,10 @@ export function TestClient({
             <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-4 dark:border-slate-800">
               <span className="inline-flex items-center gap-2 text-xs font-bold text-slate-600 dark:text-slate-300">
                 <span className="h-2 w-2 rounded-full bg-red-500" />
-                {SKILL_META[currentQuestion.skill].icon} Kỹ năng: {SKILL_META[currentQuestion.skill].label} ({currentQuestion.subCategory}) · Cấp độ {currentQuestion.level}
+                {SKILL_META[currentQuestion.skill].icon} {getSkillLabel(currentQuestion.skill)} ({currentQuestion.subCategory}) · {currentQuestion.level}
               </span>
               <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
-                Đã hoàn thành {answeredCount}/{questions.length} câu
+                {answeredCount}/{questions.length}
               </span>
             </div>
 
@@ -705,7 +729,7 @@ export function TestClient({
                 <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
                   <div className="space-y-1">
                     <p className="text-xs font-extrabold uppercase tracking-wider text-indigo-700 dark:text-indigo-300">
-                      🎧 Phần Nghe Hiểu (Listening Audio)
+                      🎧 {t("testSkillListening") || "Phần Nghe Hiểu (Listening Audio)"}
                     </p>
                     <p className="text-xs text-slate-600 dark:text-slate-300">
                       Bấm nút phát để nghe hội thoại tiếng Nhật (kịch bản chữ được ẩn trong lúc làm bài để đánh giá đúng kỹ năng nghe).
@@ -718,7 +742,7 @@ export function TestClient({
                         onClick={() => speak(currentQuestion.audioScript!)}
                         className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-xs font-extrabold text-white shadow transition hover:bg-indigo-700 active:scale-95"
                       >
-                        <span>{speakingText === currentQuestion.audioScript ? "🔊 Đang phát..." : "▶️ Nghe Audio"}</span>
+                        <span>{speakingText === currentQuestion.audioScript ? (t("testPlayingAudio") || "🔊 Đang phát...") : (t("testListenAudio") || "▶️ Nghe Audio")}</span>
                       </button>
                     </div>
                   )}
@@ -791,7 +815,7 @@ export function TestClient({
                   <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-rose-200 bg-rose-50/70 p-4 dark:border-red-900/50 dark:bg-red-950/30">
                     <div className="space-y-1">
                       <p className="text-xs font-extrabold text-red-700 dark:text-red-300">
-                        🎙️ Thu âm phản xạ nói tiếng Nhật (Web Speech API)
+                        🎙️ {t("testSkillSpeaking") || "Thu âm phản xạ nói tiếng Nhật (Web Speech API)"}
                       </p>
                       <p className="text-xs text-slate-600 dark:text-slate-300">
                         {speechSupported
@@ -809,7 +833,7 @@ export function TestClient({
                             : "bg-slate-900 hover:bg-slate-800 dark:bg-red-600 dark:hover:bg-red-700"
                         }`}
                       >
-                        {isRecording ? "⏹️ Đang nghe... (Bấm để dừng)" : "🎙️ Bấm để nói (ja-JP)"}
+                        {isRecording ? (t("testListeningSpeech") || "⏹️ Đang nghe... (Bấm để dừng)") : (t("testStartSpeaking") || "🎙️ Bấm để nói (ja-JP)")}
                       </button>
                       {currentQuestion.sampleAnswer && (
                         <button
@@ -817,7 +841,7 @@ export function TestClient({
                           onClick={() => speak(currentQuestion.sampleAnswer!)}
                           className="inline-flex min-h-11 items-center gap-1.5 rounded-xl border border-rose-200 bg-white px-3 py-2 text-xs font-bold text-red-600 hover:bg-rose-50 dark:border-red-800 dark:bg-sumi-900 dark:text-red-300"
                         >
-                          🔊 Nghe ngữ điệu mẫu
+                          {t("testListenSampleTone") || "🔊 Nghe ngữ điệu mẫu"}
                         </button>
                       )}
                     </div>
@@ -830,8 +854,8 @@ export function TestClient({
                     className="mb-1.5 block text-xs font-bold text-slate-700 dark:text-slate-300"
                   >
                     {currentQuestion.format === "WRITING_INPUT"
-                      ? "✍️ Nhập câu tiếng Nhật của bạn (Hiragana, Kanji hoặc Romaji):"
-                      : "📝 Bản ghi câu nói của bạn (tự động điền khi nói hoặc nhập trực tiếp):"}
+                      ? `${t("testYourAnswer") || "✍️ Nhập câu tiếng Nhật của bạn"} (Hiragana, Kanji, Romaji):`
+                      : `${t("testYourAnswer") || "📝 Bản ghi câu nói của bạn"}:`}
                   </label>
                   <textarea
                     id={`response-${currentQuestion.id}`}
@@ -892,7 +916,7 @@ export function TestClient({
                 }}
                 className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-40 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-sumi-800"
               >
-                ← Câu trước
+                {t("testPrevQuestion") || "← Câu trước"}
               </button>
 
               <div className="hidden max-w-md items-center gap-1.5 overflow-x-auto sm:flex">
@@ -907,7 +931,7 @@ export function TestClient({
                         stopRecording();
                         setQuestionIndex(idx);
                       }}
-                      title={`${SKILL_META[q.skill].label} (${q.level})`}
+                      title={`${getSkillLabel(q.skill)} (${q.level})`}
                       className={`h-7 w-7 rounded-lg text-xs font-extrabold transition ${
                         isCurrent
                           ? "bg-red-600 text-white ring-2 ring-red-400"
@@ -932,7 +956,7 @@ export function TestClient({
                   }}
                   className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-5 py-2 text-xs font-bold text-white transition hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-white"
                 >
-                  Câu tiếp →
+                  {t("testNextQuestion") || "Câu tiếp →"}
                 </button>
               ) : (
                 <button
@@ -940,7 +964,7 @@ export function TestClient({
                   onClick={finishTest}
                   className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-red-600 to-rose-500 px-6 py-2.5 text-xs font-black text-white shadow transition hover:brightness-110"
                 >
-                  Hoàn tất & Nộp bài 🎉
+                  {t("testSubmitConfirm") || "Hoàn tất & Nộp bài 🎉"}
                 </button>
               )}
             </div>
@@ -1112,7 +1136,7 @@ export function TestClient({
                   🧭
                 </span>
                 <div>
-                  <h3 className="font-black text-slate-900 dark:text-white">Đề Xuất Bài Học Tiếp Theo</h3>
+                  <h3 className="font-black text-slate-900 dark:text-white">{t("testRecommendedLessons") || "Đề Xuất Bài Học Tiếp Theo"}</h3>
                   <p className="text-xs text-slate-500 dark:text-slate-400">
                     Bấm trực tiếp vào bài học để lấp lỗ hổng kiến thức ngay lập tức
                   </p>
@@ -1128,14 +1152,14 @@ export function TestClient({
                   >
                     <div className="min-w-0">
                       <span className="text-[11px] font-extrabold text-red-600 dark:text-red-400">
-                        {SKILL_META[rec.skill].icon} Bổ trợ {SKILL_META[rec.skill].label} · {rec.topic}
+                        {SKILL_META[rec.skill].icon} Bổ trợ {getSkillLabel(rec.skill)} · {rec.topic}
                       </span>
                       <h4 className="mt-0.5 truncate text-sm font-black text-slate-900 dark:text-white">
                         {rec.title}
                       </h4>
                     </div>
                     <span className="shrink-0 rounded-xl bg-red-600 px-3 py-1.5 text-xs font-extrabold text-white">
-                      Học ngay →
+                      {t("testLearnNow") || "Học ngay →"}
                     </span>
                   </Link>
                 ))}
@@ -1145,13 +1169,13 @@ export function TestClient({
                     href="/app/path"
                     className="flex items-center justify-center gap-1.5 rounded-2xl border border-slate-200 bg-white py-3 text-xs font-bold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-sumi-800 dark:text-slate-200"
                   >
-                    🗺️ Về Lộ trình cá nhân
+                    {t("testBackToPath") || "🗺️ Về Lộ trình cá nhân"}
                   </Link>
                   <Link
                     href="/app/review"
                     className="flex items-center justify-center gap-1.5 rounded-2xl border border-slate-200 bg-white py-3 text-xs font-bold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-sumi-800 dark:text-slate-200"
                   >
-                    🔄 Ôn tập thẻ SRS
+                    {t("testBackToSrs") || "🔄 Ôn tập thẻ SRS"}
                   </Link>
                 </div>
               </div>
@@ -1168,7 +1192,7 @@ export function TestClient({
                 </span>
                 <div>
                   <h3 className="font-bold text-slate-900 dark:text-white">
-                    Xác Nhận Trình Độ & Miễn Học Phần
+                    {t("testConfirmLevelTitle") || "Xác Nhận Trình Độ & Miễn Học Phần"}
                   </h3>
                   <p className="text-xs text-slate-500 dark:text-slate-400">
                     Đồng bộ kết quả đánh giá vào lộ trình học cá nhân của bạn
@@ -1219,7 +1243,7 @@ export function TestClient({
                   ⭐
                 </span>
                 <div>
-                  <h3 className="font-bold text-slate-900 dark:text-white">Phần Thưởng Kinh Nghiệm</h3>
+                  <h3 className="font-bold text-slate-900 dark:text-white">{t("testXpRewardTitle") || "Phần Thưởng Kinh Nghiệm"}</h3>
                   <p className="text-xs text-slate-500 dark:text-slate-400">
                     Đồng bộ XP với tài khoản, Journey và Bảng xếp hạng
                   </p>
@@ -1264,7 +1288,7 @@ export function TestClient({
               onClick={() => setCurrentStep("SELECT")}
               className="w-full rounded-2xl border border-slate-300 bg-white px-6 py-3 text-xs font-bold text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:bg-sumi-900 dark:text-slate-200 dark:hover:bg-sumi-800 sm:w-auto"
             >
-              ← Chọn Bài Đánh Giá Khác
+              {t("testSelectOtherExam") || "← Chọn Bài Đánh Giá Khác"}
             </button>
 
             <button
@@ -1272,7 +1296,7 @@ export function TestClient({
               onClick={() => setShowReview((prev) => !prev)}
               className="w-full rounded-2xl bg-slate-900 px-6 py-3 text-xs font-bold text-white transition hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-white sm:w-auto"
             >
-              {showReview ? "Ẩn Chi Tiết Đáp Án" : "Xem Chi Tiết Đáp Án, Kịch Bản Nghe & Câu Mẫu 📖"}
+              {showReview ? (t("testHideAnswers") || "Ẩn Chi Tiết Đáp Án") : (t("testShowAnswers") || "Xem Chi Tiết Đáp Án, Kịch Bản Nghe & Câu Mẫu 📖")}
             </button>
           </div>
 
@@ -1280,7 +1304,7 @@ export function TestClient({
           {showReview && (
             <div className="space-y-4 rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200/80 dark:bg-sumi-900 dark:ring-slate-800 animate-fadeIn">
               <h3 className="border-b border-slate-100 pb-3 font-bold text-slate-900 dark:border-slate-800 dark:text-white">
-                Chi Tiết Đáp Án, Kịch Bản Audio & Giải Thích
+                {t("testShowAnswers") || "Chi Tiết Đáp Án, Kịch Bản Audio & Giải Thích"}
               </h3>
 
               <div className="space-y-6 pt-2">
@@ -1300,7 +1324,7 @@ export function TestClient({
                     >
                       <div className="flex items-center justify-between text-xs font-bold">
                         <span className="text-slate-500 dark:text-slate-400">
-                          Câu {idx + 1} ({SKILL_META[q.skill].icon} {SKILL_META[q.skill].label} · {q.level})
+                          {t("questionUnit") || "Câu"} {idx + 1} ({SKILL_META[q.skill].icon} {getSkillLabel(q.skill)} · {q.level})
                         </span>
                         <span
                           className={`rounded-full px-2.5 py-0.5 text-[11px] font-extrabold ${
@@ -1362,14 +1386,14 @@ export function TestClient({
                       ) : (
                         <div className="space-y-2 rounded-xl bg-white/80 p-3 text-xs dark:bg-sumi-900/70">
                           <p>
-                            <b>Câu trả lời của bạn:</b>{" "}
+                            <b>{t("testYourAnswer") || "Câu trả lời của bạn:"}</b>{" "}
                             <span className="jp-text font-semibold text-slate-800 dark:text-slate-200">
                               {userText || "(Chưa nhập nội dung)"}
                             </span>
                           </p>
                           {q.sampleAnswer && (
                             <p>
-                              <b>Câu trả lời mẫu chuẩn:</b>{" "}
+                              <b>{t("testSampleAnswer") || "Câu trả lời mẫu chuẩn:"}</b>{" "}
                               <span className="jp-text font-bold text-emerald-700 dark:text-emerald-300">
                                 {q.sampleAnswer}
                               </span>

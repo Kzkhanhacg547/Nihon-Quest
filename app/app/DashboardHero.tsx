@@ -91,7 +91,7 @@ export function DashboardHero({
         </span>
       </div>
 
-      <aside className="nqd-card nqd-hero-quote" aria-label="Câu nói hôm nay">
+      <aside className="nqd-card nqd-hero-quote" aria-label={t("dailyQuoteTitle") || "Câu nói truyền cảm hứng hôm nay"}>
         <b>{quote.kanji}</b>
         <em>{quote.romaji}</em>
         <p suppressHydrationWarning>{localizedQuoteMeaning}</p>

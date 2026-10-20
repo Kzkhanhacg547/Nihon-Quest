@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { RubyWord } from "@/components/JapaneseTerm";
 import { useSoundAndTheme } from "@/components/SoundAndThemeContext";
+import { useNativeLanguage } from "@/components/LanguageContext";
 import {
   toCanonicalVocabularyItem,
   type ContentProvenanceType,
@@ -154,23 +155,24 @@ function Chip({ children }: { children: ReactNode }) {
 }
 
 // ─────────────────────────── Thanh 4 bước + tiến độ ───────────────────────────
-const STEPS = [
-  { id: "lesson-vocab", label: "Từ vựng", short: "Từ" },
-  { id: "lesson-grammar", label: "Ngữ pháp", short: "Ngữ" },
-  { id: "lesson-dialogue", label: "Hội thoại", short: "Hội" },
-  { id: "quick-practice", label: "Luyện tập", short: "Luy" },
-];
-
 export function LessonStepsBar() {
   const [active, setActive] = useState(0);
   const quizStarted = useRef(false);
+  const { t } = useNativeLanguage();
+
+  const steps = [
+    { id: "lesson-vocab", label: t("lessonTabVocab") || "1. Từ vựng", short: t("navVocab") || "Từ" },
+    { id: "lesson-grammar", label: t("lessonTabGrammar") || "2. Ngữ pháp", short: t("navGrammar") || "Ngữ" },
+    { id: "lesson-dialogue", label: t("lessonTabDialogue") || "3. Hội thoại", short: t("voiceChatQuick") || "Hội" },
+    { id: "quick-practice", label: t("lessonTabQuiz") || "4. Luyện tập", short: t("groupPractice") || "Luyện" },
+  ];
 
   useEffect(() => {
     const update = () => {
       const line = window.innerHeight * 0.4;
       const isWide = window.matchMedia("(min-width: 1024px)").matches;
       let idx = 0;
-      STEPS.forEach((step, i) => {
+      steps.forEach((step, i) => {
         if (i === 3 && isWide) return;
         const el = document.getElementById(step.id);
         if (el && el.getBoundingClientRect().top <= line) idx = i;
@@ -196,7 +198,7 @@ export function LessonStepsBar() {
     };
   }, []);
 
-  const percent = ((active + 1) / STEPS.length) * 100;
+  const percent = ((active + 1) / steps.length) * 100;
 
   return (
     <nav
@@ -205,7 +207,7 @@ export function LessonStepsBar() {
       className="flex flex-col gap-4 rounded-2xl border border-slate-200/80 bg-white/90 px-4 py-3 shadow-sm dark:border-slate-800 dark:bg-sumi-900/80 lg:flex-row lg:items-center lg:gap-8 lg:px-6"
     >
       <ol className="flex flex-1 items-center gap-2 sm:gap-3">
-        {STEPS.map((step, i) => {
+        {steps.map((step, i) => {
           const isActive = i === active;
           const isPast = i < active;
           return (
@@ -236,7 +238,7 @@ export function LessonStepsBar() {
                   <span className="hidden sm:inline">{step.label}</span>
                 </span>
               </a>
-              {i < STEPS.length - 1 && <span className="h-px flex-1 bg-slate-200 dark:bg-slate-700" aria-hidden />}
+              {i < steps.length - 1 && <span className="h-px flex-1 bg-slate-200 dark:bg-slate-700" aria-hidden />}
             </li>
           );
         })}
@@ -244,9 +246,9 @@ export function LessonStepsBar() {
 
       <div className="lg:w-72">
         <div className="mb-1.5 flex items-center justify-between text-xs font-semibold text-slate-500 dark:text-slate-400">
-          <span>Tiến độ bài học</span>
+          <span>{t("lessonProgressText") || "Tiến độ bài học"}</span>
           <span className="font-black text-slate-800 dark:text-slate-100">
-            {active + 1} / {STEPS.length} phần
+            {active + 1} / {steps.length}
           </span>
         </div>
         <div className="h-2 overflow-hidden rounded-full bg-rose-100 dark:bg-sumi-800">
@@ -262,6 +264,7 @@ const VOCAB_LIMIT = 8;
 
 export function VocabSection({ words }: { words: VocabView[] }) {
   const { speak, speakAll } = useSoundAndTheme();
+  const { t } = useNativeLanguage();
   const [expanded, setExpanded] = useState(false);
   const [showRomaji, setShowRomaji] = useState(true);
 
@@ -290,8 +293,8 @@ export function VocabSection({ words }: { words: VocabView[] }) {
     <SectionShell
       id="lesson-vocab"
       icon={<IconCube />}
-      title="1. Từ vựng trọng tâm (Phát âm / Romaji | Chữ viết | Nghĩa)"
-      subtitle="Trình bày nhất quán theo một đơn vị từ vựng chuẩn: Phát âm / Romaji → Chữ viết tiếng Nhật (kèm cách đọc Kana) → Nghĩa tiếng Việt."
+      title={t("lessonVocabTitle") || "1. Từ vựng trọng tâm (Phát âm / Romaji | Chữ viết | Nghĩa)"}
+      subtitle={t("lessonVocabSubtitle") || "Trình bày nhất quán theo một đơn vị từ vựng chuẩn: Phát âm / Romaji → Chữ viết tiếng Nhật (kèm cách đọc Kana) → Nghĩa tiếng Việt."}
       action={
         words.length > 0 ? (
           <div className="flex flex-wrap items-center gap-2">
@@ -307,7 +310,7 @@ export function VocabSection({ words }: { words: VocabView[] }) {
               }`}
             >
               <span>あ/A</span>
-              <span>Romaji: {showRomaji ? "Bật" : "Tắt"}</span>
+              <span>Romaji: {showRomaji ? (t("lessonOn") || "Bật") : (t("lessonOff") || "Tắt")}</span>
             </button>
             <button
               type="button"
@@ -315,7 +318,7 @@ export function VocabSection({ words }: { words: VocabView[] }) {
               className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-4 py-2.5 text-sm font-bold text-red-600 transition-colors hover:bg-rose-100 active:scale-[0.98] focus-visible:outline focus-visible:outline-2 focus-visible:outline-red-500 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-300 dark:hover:bg-red-950/70"
             >
               <IconPlay width={14} height={14} />
-              Nghe tất cả
+              {t("lessonListenAll") || "Nghe tất cả"}
             </button>
           </div>
         ) : null
@@ -323,16 +326,16 @@ export function VocabSection({ words }: { words: VocabView[] }) {
     >
       {words.length === 0 ? (
         <p className="rounded-2xl bg-slate-50 p-5 text-center text-sm text-slate-500 dark:bg-sumi-800/60 dark:text-slate-400">
-          Bài học này chưa có từ vựng riêng.
+          {t("lessonNoVocab") || "Bài học này chưa có từ vựng riêng."}
         </p>
       ) : (
         <>
           <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white dark:border-slate-800 dark:bg-sumi-900">
             <div className="hidden grid-cols-[minmax(130px,1.1fr)_minmax(160px,1.35fr)_minmax(170px,1.55fr)_52px] items-center gap-3 border-b border-slate-200/80 bg-slate-50/90 px-4 py-2.5 text-[11px] font-extrabold uppercase tracking-wider text-slate-500 dark:border-slate-800 dark:bg-sumi-950/80 dark:text-slate-400 sm:grid">
-              <span>Phát âm / Romaji</span>
-              <span>Chữ viết tiếng Nhật</span>
-              <span>Nghĩa tiếng Việt</span>
-              <span className="text-center">Nghe</span>
+              <span>{t("vocabColRomaji") || "Phát âm / Romaji"}</span>
+              <span>{t("vocabColJapanese") || "Chữ viết tiếng Nhật"}</span>
+              <span>{t("vocabColMeaning") || "Nghĩa"}</span>
+              <span className="text-center">{t("vocabColAction") || "Nghe"}</span>
             </div>
 
             <div className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -534,17 +537,18 @@ export function LessonObjectivesSection({ info }: { info: LessonObjectiveNoteVie
 // ─────────────────────────── 2. Ngữ pháp ───────────────────────────
 export function GrammarSection({ items }: { items: GrammarView[] }) {
   const { speak } = useSoundAndTheme();
+  const { t } = useNativeLanguage();
 
   return (
     <SectionShell
       id="lesson-grammar"
       icon={<IconBook />}
-      title="2. Ngữ pháp trọng tâm & Phân biệt cách dùng"
-      subtitle="Các mẫu câu cốt lõi, công thức ghép câu và lưu ý tránh nhầm lẫn trong ngữ cảnh thực tế."
+      title={t("lessonGrammarTitle") || "2. Ngữ pháp trọng tâm & Phân biệt cách dùng"}
+      subtitle={t("lessonGrammarSubtitle") || "Các mẫu câu cốt lõi, công thức ghép câu và lưu ý tránh nhầm lẫn trong ngữ cảnh thực tế."}
     >
       {items.length === 0 ? (
         <p className="rounded-2xl bg-slate-50 p-5 text-center text-sm text-slate-500 dark:bg-sumi-800/60 dark:text-slate-400">
-          Bài học này chưa có mẫu ngữ pháp riêng.
+          {t("lessonNoGrammar") || "Bài học này chưa có mẫu ngữ pháp riêng."}
         </p>
       ) : (
         <div className="space-y-3">
@@ -611,17 +615,18 @@ export function GrammarSection({ items }: { items: GrammarView[] }) {
 // ─────────────────────────── 3. Hội thoại ───────────────────────────
 export function DialogueSection({ lines }: { lines: DialogueLineView[] }) {
   const { speak } = useSoundAndTheme();
+  const { t } = useNativeLanguage();
 
   return (
     <SectionShell
       id="lesson-dialogue"
       icon={<IconChat />}
-      title="3. Hội thoại mẫu"
-      subtitle="Xem và nghe cách kiến thức xuất hiện trong tình huống thực tế."
+      title={t("lessonDialogueTitle") || "3. Hội thoại mẫu"}
+      subtitle={t("lessonDialogueSubtitle") || "Xem và nghe cách kiến thức xuất hiện trong tình huống thực tế."}
     >
       {lines.length === 0 ? (
         <p className="rounded-2xl bg-slate-50 p-5 text-center text-sm text-slate-500 dark:bg-sumi-800/60 dark:text-slate-400">
-          Bài học này chưa có hội thoại mẫu.
+          {t("lessonNoDialogue") || "Bài học này chưa có hội thoại mẫu."}
         </p>
       ) : (
         <div className="grid gap-3 sm:grid-cols-2">

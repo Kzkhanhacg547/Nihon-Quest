@@ -6,6 +6,7 @@ import { Badge, Button, Card, EmptyState, Icon, IconButton, Modal, SelectField }
 import { RubyWord } from "@/components/JapaneseTerm";
 import { useSoundAndTheme } from "@/components/SoundAndThemeContext";
 import { notifyProgressUpdated } from "@/components/UserProgressContext";
+import { useNativeLanguage, getLocalizedQuote } from "@/components/LanguageContext";
 import {
   toCanonicalVocabularyItem,
   parseKanjiMeaningAndHanViet,
@@ -75,21 +76,6 @@ type Tab = "VOCAB" | "KANJI";
 
 /* ============================== CONSTANTS & HELPERS ============================== */
 
-const LEVEL_OPTIONS = [
-  { value: "ALL", label: "Tất cả" },
-  { value: "N5", label: "N5" },
-  { value: "N4", label: "N4" },
-  { value: "N3", label: "N3" },
-];
-
-const SCRIPT_FILTER_OPTIONS: Array<{ value: "ALL" | JapaneseScriptType; label: string }> = [
-  { value: "ALL", label: "Tất cả chữ viết" },
-  { value: "KANJI", label: "Kanji (学校)" },
-  { value: "MIXED", label: "Kết hợp (食べる)" },
-  { value: "HIRAGANA", label: "Hiragana (こんにちは)" },
-  { value: "KATAKANA", label: "Katakana (コーヒー)" },
-];
-
 const SCRIPT_BADGE_TONE: Record<JapaneseScriptType, string> = {
   HIRAGANA: "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800/60 dark:bg-emerald-950/40 dark:text-emerald-300",
   KATAKANA: "border-sky-200 bg-sky-50 text-sky-700 dark:border-sky-800/60 dark:bg-sky-950/40 dark:text-sky-300",
@@ -108,7 +94,53 @@ const POS_LABELS: Record<string, string> = {
   pronoun: "Đại từ",
 };
 
-const POS_OPTIONS = [{ value: "ALL", label: "Tất cả" }, ...Object.entries(POS_LABELS).map(([value, label]) => ({ value, label }))];
+function getPosLabel(pos: string, t?: (k: string) => string): string {
+  if (!t) return POS_LABELS[pos] ?? pos;
+  switch (pos) {
+    case "noun": return t("posNoun");
+    case "verb": return t("posVerb");
+    case "adjective": return t("posAdjective");
+    case "na-adjective": return t("posNaAdjective");
+    case "adverb": return t("posAdverb");
+    case "particle": return t("posParticle");
+    case "expression": return t("posExpression");
+    case "pronoun": return t("posPronoun");
+    default: return POS_LABELS[pos] ?? pos;
+  }
+}
+
+function getPosOptions(t: (k: string) => string) {
+  return [
+    { value: "ALL", label: t("filterAll") },
+    { value: "noun", label: t("posNoun") },
+    { value: "verb", label: t("posVerb") },
+    { value: "adjective", label: t("posAdjective") },
+    { value: "na-adjective", label: t("posNaAdjective") },
+    { value: "adverb", label: t("posAdverb") },
+    { value: "particle", label: t("posParticle") },
+    { value: "expression", label: t("posExpression") },
+    { value: "pronoun", label: t("posPronoun") },
+  ];
+}
+
+function getLevelOptions(t: (k: string) => string) {
+  return [
+    { value: "ALL", label: t("filterAll") },
+    { value: "N5", label: "N5" },
+    { value: "N4", label: "N4" },
+    { value: "N3", label: "N3" },
+  ];
+}
+
+function getScriptFilterOptions(t: (k: string) => string): Array<{ value: "ALL" | JapaneseScriptType; label: string }> {
+  return [
+    { value: "ALL", label: t("vocabScriptFilterAll") },
+    { value: "KANJI", label: t("vocabScriptFilterKanji") },
+    { value: "MIXED", label: t("vocabScriptFilterMixed") },
+    { value: "HIRAGANA", label: t("vocabScriptFilterHiragana") },
+    { value: "KATAKANA", label: t("vocabScriptFilterKatakana") },
+  ];
+}
 
 const LEVEL_ORDER: Record<string, number> = { N5: 0, N4: 1, N3: 2, N2: 3, N1: 4 };
 const FREQUENCY_LABELS = ["Hiếm gặp", "Ít gặp", "Phổ biến", "Rất phổ biến", "Cực kỳ phổ biến"];
@@ -177,7 +209,7 @@ function sortItems<T extends { id: string; jlptLevel: string }>(
   return copy;
 }
 
-function vocabToCard(v: VocabItem, canon: CanonicalVocabularyItem): CardData {
+function vocabToCard(v: VocabItem, canon: CanonicalVocabularyItem, t?: (k: string) => string): CardData {
   return {
     id: v.id,
     type: "VOCAB",
@@ -190,15 +222,15 @@ function vocabToCard(v: VocabItem, canon: CanonicalVocabularyItem): CardData {
     hanVietNote: canon.hanVietNote,
     scriptBadge: SCRIPT_SHORT_LABELS_VI[canon.primaryScript],
     provenanceLabel: canon.provenance.shortLabelVi,
-    label: POS_LABELS[canon.partOfSpeech] ?? canon.partOfSpeechVi,
+    label: getPosLabel(canon.partOfSpeech, t),
     level: v.jlptLevel,
-    topic: tagsOf(v.tags)[0] ?? "Chung",
+    topic: tagsOf(v.tags)[0] ?? (t ? t("filterAll") : "Chung"),
     example: v.examples[0],
     highlight: { word: canon.japanese, kana: canon.kana },
   };
 }
 
-function kanjiToCard(k: KanjiItem): CardData {
+function kanjiToCard(k: KanjiItem, t?: (k: string) => string): CardData {
   const on = readingsOf(k, "ONYOMI").join("、");
   const kun = readingsOf(k, "KUNYOMI").join("、");
   const parsed = parseKanjiMeaningAndHanViet(k.meaning);
@@ -211,9 +243,9 @@ function kanjiToCard(k: KanjiItem): CardData {
     meaning: parsed.meaningVi,
     hanVietNote: parsed.hanViet,
     scriptBadge: "Kanji",
-    label: `${k.strokeCount} nét`,
+    label: `${k.strokeCount} ${t ? t("vocabColStrokes") : "nét"}`,
     level: k.jlptLevel,
-    topic: "Hán tự",
+    topic: t ? t("vocabTabKanji") : "Hán tự",
   };
 }
 
@@ -291,7 +323,7 @@ function PlayButton({ text, speakingText, onSpeak }: { text: string; speakingTex
   );
 }
 
-function SaveButton({ saved, onSave, className = "" }: { saved: boolean; onSave: () => void; className?: string }) {
+function SaveButton({ saved, onSave, className = "", t }: { saved: boolean; onSave: () => void; className?: string; t?: (k: string) => string }) {
   return (
     <Button
       size="xs"
@@ -304,11 +336,11 @@ function SaveButton({ saved, onSave, className = "" }: { saved: boolean; onSave:
     >
       {saved ? (
         <>
-          Đã lưu <Icon name="check" className="h-3.5 w-3.5" />
+          {t ? t("vocabSavedBtn") : "Đã lưu"} <Icon name="check" className="h-3.5 w-3.5" />
         </>
       ) : (
         <>
-          <Icon name="plus" className="h-3.5 w-3.5" /> Lưu
+          <Icon name="plus" className="h-3.5 w-3.5" /> {t ? t("vocabSaveBtn") : "Lưu"}
         </>
       )}
     </Button>
@@ -317,7 +349,7 @@ function SaveButton({ saved, onSave, className = "" }: { saved: boolean; onSave:
 
 const SLOGAN = "Học hôm nay, giỏi tiếng Nhật ngày mai!";
 
-function Pagination({ page, totalPages, onPage }: { page: number; totalPages: number; onPage: (p: number) => void }) {
+function Pagination({ page, totalPages, onPage, slogan }: { page: number; totalPages: number; onPage: (p: number) => void; slogan?: string }) {
   const pages = Array.from({ length: totalPages }, (_, i) => i + 1).filter(
     (p) => p === 1 || p === totalPages || Math.abs(p - page) <= 1
   );
@@ -330,7 +362,7 @@ function Pagination({ page, totalPages, onPage }: { page: number; totalPages: nu
           <path d="M4 4v16h16" />
           <path d="M8 15l3-4 3 2 4-6" />
         </svg>
-        {SLOGAN}
+        {slogan || SLOGAN}
       </span>
 
       {totalPages > 1 && (
@@ -406,19 +438,19 @@ function StarToggle({ starred, name, onToggle }: { starred: boolean; name: strin
   );
 }
 
-function ListColumnsHeader({ tab }: { tab: Tab }) {
+function ListColumnsHeader({ tab, t }: { tab: Tab; t?: (k: string) => string }) {
   return (
     <div
       aria-hidden="true"
       className="mb-1.5 hidden rounded-xl border border-slate-200/80 bg-slate-50/90 px-3 py-2 text-[11px] font-extrabold uppercase tracking-wider text-slate-500 dark:border-slate-800 dark:bg-sumi-950/80 dark:text-slate-400 md:grid md:grid-cols-[24px_minmax(125px,155px)_minmax(130px,165px)_minmax(160px,1fr)_minmax(0,1fr)_44px_84px] md:gap-x-3 lg:grid-cols-[24px_minmax(130px,165px)_minmax(140px,180px)_minmax(170px,1fr)_44px_84px]"
     >
       <span />
-      <span>{tab === "VOCAB" ? "Phát âm / Romaji" : "Phiên âm (On/Kun)"}</span>
-      <span>Chữ viết tiếng Nhật</span>
-      <span>Nghĩa tiếng Việt</span>
-      <span className="hidden md:block lg:hidden">{tab === "VOCAB" ? "Ví dụ" : "Số nét"}</span>
-      <span className="text-center">Nghe</span>
-      <span className="text-center">Sổ SRS</span>
+      <span>{tab === "VOCAB" ? (t ? t("vocabColRomaji") : "Phát âm / Romaji") : (t ? t("vocabColOnKun") : "Phiên âm (On/Kun)")}</span>
+      <span>{t ? t("vocabColJapanese") : "Chữ viết tiếng Nhật"}</span>
+      <span>{t ? t("vocabColMeaning") : "Nghĩa tiếng Việt"}</span>
+      <span className="hidden md:block lg:hidden">{tab === "VOCAB" ? (t ? t("vocabColExamples") : "Ví dụ") : (t ? t("vocabColStrokes") : "Số nét")}</span>
+      <span className="text-center">{t ? t("vocabColListen") : "Nghe"}</span>
+      <span className="text-center">{t ? t("vocabColSrs") : "Sổ SRS"}</span>
     </div>
   );
 }
@@ -436,6 +468,7 @@ function VocabRow({
   onToggleStar,
   onSpeak,
   onSave,
+  t,
 }: {
   v: VocabItem;
   canon: CanonicalVocabularyItem;
@@ -449,6 +482,7 @@ function VocabRow({
   onToggleStar: () => void;
   onSpeak: (t: string) => void;
   onSave: () => void;
+  t?: (k: string) => string;
 }) {
   const ex = v.examples[0];
   return (
@@ -508,14 +542,14 @@ function VocabRow({
               </span>
             )}
             <Badge variant="sky" className="text-[10px] sm:text-[11px]">
-              {POS_LABELS[canon.partOfSpeech] ?? canon.partOfSpeechVi}
+              {getPosLabel(canon.partOfSpeech, t)}
             </Badge>
             <Badge variant="amber" className="text-[10px] sm:text-[11px]">
               JLPT {v.jlptLevel}
             </Badge>
             {isHigherLevel && (
               <span className="inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-800 dark:border-amber-800/60 dark:bg-amber-950/40 dark:text-amber-300">
-                🔒 Cấp cao hơn
+                {t ? t("vocabHigherLevelBadge") : "🔒 Cấp cao hơn"}
               </span>
             )}
           </div>
@@ -537,7 +571,7 @@ function VocabRow({
       </div>
 
       <PlayButton text={canon.kana || canon.japanese} speakingText={speakingText} onSpeak={onSpeak} />
-      <SaveButton saved={saved} onSave={onSave} className="w-[84px]" />
+      <SaveButton saved={saved} onSave={onSave} className="w-[84px]" t={t} />
     </li>
   );
 }
@@ -553,6 +587,7 @@ function KanjiRow({
   onToggleStar,
   onSpeak,
   onSave,
+  t,
 }: {
   k: KanjiItem;
   selected: boolean;
@@ -564,6 +599,7 @@ function KanjiRow({
   onToggleStar: () => void;
   onSpeak: (t: string) => void;
   onSave: () => void;
+  t?: (k: string) => string;
 }) {
   const on = readingsOf(k, "ONYOMI");
   const kun = readingsOf(k, "KUNYOMI");
@@ -599,7 +635,7 @@ function KanjiRow({
           <span className="jp-text text-[28px] font-black leading-none text-slate-900 dark:text-white sm:text-[34px]">
             {k.character}
           </span>
-          <span className="text-xs text-slate-500 dark:text-slate-400">{k.strokeCount} nét</span>
+          <span className="text-xs text-slate-500 dark:text-slate-400">{k.strokeCount} {t ? t("vocabColStrokes") : "nét"}</span>
         </div>
 
         {/* Cột 3: Nghĩa tiếng Việt (tách riêng âm Hán Việt) */}
@@ -616,7 +652,7 @@ function KanjiRow({
             </Badge>
             {isHigherLevel && (
               <span className="inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-800 dark:border-amber-800/60 dark:bg-amber-950/40 dark:text-amber-300">
-                🔒 Cấp cao hơn
+                {t ? t("vocabHigherLevelBadge") : "🔒 Cấp cao hơn"}
               </span>
             )}
           </div>
@@ -624,10 +660,10 @@ function KanjiRow({
       </div>
 
       <div className={ROW_EXTRA_COL}>
-        <p className="text-xs font-semibold text-slate-600 dark:text-slate-300">{k.strokeCount} nét viết</p>
+        <p className="text-xs font-semibold text-slate-600 dark:text-slate-300">{k.strokeCount} {t ? t("vocabColStrokes") : "nét viết"}</p>
       </div>
       <PlayButton text={k.character} speakingText={speakingText} onSpeak={onSpeak} />
-      <SaveButton saved={saved} onSave={onSave} className="w-[84px]" />
+      <SaveButton saved={saved} onSave={onSave} className="w-[84px]" t={t} />
     </li>
   );
 }
@@ -645,17 +681,21 @@ function DetailRow({ label, children }: { label: string; children: React.ReactNo
 
 const detailTable = "overflow-hidden rounded-2xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-sumi-900";
 
-function SrsBox({ name, saved, onSave }: { name: string; saved: boolean; onSave: () => void }) {
+function SrsBox({ name, saved, onSave, t }: { name: string; saved: boolean; onSave: () => void; t?: (k: string) => string }) {
+  const title = t ? t("vocabSavedToSrsTitle") : "Thêm vào sổ SRS";
+  const desc = t
+    ? t("vocabSavedToSrsDesc").replace("{name}", name)
+    : `Lưu ${name} để ôn tập định kỳ theo thuật toán lặp lại ngắt quãng.`;
   return (
     <div className="flex items-center gap-3 rounded-2xl border border-rose-100 bg-gradient-to-r from-rose-50 to-pink-50/60 p-3.5 dark:border-red-900/50 dark:from-red-950/30 dark:to-red-950/20">
       <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-red-200 bg-white text-red-600 dark:border-red-900/60 dark:bg-sumi-900">
         <Icon name="cards" className="h-5 w-5" />
       </span>
       <div className="min-w-0 flex-1">
-        <p className="text-sm font-extrabold text-red-700 dark:text-red-300">Thêm vào sổ SRS</p>
-        <p className="text-xs text-slate-600 dark:text-slate-400">Lưu {name} để ôn tập định kỳ theo thuật toán lặp lại ngắt quãng.</p>
+        <p className="text-sm font-extrabold text-red-700 dark:text-red-300">{title}</p>
+        <p className="text-xs text-slate-600 dark:text-slate-400">{desc}</p>
       </div>
-      <SaveButton saved={saved} onSave={onSave} className="shrink-0 px-3.5" />
+      <SaveButton saved={saved} onSave={onSave} className="shrink-0 px-3.5" t={t} />
     </div>
   );
 }
@@ -718,6 +758,7 @@ function VocabDetail({
   onToggleExamples,
   onSpeak,
   onSave,
+  t,
 }: {
   v: VocabItem;
   canon: CanonicalVocabularyItem;
@@ -728,6 +769,7 @@ function VocabDetail({
   onToggleExamples: () => void;
   onSpeak: (t: string) => void;
   onSave: () => void;
+  t?: (k: string) => string;
 }) {
   const freq = frequencyOf(v);
   const meta = parseLinguisticMeta(v);
@@ -775,14 +817,14 @@ function VocabDetail({
           <Button size="sm" variant="brand" className="h-11" onClick={onSave}>
             {saved ? (
               <>
-                Đã lưu vào sổ <Icon name="check" className="h-3.5 w-3.5" />
+                {t ? t("vocabSavedBtn") : "Đã lưu vào sổ"} <Icon name="check" className="h-3.5 w-3.5" />
               </>
             ) : (
               <>
                 <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" aria-hidden="true">
                   <path d="M6 4h12v17l-6-4-6 4z" />
                 </svg>
-                Lưu vào sổ
+                {t ? t("vocabSaveBtn") : "Lưu vào sổ"}
               </>
             )}
           </Button>
@@ -790,14 +832,14 @@ function VocabDetail({
       </div>
 
       <dl className={detailTable}>
-        <DetailRow label="Phát âm / Romaji">
+        <DetailRow label={t ? t("vocabColRomaji") : "Phát âm / Romaji"}>
           <span className="font-extrabold text-red-600 dark:text-red-400">{canon.displayRomaji}</span>
           <span className="jp-text text-xs font-bold text-slate-600 dark:text-slate-300">({canon.kana})</span>
         </DetailRow>
-        <DetailRow label="Chữ viết Nhật">
+        <DetailRow label={t ? t("vocabColJapanese") : "Chữ viết Nhật"}>
           <span className="jp-text text-base font-black">{canon.japaneseWithReading}</span>
         </DetailRow>
-        <DetailRow label="Nghĩa tiếng Việt">{canon.meaningVi}</DetailRow>
+        <DetailRow label={t ? t("vocabColMeaning") : "Nghĩa tiếng Việt"}>{canon.meaningVi}</DetailRow>
         <DetailRow label="Hệ chữ (Script)">
           <span
             className={`rounded-lg border px-2 py-0.5 text-xs font-bold ${
@@ -815,7 +857,7 @@ function VocabDetail({
             <span className="text-[11px] font-normal text-slate-500">(Từ nguyên Hán–Việt hỗ trợ ghi nhớ)</span>
           </DetailRow>
         )}
-        <DetailRow label="Loại từ">{POS_LABELS[canon.partOfSpeech] ?? canon.partOfSpeechVi}</DetailRow>
+        <DetailRow label={t ? t("vocabColPos") : "Loại từ"}>{getPosLabel(canon.partOfSpeech, t)}</DetailRow>
         {canon.usageNote && (
           <DetailRow label="Ghi chú cú pháp">
             <span className="text-xs font-semibold text-amber-700 dark:text-amber-300">{canon.usageNote}</span>
@@ -839,17 +881,17 @@ function VocabDetail({
       <section aria-labelledby="vocab-examples">
         <div className="mb-1 flex items-center justify-between">
           <h3 id="vocab-examples" className="text-sm font-extrabold text-slate-900 dark:text-white">
-            Ví dụ câu
+            {t ? t("vocabSentenceExamples") : "Ví dụ câu"}
           </h3>
           {v.examples.length > 3 && (
             <button type="button" onClick={onToggleExamples} className="text-xs font-bold text-red-600 hover:underline dark:text-red-400">
-              {showAllExamples ? "Thu gọn" : `Xem thêm (${v.examples.length})`}
+              {showAllExamples ? (t ? t("vocabCollapse") : "Thu gọn") : `${t ? t("vocabShowMore") : "Xem thêm"} (${v.examples.length})`}
             </button>
           )}
         </div>
         {v.examples.length === 0 ? (
           <p className="rounded-2xl border border-dashed border-slate-200 p-4 text-center text-sm text-slate-500 dark:border-slate-700">
-            Từ này chưa có câu ví dụ.
+            {t ? t("vocabNoExamples") : "Từ này chưa có câu ví dụ."}
           </p>
         ) : (
           <ol className="mt-2 space-y-2">
@@ -877,7 +919,7 @@ function VocabDetail({
         )}
       </section>
 
-      <SrsBox name={`「${canon.japanese}」`} saved={saved} onSave={onSave} />
+      <SrsBox name={`「${canon.japanese}」`} saved={saved} onSave={onSave} t={t} />
     </div>
   );
 }
@@ -890,6 +932,7 @@ function KanjiDetail({
   onSpeak,
   onSave,
   onToggleStar,
+  t,
 }: {
   k: KanjiItem;
   saved: boolean;
@@ -898,6 +941,7 @@ function KanjiDetail({
   onSpeak: (t: string) => void;
   onSave: () => void;
   onToggleStar: () => void;
+  t?: (k: string) => string;
 }) {
   const on = readingsOf(k, "ONYOMI");
   const kun = readingsOf(k, "KUNYOMI");
@@ -939,11 +983,11 @@ function KanjiDetail({
           <Button size="sm" variant={saved ? "brand" : "brandOutline"} onClick={onSave}>
             {saved ? (
               <>
-                Đã lưu vào SRS <Icon name="check" className="h-3.5 w-3.5" />
+                {t ? t("vocabSavedBtn") : "Đã lưu vào SRS"} <Icon name="check" className="h-3.5 w-3.5" />
               </>
             ) : (
               <>
-                <Icon name="plus" className="h-3.5 w-3.5" /> Lưu vào SRS
+                <Icon name="plus" className="h-3.5 w-3.5" /> {t ? t("vocabSaveBtn") : "Lưu vào SRS"}
               </>
             )}
           </Button>
@@ -951,7 +995,7 @@ function KanjiDetail({
       </div>
 
       <dl className={detailTable}>
-        <DetailRow label="Âm On (Âm Hán Nhật)">
+        <DetailRow label={t ? t("vocabOnyomiLabel") : "Âm On (Âm Hán Nhật)"}>
           {on.length === 0 ? (
             <span className="text-slate-400">—</span>
           ) : (
@@ -962,7 +1006,7 @@ function KanjiDetail({
             ))
           )}
         </DetailRow>
-        <DetailRow label="Âm Kun (Âm Thuần Nhật)">
+        <DetailRow label={t ? t("vocabKunyomiLabel") : "Âm Kun (Âm Thuần Nhật)"}>
           {kun.length === 0 ? (
             <span className="text-slate-400">—</span>
           ) : (
@@ -973,10 +1017,10 @@ function KanjiDetail({
             ))
           )}
         </DetailRow>
-        <DetailRow label="Chữ viết Nhật">
+        <DetailRow label={t ? t("vocabColJapanese") : "Chữ viết Nhật"}>
           <span className="jp-text text-xl font-black">{k.character}</span>
         </DetailRow>
-        <DetailRow label="Nghĩa tiếng Việt">{parsed.meaningVi}</DetailRow>
+        <DetailRow label={t ? t("vocabColMeaning") : "Nghĩa tiếng Việt"}>{parsed.meaningVi}</DetailRow>
         {parsed.hanViet && (
           <DetailRow label="Âm Hán Việt">
             <span className="rounded-lg border border-slate-200 bg-slate-100 px-2.5 py-0.5 text-xs font-bold text-slate-700 dark:border-slate-700 dark:bg-sumi-800 dark:text-slate-200">
@@ -984,10 +1028,10 @@ function KanjiDetail({
             </span>
           </DetailRow>
         )}
-        <DetailRow label="Số nét viết">{k.strokeCount} nét</DetailRow>
+        <DetailRow label={t ? t("vocabStrokeCountLabel") : "Số nét viết"}>{k.strokeCount} {t ? t("vocabColStrokes") : "nét"}</DetailRow>
       </dl>
 
-      <SrsBox name={`chữ 「${k.character}」`} saved={saved} onSave={onSave} />
+      <SrsBox name={`chữ 「${k.character}」`} saved={saved} onSave={onSave} t={t} />
     </div>
   );
 }
@@ -1003,6 +1047,7 @@ function GridCard({
   onSpeak,
   onSave,
   onToggleMastered,
+  t,
 }: {
   c: CardData;
   saved: boolean;
@@ -1012,6 +1057,7 @@ function GridCard({
   onSpeak: (t: string) => void;
   onSave: () => void;
   onToggleMastered: () => void;
+  t?: (k: string) => string;
 }) {
   return (
     <Card hover className="flex flex-col justify-between !rounded-2xl">
@@ -1082,9 +1128,9 @@ function GridCard({
               : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
           }`}
         >
-          {mastered ? "✓ Đã thuộc" : "○ Đánh dấu thuộc"}
+          {mastered ? (t ? t("vocabMasteredBtn") : "✓ Đã thuộc") : (t ? t("vocabMarkMasteredBtn") : "○ Đánh dấu thuộc")}
         </button>
-        <SaveButton saved={saved} onSave={onSave} className="px-3" />
+        <SaveButton saved={saved} onSave={onSave} className="px-3" t={t} />
       </div>
     </Card>
   );
@@ -1096,10 +1142,12 @@ function ProgressCard({
   vocab,
   kanji,
   grammar,
+  t,
 }: {
   vocab: { done: number; total: number };
   kanji: { done: number; total: number };
   grammar: { done: number; total: number };
+  t?: (k: string) => string;
 }) {
   const done = vocab.done + kanji.done + grammar.done;
   const total = vocab.total + kanji.total + grammar.total;
@@ -1107,9 +1155,9 @@ function ProgressCard({
   const R = 38;
   const C = 2 * Math.PI * R;
   const rows = [
-    { label: "Từ vựng", data: vocab, icon: <Icon name="book" className="h-5 w-5" /> },
-    { label: "Hán tự", data: kanji, icon: <span className="jp-text text-lg font-black leading-none">漢</span> },
-    { label: "Ngữ pháp", data: grammar, icon: <span className="jp-text text-lg font-black leading-none">文</span> },
+    { label: t ? t("navVocab") : "Từ vựng", data: vocab, icon: <Icon name="book" className="h-5 w-5" /> },
+    { label: t ? t("vocabTabKanji") : "Hán tự", data: kanji, icon: <span className="jp-text text-lg font-black leading-none">漢</span> },
+    { label: t ? t("navGrammar") : "Ngữ pháp", data: grammar, icon: <span className="jp-text text-lg font-black leading-none">文</span> },
   ];
   return (
     <section
@@ -1122,7 +1170,7 @@ function ProgressCard({
             <path d="M5 20V10M12 20V4M19 20v-7" />
           </svg>
         </span>
-        Tiến độ học tập
+        {t ? t("vocabLearningProgress") : "Tiến độ học tập"}
       </h3>
       <div className="grid grid-cols-[120px_1fr] items-center gap-4">
         <div className="relative h-[120px] w-[120px]">
@@ -1141,7 +1189,7 @@ function ProgressCard({
           </svg>
           <div className="absolute inset-0 flex flex-col items-center justify-center">
             <span className="text-2xl font-black text-slate-900 dark:text-white">{pct}%</span>
-            <span className="text-[11px] text-slate-500">Hoàn thành</span>
+            <span className="text-[11px] text-slate-500">{t ? t("vocabProgressCompleted") : "Hoàn thành"}</span>
           </div>
         </div>
         <ul className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -1162,13 +1210,14 @@ function ProgressCard({
   );
 }
 
-function QuoteCard() {
+function QuoteCard({ nativeLanguage }: { nativeLanguage?: string }) {
+  const quote = getLocalizedQuote("継続は力なり", "Kiên trì chính là sức mạnh.", (nativeLanguage as any) || "vi");
   return (
     <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-rose-100 via-pink-50 to-white px-5 py-5 text-center dark:from-red-950/40 dark:via-sumi-900 dark:to-sumi-900">
       <Sakura className="absolute left-4 top-3 h-6 w-6 opacity-80" />
       <Sakura className="absolute bottom-3 right-5 h-5 w-5 opacity-70" />
       <p className="jp-text text-lg font-black text-red-700 dark:text-red-300">「継続は力なり」</p>
-      <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">Kiên trì là sức mạnh.</p>
+      <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">{quote}</p>
     </div>
   );
 }
@@ -1223,6 +1272,7 @@ export function VocabKanjiClient({
   const [expandedTopics, setExpandedTopics] = useState<Set<string>>(new Set());
 
   const isDesktop = useIsDesktop();
+  const { nativeLanguage, t } = useNativeLanguage();
   const { playClick, playCorrect, showToast, speak, speakingText } = useSoundAndTheme();
   const userRank = LEVEL_ORDER[defaultLevel] ?? 0;
 
@@ -1291,7 +1341,7 @@ export function VocabKanjiClient({
   const handleAddToSrs = async (contentType: Tab, contentId: string, name: string) => {
     playClick();
     if (savedSet.has(contentId)) {
-      showToast({ title: `${name} đã nằm trong hàng đợi SRS`, type: "info" });
+      showToast({ title: `${name} ${t("vocabSavedToSrsTitle")}`, type: "info" });
       return;
     }
     try {
@@ -1305,15 +1355,15 @@ export function VocabKanjiClient({
         setSavedSet((prev) => new Set(prev).add(contentId));
         notifyProgressUpdated();
         showToast({
-          title: `Đã lưu thẻ Flashcard: ${name}! 🎴`,
-          description: "Mục này đã được đưa vào hàng đợi ôn tập SRS!",
+          title: `${t("vocabSavedToSrsTitle")}: ${name}! 🎴`,
+          description: t("vocabSavedToSrsDesc").replace("{name}", name),
           type: "xp",
         });
       } else {
-        showToast({ title: "Không thể lưu thẻ, vui lòng thử lại.", type: "error" });
+        showToast({ title: t("serverError") || "Không thể lưu thẻ, vui lòng thử lại.", type: "error" });
       }
     } catch {
-      showToast({ title: "Không thể lưu thẻ, vui lòng thử lại.", type: "error" });
+      showToast({ title: t("serverError") || "Không thể lưu thẻ, vui lòng thử lại.", type: "error" });
     }
   };
 
@@ -1415,19 +1465,23 @@ export function VocabKanjiClient({
     return Array.from(set);
   }, [vocabulary]);
 
+  const levelOptions = useMemo(() => getLevelOptions(t), [t]);
+  const scriptFilterOptions = useMemo(() => getScriptFilterOptions(t), [t]);
+  const posOptions = useMemo(() => getPosOptions(t), [t]);
+
   const topicOptions = useMemo(
-    () => [{ value: "ALL", label: "Tất cả" }, ...availableTags.map((t) => ({ value: t, label: t }))],
-    [availableTags]
+    () => [{ value: "ALL", label: t("filterAll") }, ...availableTags.map((t) => ({ value: t, label: t }))],
+    [availableTags, t]
   );
 
   const sortOptions = useMemo(
     () => [
-      { value: "DEFAULT", label: "Mặc định" },
-      ...(tab === "VOCAB" ? [{ value: "KANA", label: "Bảng chữ cái あ–ん" }] : []),
-      { value: "LEVEL", label: "Cấp độ JLPT" },
-      { value: "SAVED", label: "Đã lưu trước" },
+      { value: "DEFAULT", label: t("vocabSortDefault") },
+      ...(tab === "VOCAB" ? [{ value: "KANA", label: t("vocabSortKana") }] : []),
+      { value: "LEVEL", label: t("vocabSortLevel") },
+      { value: "SAVED", label: t("vocabSortSaved") },
     ],
-    [tab]
+    [tab, t]
   );
 
   const topicGroups = useMemo(() => {
@@ -1488,20 +1542,20 @@ export function VocabKanjiClient({
   const sliceCards = useMemo<CardData[]>(
     () =>
       tab === "VOCAB"
-        ? vocabSlice.map((v) => vocabToCard(v, canonicalVocabMap.get(v.id)!))
-        : kanjiSlice.map(kanjiToCard),
-    [tab, vocabSlice, kanjiSlice, canonicalVocabMap]
+        ? vocabSlice.map((v) => vocabToCard(v, canonicalVocabMap.get(v.id)!, t))
+        : kanjiSlice.map((k) => kanjiToCard(k, t)),
+    [tab, vocabSlice, kanjiSlice, canonicalVocabMap, t]
   );
   const flashcards = useMemo<CardData[]>(
     () =>
       tab === "VOCAB"
-        ? filteredVocab.map((v) => vocabToCard(v, canonicalVocabMap.get(v.id)!))
-        : filteredKanji.map(kanjiToCard),
-    [tab, filteredVocab, filteredKanji, canonicalVocabMap]
+        ? filteredVocab.map((v) => vocabToCard(v, canonicalVocabMap.get(v.id)!, t))
+        : filteredKanji.map((k) => kanjiToCard(k, t)),
+    [tab, filteredVocab, filteredKanji, canonicalVocabMap, t]
   );
   const flashcard = flashcards.length > 0 ? flashcards[Math.min(flashcardIndex, flashcards.length - 1)] : null;
 
-  const unit = tab === "VOCAB" ? "từ vựng" : "Hán tự";
+  const unit = tab === "VOCAB" ? t("vocabUnitVocab") : t("vocabUnitKanji");
   const rangeFrom = totalItems === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1;
   const rangeTo = Math.min(currentPage * itemsPerPage, totalItems);
 
@@ -1526,6 +1580,7 @@ export function VocabKanjiClient({
       onToggleExamples={() => setShowAllExamples((s) => !s)}
       onSpeak={speak}
       onSave={() => handleAddToSrs("VOCAB", activeVocab.id, canonicalVocabMap.get(activeVocab.id)?.writtenForm || activeVocab.word)}
+      t={t}
     />
   ) : activeKanji ? (
     <KanjiDetail
@@ -1536,17 +1591,18 @@ export function VocabKanjiClient({
       onSpeak={speak}
       onSave={() => handleAddToSrs("KANJI", activeKanji.id, activeKanji.character)}
       onToggleStar={() => toggleStar(activeKanji.id)}
+      t={t}
     />
   ) : null;
 
   const emptyState = (
     <EmptyState
       icon="🔍"
-      title="Không tìm thấy kết quả"
-      body="Thử đổi từ khóa hoặc bỏ bớt bộ lọc để xem thêm mục."
+      title={t("vocabEmptyState")}
+      body={t("vocabEmptyHint")}
       action={
         <Button variant="brandOutline" size="sm" onClick={resetFilters}>
-          Xóa bộ lọc
+          {t("btnResetFilters") || "Xóa bộ lọc"}
         </Button>
       }
     />
@@ -1581,7 +1637,7 @@ export function VocabKanjiClient({
               aria-pressed={tab === "VOCAB"}
               className={`${tabBase} ${tab === "VOCAB" ? tabActive : tabIdle}`}
             >
-              <Icon name="book" className="h-[18px] w-[18px]" /> Từ vựng ({vocabulary.length})
+              <Icon name="book" className="h-[18px] w-[18px]" /> {t("navVocab")} ({vocabulary.length})
             </button>
             <button
               type="button"
@@ -1589,20 +1645,20 @@ export function VocabKanjiClient({
               aria-pressed={tab === "KANJI"}
               className={`${tabBase} ${tab === "KANJI" ? tabActive : tabIdle}`}
             >
-              <span className="jp-text text-lg leading-none">漢</span> Hán tự ({kanji.length})
+              <span className="jp-text text-lg leading-none">漢</span> {t("vocabTabKanji")} ({kanji.length})
             </button>
             <Link href="/app/grammar" onClick={playClick} className={`${tabBase} ${tabIdle}`}>
-              <Icon name="star" className="h-[18px] w-[18px]" /> Ngữ pháp
+              <Icon name="star" className="h-[18px] w-[18px]" /> {t("navGrammar")}
             </Link>
           </div>
 
           <div className="hidden items-center gap-2 rounded-2xl border border-slate-100 bg-slate-50/80 px-3.5 py-2 text-xs font-bold text-slate-600 dark:border-slate-800 dark:bg-sumi-800/80 dark:text-slate-300 md:flex">
-            <span className="text-red-600 dark:text-red-400">Chuẩn trình bày:</span>
-            <span>Phát âm / Romaji</span>
+            <span className="text-red-600 dark:text-red-400">{t("vocabStandardBanner")}</span>
+            <span>{t("vocabColRomaji")}</span>
             <span className="text-slate-300 dark:text-slate-600">|</span>
-            <span className="jp-text">Chữ Nhật（かな）</span>
+            <span className="jp-text">{t("vocabColJapanese")}</span>
             <span className="text-slate-300 dark:text-slate-600">|</span>
-            <span>Nghĩa tiếng Việt</span>
+            <span>{t("vocabColMeaning")}</span>
           </div>
         </div>
 
@@ -1614,18 +1670,18 @@ export function VocabKanjiClient({
               type="search"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              aria-label={tab === "VOCAB" ? "Tìm từ vựng" : "Tìm Hán tự"}
+              aria-label={tab === "VOCAB" ? t("vocabSearchInputPlaceholderVocab") : t("vocabSearchInputPlaceholderKanji")}
               placeholder={
                 tab === "VOCAB"
-                  ? "Tìm theo Romaji, Chữ Nhật, Kana, nghĩa Việt... (ví dụ: gakkou, 学校, がっこう, trường học)"
-                  : "Tìm Hán tự, nghĩa Việt, âm On/Kun... (ví dụ: 学, gaku, học)"
+                  ? t("vocabSearchInputPlaceholderVocab")
+                  : t("vocabSearchInputPlaceholderKanji")
               }
               className="h-11 w-full rounded-2xl border border-slate-200 bg-white pl-11 pr-10 text-sm text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-red-400 focus:ring-4 focus:ring-red-500/10 dark:border-slate-700 dark:bg-sumi-900 dark:text-white [&::-webkit-search-cancel-button]:hidden"
             />
             {query && (
               <button
                 type="button"
-                aria-label="Xóa từ khóa"
+                aria-label="Clear search"
                 onClick={() => setQuery("")}
                 className="absolute right-0 top-1/2 inline-flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full text-slate-400 transition hover:bg-slate-100 active:scale-90 dark:hover:bg-sumi-800"
               >
@@ -1635,17 +1691,17 @@ export function VocabKanjiClient({
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            <SelectField label="JLPT" value={levelFilter} options={LEVEL_OPTIONS} onChange={setLevelFilter} />
+            <SelectField label="JLPT" value={levelFilter} options={levelOptions} onChange={setLevelFilter} />
             {tab === "VOCAB" && (
               <>
                 <SelectField
-                  label="Hệ chữ"
+                  label={t("vocabScript") || "Hệ chữ"}
                   value={scriptFilter}
-                  options={SCRIPT_FILTER_OPTIONS}
+                  options={scriptFilterOptions}
                   onChange={(v) => setScriptFilter(v as "ALL" | JapaneseScriptType)}
                 />
-                <SelectField label="Chủ đề" value={tagFilter} options={topicOptions} onChange={setTagFilter} />
-                <SelectField label="Loại từ" value={posFilter} options={POS_OPTIONS} onChange={setPosFilter} />
+                <SelectField label={t("vocabTopic") || "Chủ đề"} value={tagFilter} options={topicOptions} onChange={setTagFilter} />
+                <SelectField label={t("vocabPos") || "Loại từ"} value={posFilter} options={posOptions} onChange={setPosFilter} />
                 <button
                   type="button"
                   role="switch"
@@ -1654,7 +1710,7 @@ export function VocabKanjiClient({
                     playClick();
                     setShowRomaji((r) => !r);
                   }}
-                  title="Bật/tắt hiển thị Romaji ở cột phát âm"
+                  title={t("vocabRomajiToggleLabel")}
                   className={`inline-flex h-11 items-center gap-1.5 rounded-2xl border px-3.5 text-xs font-bold shadow-sm transition ${
                     showRomaji
                       ? "border-red-300 bg-red-50 text-red-700 dark:border-red-900/70 dark:bg-red-950/40 dark:text-red-300"
@@ -1662,7 +1718,7 @@ export function VocabKanjiClient({
                   }`}
                 >
                   <span>あ/A</span>
-                  <span>Romaji: {showRomaji ? "Bật" : "Tắt"}</span>
+                  <span>Romaji: {showRomaji ? "ON" : "OFF"}</span>
                 </button>
               </>
             )}
@@ -1680,7 +1736,7 @@ export function VocabKanjiClient({
               }`}
             >
               <Icon name="filter" className="h-4 w-4" />
-              Bộ lọc khác
+              {t("vocabMoreFilters")}
               {advancedCount > 0 && (
                 <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1 text-[11px] font-black text-white">
                   {advancedCount}
@@ -1730,7 +1786,7 @@ export function VocabKanjiClient({
         {advancedOpen && (
           <div className="mt-3 grid gap-4 rounded-2xl border border-slate-200 bg-slate-50/70 p-4 dark:border-slate-800 dark:bg-sumi-950/50 md:grid-cols-3">
             <div>
-              <p className="mb-2 text-xs font-bold text-slate-500">Thẻ đã lưu</p>
+              <p className="mb-2 text-xs font-bold text-slate-500">{t("vocabSavedCardsLabel") || "Thẻ đã lưu"}</p>
               <button
                 type="button"
                 role="switch"
@@ -1741,21 +1797,21 @@ export function VocabKanjiClient({
                 }}
                 className="flex w-full items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-left text-xs font-bold text-slate-700 dark:border-slate-700 dark:bg-sumi-900 dark:text-slate-200"
               >
-                <span>Chỉ hiện thẻ đã lưu SRS ({savedSet.size})</span>
+                <span>{t("vocabOnlySrsSaved") || "Chỉ hiện thẻ đã lưu SRS"} ({savedSet.size})</span>
                 <span className={`relative h-5 w-9 shrink-0 rounded-full transition ${srsOnlyFilter ? "bg-red-600" : "bg-slate-300 dark:bg-slate-700"}`}>
                   <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-all ${srsOnlyFilter ? "left-[18px]" : "left-0.5"}`} />
                 </span>
               </button>
             </div>
             <div>
-              <p className="mb-2 text-xs font-bold text-slate-500">Chế độ xem</p>
+              <p className="mb-2 text-xs font-bold text-slate-500">{t("vocabDisplayMode") || "Chế độ xem"}</p>
               <div className="flex flex-wrap gap-1.5">
                 {(
                   [
-                    ["LIST", "Danh sách"],
-                    ["GRID", "Thẻ lưới"],
-                    ["FLASHCARD", "Flashcard"],
-                    ...(tab === "VOCAB" ? [["TOPIC", "Theo chủ đề"]] : []),
+                    ["LIST", t("vocabListMode") || "Danh sách"],
+                    ["GRID", t("vocabGridMode") || "Thẻ lưới"],
+                    ["FLASHCARD", t("vocabFlashcardMode") || "Flashcard"],
+                    ...(tab === "VOCAB" ? [["TOPIC", t("vocabTopicMode") || "Theo chủ đề"]] : []),
                   ] as Array<[ViewMode, string]>
                 ).map(([mode, label]) => (
                   <button
@@ -1774,7 +1830,7 @@ export function VocabKanjiClient({
               </div>
             </div>
             <div>
-              <p className="mb-2 text-xs font-bold text-slate-500">Số mục mỗi trang</p>
+              <p className="mb-2 text-xs font-bold text-slate-500">{t("vocabItemsPerPageLabel") || "Số mục mỗi trang"}</p>
               <div className="flex gap-1.5">
                 {[12, 24, 48].map((n) => (
                   <button
@@ -1799,20 +1855,20 @@ export function VocabKanjiClient({
         {/* ---------- Results header ---------- */}
         <div className="mt-5 flex flex-wrap items-center justify-between gap-3 px-1 pb-3">
           <p className="text-sm text-slate-600 dark:text-slate-300">
-            Hiển thị{" "}
+            {t("vocabShowing")}{" "}
             <b className="font-extrabold text-slate-900 dark:text-white">
-              {rangeFrom.toLocaleString("vi-VN")}-{rangeTo.toLocaleString("vi-VN")}
+              {rangeFrom.toLocaleString(nativeLanguage === "vi" ? "vi-VN" : nativeLanguage.startsWith("zh") ? "zh-CN" : "en-US")}-{rangeTo.toLocaleString(nativeLanguage === "vi" ? "vi-VN" : nativeLanguage.startsWith("zh") ? "zh-CN" : "en-US")}
             </b>{" "}
             {unit}
-            <span className="text-slate-500 dark:text-slate-400"> (tổng {totalItems.toLocaleString("vi-VN")})</span>
+            <span className="text-slate-500 dark:text-slate-400"> ({t("vocabOfTotal")} {totalItems.toLocaleString(nativeLanguage === "vi" ? "vi-VN" : nativeLanguage.startsWith("zh") ? "zh-CN" : "en-US")})</span>
           </p>
           <div className="flex items-center gap-3">
-            <SelectField plain label="Sắp xếp" value={sortMode} options={sortOptions} onChange={(v) => setSortMode(v as SortMode)} />
+            <SelectField plain label={t("sortLabel") || "Sắp xếp"} value={sortMode} options={sortOptions} onChange={(v) => setSortMode(v as SortMode)} />
             <div className="inline-flex rounded-xl border border-slate-200 bg-white p-0.5 dark:border-slate-700 dark:bg-sumi-900">
               <button
                 type="button"
-                aria-label="Dạng danh sách"
-                title="Dạng danh sách"
+                aria-label={t("vocabListMode") || "Dạng danh sách"}
+                title={t("vocabListMode") || "Dạng danh sách"}
                 aria-pressed={viewMode === "LIST"}
                 onClick={() => {
                   playClick();
@@ -1824,8 +1880,8 @@ export function VocabKanjiClient({
               </button>
               <button
                 type="button"
-                aria-label="Dạng thẻ lưới"
-                title="Dạng thẻ lưới"
+                aria-label={t("vocabGridMode") || "Dạng thẻ lưới"}
+                title={t("vocabGridMode") || "Dạng thẻ lưới"}
                 aria-pressed={viewMode === "GRID"}
                 onClick={() => {
                   playClick();
@@ -1847,7 +1903,7 @@ export function VocabKanjiClient({
                 emptyState
               ) : (
                 <>
-                  <ListColumnsHeader tab={tab} />
+                  <ListColumnsHeader tab={tab} t={t} />
                   <ul className="space-y-0.5">
                     {tab === "VOCAB"
                       ? vocabSlice.map((v) => {
@@ -1867,6 +1923,7 @@ export function VocabKanjiClient({
                               onToggleStar={() => toggleStar(v.id)}
                               onSpeak={speak}
                               onSave={() => handleAddToSrs("VOCAB", v.id, canon.writtenForm)}
+                              t={t}
                             />
                           );
                         })
@@ -1883,12 +1940,13 @@ export function VocabKanjiClient({
                             onToggleStar={() => toggleStar(k.id)}
                             onSpeak={speak}
                             onSave={() => handleAddToSrs("KANJI", k.id, k.character)}
+                            t={t}
                           />
                         ))}
                   </ul>
                 </>
               )}
-              <Pagination page={currentPage} totalPages={totalPages} onPage={goToPage} />
+              <Pagination page={currentPage} totalPages={totalPages} onPage={goToPage} slogan={t("vocabSlogan")} />
             </div>
 
             <aside className="hidden space-y-5 lg:block" aria-label="Chi tiết">
@@ -1900,11 +1958,11 @@ export function VocabKanjiClient({
                 <Sakura className="pointer-events-none absolute right-5 top-4 h-9 w-9 opacity-80" />
                 <Sakura className="pointer-events-none absolute right-16 top-10 h-5 w-5 opacity-60" />
                 <div className="relative">
-                  {detail ?? <p className="py-10 text-center text-sm text-slate-500">Chọn một mục để xem chi tiết.</p>}
+                  {detail ?? <p className="py-10 text-center text-sm text-slate-500">{t("vocabSelectPrompt")}</p>}
                 </div>
               </div>
-              <ProgressCard vocab={progress.vocab} kanji={progress.kanji} grammar={{ done: grammarProgress.done, total: grammarProgress.total }} />
-              <QuoteCard />
+              <ProgressCard vocab={progress.vocab} kanji={progress.kanji} grammar={{ done: grammarProgress.done, total: grammarProgress.total }} t={t} />
+              <QuoteCard nativeLanguage={nativeLanguage} />
             </aside>
           </div>
         )}
@@ -1913,7 +1971,7 @@ export function VocabKanjiClient({
         <Modal
           isOpen={!isDesktop && detailOpen && viewMode === "LIST" && detail !== null}
           onClose={() => setDetailOpen(false)}
-          title={tab === "VOCAB" ? "Chi tiết từ vựng" : "Chi tiết Hán tự"}
+          title={tab === "VOCAB" ? t("vocabDetailModalVocab") : t("vocabDetailModalKanji")}
           maxWidth="lg"
         >
           {detail}
@@ -1937,11 +1995,12 @@ export function VocabKanjiClient({
                     onSpeak={speak}
                     onSave={() => handleAddToSrs(c.type, c.id, c.front)}
                     onToggleMastered={() => toggleMastered(c.id)}
+                    t={t}
                   />
                 ))}
               </div>
             )}
-            <Pagination page={currentPage} totalPages={totalPages} onPage={goToPage} />
+            <Pagination page={currentPage} totalPages={totalPages} onPage={goToPage} slogan={t("vocabSlogan")} />
           </>
         )}
 
@@ -1954,7 +2013,7 @@ export function VocabKanjiClient({
               <>
                 <div className="flex items-center justify-between px-1 text-xs font-black text-slate-500">
                   <span>
-                    Thẻ {Math.min(flashcardIndex, flashcards.length - 1) + 1} / {flashcards.length}
+                    {Math.min(flashcardIndex, flashcards.length - 1) + 1} / {flashcards.length}
                   </span>
                   <div className="h-2 w-36 overflow-hidden rounded-full bg-slate-200 dark:bg-sumi-800">
                     <div
@@ -1968,7 +2027,7 @@ export function VocabKanjiClient({
                 <div
                   role="button"
                   tabIndex={0}
-                  aria-label={isFlipped ? "Lật thẻ để xem lại mặt trước" : "Lật thẻ để xem nghĩa"}
+                  aria-label={isFlipped ? (t("flashcardFlipBack") || "Lật thẻ để xem lại mặt trước") : (t("flashcardFlipFront") || "Lật thẻ để xem nghĩa")}
                   onClick={() => {
                     playClick();
                     setIsFlipped((f) => !f);
@@ -1984,7 +2043,9 @@ export function VocabKanjiClient({
                 >
                   {!isFlipped ? (
                     <div className="my-auto flex flex-col items-center space-y-3 text-center">
-                      <span className="text-xs font-bold text-slate-400">Mặt trước – Phát âm / Romaji | Chữ viết</span>
+                      <span className="text-xs font-bold text-slate-400">
+                        {t("vocabStandardBanner")}
+                      </span>
                       {/* 1. Phát âm / Romaji -> 2. Chữ Nhật */}
                       <p className="text-base font-extrabold text-red-600 dark:text-red-400">
                         {showRomaji && flashcard.displayRomaji ? flashcard.displayRomaji : flashcard.reading}
@@ -2003,13 +2064,13 @@ export function VocabKanjiClient({
                         }}
                         className="mt-2 inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-700 shadow-sm hover:bg-red-50 dark:border-slate-700 dark:bg-sumi-800 dark:text-slate-300"
                       >
-                        <Icon name="speaker" className="h-4 w-4 text-red-600" /> Nghe phát âm
+                        <Icon name="speaker" className="h-4 w-4 text-red-600" /> {t("vocabColListen") || "Nghe phát âm"}
                       </button>
                     </div>
                   ) : (
                     <div className="my-auto flex flex-col items-center space-y-3 text-center">
                       <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">
-                        Mặt sau – Phát âm / Romaji | Chữ viết | Nghĩa tiếng Việt
+                        {t("vocabStandardBanner")}
                       </span>
                       <p className="text-sm font-extrabold text-red-600 dark:text-red-400">
                         {showRomaji && flashcard.displayRomaji ? flashcard.displayRomaji : flashcard.reading}
@@ -2042,8 +2103,8 @@ export function VocabKanjiClient({
                     </div>
                   )}
                   <div className="flex items-center justify-between border-t border-slate-200/60 pt-4 text-xs font-bold text-slate-500 dark:border-slate-800 dark:text-slate-400">
-                    <span>{isFlipped ? "Chạm để xem lại mặt trước" : "Chạm để xem nghĩa"}</span>
-                    <span>Chủ đề: {flashcard.topic}</span>
+                    <span>{isFlipped ? (t("flashcardFlipBack") || "Chạm để xem lại mặt trước") : (t("flashcardFlipFront") || "Chạm để xem nghĩa")}</span>
+                    <span>{t("vocabTopic") || "Chủ đề"}: {flashcard.topic}</span>
                   </div>
                 </div>
 
@@ -2057,7 +2118,7 @@ export function VocabKanjiClient({
                       setFlashcardIndex((i) => Math.max(0, i - 1));
                     }}
                   >
-                    ‹ Thẻ trước
+                    {t("testPrevQuestion") || "‹ Thẻ trước"}
                   </Button>
                   <Button
                     variant={savedSet.has(flashcard.id) ? "brand" : "brandOutline"}
@@ -2065,11 +2126,11 @@ export function VocabKanjiClient({
                   >
                     {savedSet.has(flashcard.id) ? (
                       <>
-                        Đã lưu SRS <Icon name="check" className="h-4 w-4" />
+                        {t("vocabSavedBtn") || "Đã lưu SRS"} <Icon name="check" className="h-4 w-4" />
                       </>
                     ) : (
                       <>
-                        <Icon name="plus" className="h-4 w-4" /> Lưu vào SRS
+                        <Icon name="plus" className="h-4 w-4" /> {t("vocabSaveBtn") || "Lưu vào SRS"}
                       </>
                     )}
                   </Button>
@@ -2082,7 +2143,7 @@ export function VocabKanjiClient({
                       setFlashcardIndex((i) => Math.min(flashcards.length - 1, i + 1));
                     }}
                   >
-                    Thẻ tiếp ›
+                    {t("testNextQuestion") || "Thẻ tiếp ›"}
                   </Button>
                 </div>
               </>
@@ -2107,12 +2168,12 @@ export function VocabKanjiClient({
                     <h3 className="flex items-center gap-2 text-base font-black text-slate-900 dark:text-white">
                       {title}
                       <span className="rounded-full border border-red-100 bg-red-50 px-2.5 py-0.5 text-xs font-bold text-red-600 dark:border-red-900/60 dark:bg-red-950/50 dark:text-red-300">
-                        {items.length} từ
+                        {items.length} {t("vocabUnitVocab") || "từ"}
                       </span>
                     </h3>
                     {items.length > 6 && (
                       <Button size="xs" variant="brandSoft" onClick={() => toggleTopicExpand(title)}>
-                        {expanded ? "Thu gọn" : `Mở rộng tất cả ${items.length} từ`}
+                        {expanded ? (t("btnCollapse") || "Thu gọn") : `${t("btnExpandAll") || "Mở rộng"} ${items.length}`}
                       </Button>
                     )}
                   </div>
@@ -2157,6 +2218,7 @@ export function VocabKanjiClient({
                             saved={savedSet.has(v.id)}
                             onSave={() => handleAddToSrs("VOCAB", v.id, canon.writtenForm)}
                             className="h-8 shrink-0 px-2.5"
+                            t={t}
                           />
                         </div>
                       );

@@ -194,10 +194,10 @@ const THEME_QUESTIONS: Record<string, Array<{
       situationVi: "Cụm từ 'スープの味を濃いめにする' có nghĩa là gì?",
       furigana: "「スープ の あじ を こいめ に する」 と は どういう いみ です か？",
       options: [
-        { textJa: "Nước dùng đậm đà, vị đậm hơn bình thường.", textVi: "Nước dùng đậm đà, vị đậm hơn bình thường." },
-        { textJa: "Nước dùng nhạt bớt.", textVi: "Nước dùng nhạt bớt." },
-        { textJa: "Nước dùng thêm đá lạnh.", textVi: "Nước dùng thêm đá lạnh." },
-        { textJa: "Nước dùng ít mỡ.", textVi: "Nước dùng ít mỡ." },
+        { textJa: "スープの味が濃く、塩分や旨味が強めになること。", textVi: "Nước dùng đậm đà, vị đậm hơn bình thường." },
+        { textJa: "スープの味が薄くなること。", textVi: "Nước dùng nhạt bớt." },
+        { textJa: "スープに氷を入れること。", textVi: "Nước dùng thêm đá lạnh." },
+        { textJa: "スープの油を減らすこと。", textVi: "Nước dùng ít mỡ." },
       ],
       correctIndex: 0,
       explanation: "濃いめ (Koime) = vị đậm đà hơn.",
@@ -579,9 +579,17 @@ const THEME_QUESTIONS: Record<string, Array<{
   ],
 };
 
+import {
+  getLocalizedDungeonTheme,
+  getLocalizedDungeonQuestions,
+} from "@/lib/dungeonLocalization";
+
 export async function GET(req: Request) {
   const userId = await requireUserId();
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const url = new URL(req.url);
+  const lang = url.searchParams.get("lang") || "vi";
 
   // Calculate today's theme using local date key
   const now = new Date();
@@ -655,10 +663,13 @@ export async function GET(req: Request) {
     };
   });
 
+  const localizedTheme = getLocalizedDungeonTheme(theme, lang);
+  const localizedQuestions = getLocalizedDungeonQuestions(theme.id, randomizedQuestions, lang);
+
   return NextResponse.json({
     dateKey,
-    theme,
-    questions: randomizedQuestions,
+    theme: localizedTheme,
+    questions: localizedQuestions,
     isCompletedToday: !!existingCompletion,
     streak: currentStreak,
     totalThemes: DAILY_THEMES.length,

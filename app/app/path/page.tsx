@@ -380,10 +380,10 @@ export default async function LearningPathPage() {
                 </span>
                 <div>
                   <h2 className="text-base font-black text-slate-900 dark:text-white">
-                    Trạm Ôn Tập Củng Cố (Remediation)
+                    <LocalizedText k="remediationTitle" fallback="Trạm Ôn Tập Củng Cố (Remediation)" />
                   </h2>
                   <p className="text-xs text-slate-600 dark:text-slate-300">
-                    Hệ thống phát hiện một số kiến thức bạn làm sai nhiều hoặc đã đến hạn ôn tập cách quãng.
+                    <LocalizedText k="remediationDesc" fallback="Hệ thống phát hiện một số kiến thức bạn làm sai nhiều hoặc đã đến hạn ôn tập cách quãng." />
                   </p>
                 </div>
               </div>
@@ -402,7 +402,11 @@ export default async function LearningPathPage() {
                           : "bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300"
                       }`}
                     >
-                      {item.urgency === "HIGH" ? "Cần ôn ngay" : "Khuyến nghị ôn tập"}
+                      {item.urgency === "HIGH" ? (
+                        <LocalizedText k="remediationUrgent" fallback="Cần ôn ngay" />
+                      ) : (
+                        <LocalizedText k="remediationRecommended" fallback="Khuyến nghị ôn tập" />
+                      )}
                     </span>
                     <h3 className="mt-2 text-sm font-black text-slate-900 dark:text-white">{item.title}</h3>
                     <p className="mt-1 text-xs leading-relaxed text-slate-600 dark:text-slate-300">{item.reason}</p>
@@ -486,11 +490,19 @@ export default async function LearningPathPage() {
                             {m.exerciseCount != null ? ` • ${m.exerciseCount} bài tập` : ""}
                             {m.score != null ? ` • Điểm: ${m.score}%` : ""}
                           </span>
-                          {m.status === "COMPLETED" && <span className="nqp-done">Đã hoàn thành</span>}
-                          {isCurrent && <span className="nqp-now">Đang học</span>}
+                          {m.status === "COMPLETED" && (
+                            <span className="nqp-done">
+                              <LocalizedText k="statusCompleted" fallback="Đã hoàn thành" />
+                            </span>
+                          )}
+                          {isCurrent && (
+                            <span className="nqp-now">
+                              <LocalizedText k="statusInProgress" fallback="Đang học" />
+                            </span>
+                          )}
                           {isLocked && (
                             <span className="rounded-full bg-slate-200 px-2.5 py-0.5 text-[11px] font-bold text-slate-700 dark:bg-slate-800 dark:text-slate-300">
-                              🔒 Chưa mở khóa
+                              🔒 <LocalizedText k="moduleLocked" fallback="Chưa mở khóa" />
                             </span>
                           )}
                         </div>

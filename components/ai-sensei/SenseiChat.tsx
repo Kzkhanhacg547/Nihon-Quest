@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, type ReactNode } from "react";
 import { Icon } from "@/components/ui";
+import { useNativeLanguage } from "@/components/LanguageContext";
 import type { KaiwaScenario } from "@/lib/n3KaiwaScenarios";
 import { SenseiMessage } from "./SenseiMessage";
 import type { SenseiMessageData } from "./types";
@@ -31,6 +32,12 @@ export function SenseiChat({
   children,
 }: Props) {
   const listRef = useRef<HTMLDivElement>(null);
+  const { nativeLanguage } = useNativeLanguage();
+  const isZh = nativeLanguage === "zh-CN" || nativeLanguage === "zh-TW";
+  const isEn = nativeLanguage === "en";
+
+  const restartLabel = isZh ? "重新开始" : isEn ? "Restart" : "Bắt đầu lại";
+  const typingLabel = isZh ? "Sensei 正在构思回复…" : isEn ? "Sensei is typing a response…" : "Sensei đang soạn câu trả lời…";
 
   // Cuộn bên trong khung chat. Không dùng scrollIntoView vì nó kéo cả trang.
   useEffect(() => {
@@ -41,7 +48,7 @@ export function SenseiChat({
   }, [messages, loading]);
 
   return (
-    <section className="ais-chat" aria-label="Cuộc trò chuyện với Aoi Sensei">
+    <section className="ais-chat" aria-label={isZh ? "与 Aoi Sensei 的日语对话" : isEn ? "Conversation with Aoi Sensei" : "Cuộc trò chuyện với Aoi Sensei"}>
       <div className="ais-chat-head">
         <div className="ais-chat-topic">
           <span className="ais-chat-ico" aria-hidden>
@@ -56,12 +63,12 @@ export function SenseiChat({
           <span className="ais-chip ais-chip--red ais-chat-badge">{scenario.badge}</span>
           <button type="button" className="ais-ghost" onClick={onRestart}>
             <Icon name="refresh" className="h-4 w-4" />
-            <span>Bắt đầu lại</span>
+            <span>{restartLabel}</span>
           </button>
         </div>
       </div>
 
-      <div ref={listRef} className="ais-messages" role="log" aria-live="polite" aria-label="Tin nhắn">
+      <div ref={listRef} className="ais-messages" role="log" aria-live="polite" aria-label={isZh ? "消息列表" : isEn ? "Messages" : "Tin nhắn"}>
         {messages.map((msg) => (
           <SenseiMessage
             key={msg.id}
@@ -84,7 +91,7 @@ export function SenseiChat({
                 <i />
                 <i />
               </span>
-              <span>Sensei đang soạn câu trả lời…</span>
+              <span>{typingLabel}</span>
             </div>
           </div>
         )}

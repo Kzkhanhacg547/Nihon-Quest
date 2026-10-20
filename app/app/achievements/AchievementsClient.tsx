@@ -212,6 +212,247 @@ const MASTER_BADGES: MasterBadge[] = [
   },
 ];
 
+const BADGE_I18N: Record<string, Partial<Record<string, { desc: string; hint: string; action: string }>>> = {
+  "first-steps": {
+    "zh-CN": {
+      desc: "完成新手入门引导，准备开启日语征程。",
+      hint: "完成新手入门引导流程 (Onboarding)。",
+      action: "前往课程",
+    },
+    "zh-TW": {
+      desc: "完成新手入門引導，準備開啟日語征程。",
+      hint: "完成新手入門引導流程 (Onboarding)。",
+      action: "前往課程",
+    },
+    en: {
+      desc: "Complete onboarding and prepare to conquer Japanese.",
+      hint: "Complete the onboarding process.",
+      action: "Go to Lessons",
+    },
+  },
+  "kana-starter": {
+    "zh-CN": {
+      desc: "掌握最初的 5 个平假名/片假名。",
+      hint: "在假名实验室掌握 5 个假名字母。",
+      action: "进入假名实验室",
+    },
+    "zh-TW": {
+      desc: "掌握最初的 5 個平假名/片假名。",
+      hint: "在假名實驗室掌握 5 個假名字母。",
+      action: "進入假名實驗室",
+    },
+    en: {
+      desc: "Master the first 5 Hiragana / Katakana characters.",
+      hint: "Practice and master 5 characters in Kana Lab.",
+      action: "Go to Kana Lab",
+    },
+  },
+  "lesson-complete-1": {
+    "zh-CN": {
+      desc: "完成 Nihon Quest 学习路线中的第一堂课。",
+      hint: "在课程库中完成任意 1 节课。",
+      action: "开始第一课",
+    },
+    "zh-TW": {
+      desc: "完成 Nihon Quest 學習路線中的第一堂課。",
+      hint: "在課程庫中完成任意 1 節課。",
+      action: "開始第一課",
+    },
+    en: {
+      desc: "Complete the first lesson in Nihon Quest.",
+      hint: "Complete any 1 lesson in the Lessons section.",
+      action: "Start First Lesson",
+    },
+  },
+  "xp-500": {
+    "zh-CN": {
+      desc: "累计获得 500 点总经验值 (XP)。",
+      hint: "通过各项学习活动累计至少 500 XP。",
+      action: "探索新干线地图",
+    },
+    "zh-TW": {
+      desc: "累計獲得 500 點總經驗值 (XP)。",
+      hint: "通過各項學習活動累計至少 500 XP。",
+      action: "探索新幹線地圖",
+    },
+    en: {
+      desc: "Reach 500 total accumulated XP.",
+      hint: "Accumulate at least 500 XP from learning activities.",
+      action: "Explore Map",
+    },
+  },
+  "tokyo-unlocked": {
+    "zh-CN": {
+      desc: "在首都东京完成第一站打卡盖章。",
+      hint: "在新干线地图上探索并攻克东京站挑战。",
+      action: "探索东京站",
+    },
+    "zh-TW": {
+      desc: "在首都東京完成第一站打卡蓋章。",
+      hint: "在新幹線地圖上探索並攻克東京站挑戰。",
+      action: "探索東京站",
+    },
+    en: {
+      desc: "Stamp your first stop in Tokyo.",
+      hint: "Explore and pass the Tokyo station challenge.",
+      action: "Explore Tokyo",
+    },
+  },
+  "kyoto-temple": {
+    "zh-CN": {
+      desc: "探索千寺沉静的千年古都京都。",
+      hint: "达到 180 XP 并完成京都站任务。",
+      action: "前往京都",
+    },
+    "zh-TW": {
+      desc: "探索千寺沉靜的千年古都京都。",
+      hint: "達到 180 XP 並完成京都站任務。",
+      action: "前往京都",
+    },
+    en: {
+      desc: "Explore historic Kyoto with its timeless Zen temples.",
+      hint: "Reach 180 XP and complete the Kyoto station.",
+      action: "Go to Kyoto",
+    },
+  },
+  "nara-deer": {
+    "zh-CN": {
+      desc: "探索世界遗产奈良，与神鹿亲密互动。",
+      hint: "达到 380 XP 并完成奈良站任务。",
+      action: "前往奈良",
+    },
+    "zh-TW": {
+      desc: "探索世界遺產奈良，與神鹿親密互動。",
+      hint: "達到 380 XP 並完成奈良站任務。",
+      action: "前往奈良",
+    },
+    en: {
+      desc: "Explore historic Nara and meet the sacred deer.",
+      hint: "Reach 380 XP and complete the Nara station.",
+      action: "Go to Nara",
+    },
+  },
+  "osaka-foodie": {
+    "zh-CN": {
+      desc: "在日本美食厨房大阪品尝章鱼烧地道风味。",
+      hint: "在新干线地图上解锁大阪站。",
+      action: "前往大阪",
+    },
+    "zh-TW": {
+      desc: "在日本美食廚房大阪品嚐章魚燒道地風味。",
+      hint: "在新幹線地圖上解鎖大阪站。",
+      action: "前往大阪",
+    },
+    en: {
+      desc: "Savor vibrant street food in Osaka's culinary kitchen.",
+      hint: "Unlock the Osaka station on the Shinkansen journey.",
+      action: "Go to Osaka",
+    },
+  },
+  "fuji-conqueror": {
+    "zh-CN": {
+      desc: "在芦之湖畔远眺富士神山的壮美倒影。",
+      hint: "在学习旅途中解锁富士与箱根站。",
+      action: "前往富士山",
+    },
+    "zh-TW": {
+      desc: "在蘆之湖畔遠眺富士神山的壯美倒影。",
+      hint: "在學習旅途中解鎖富士與箱根站。",
+      action: "前往富士山",
+    },
+    en: {
+      desc: "Admire sacred Mt. Fuji mirrored over Lake Ashi.",
+      hint: "Unlock the Fuji & Hakone stop on your journey.",
+      action: "Go to Mt. Fuji",
+    },
+  },
+  "all-japan": {
+    "zh-CN": {
+      desc: "征服新干线地图上的全部日本名胜地标。",
+      hint: "完成全部 9 个新干线打卡站点。",
+      action: "成为传奇大师",
+    },
+    "zh-TW": {
+      desc: "征服新幹線地圖上的全部日本名勝地標。",
+      hint: "完成全部 9 個新幹線打卡站點。",
+      action: "成為傳奇大師",
+    },
+    en: {
+      desc: "Conquer all iconic destinations across Japan.",
+      hint: "Complete all 9 Shinkansen route stops.",
+      action: "Become a Legend",
+    },
+  },
+  "streak-7": {
+    "zh-CN": {
+      desc: "保持连续 7 天不间断的学习打卡。",
+      hint: "连续 7 天每天完成学习任务。",
+      action: "查看连胜统计",
+    },
+    "zh-TW": {
+      desc: "保持連續 7 天不間斷的學習打卡。",
+      hint: "連續 7 天每天完成學習任務。",
+      action: "查看連勝統計",
+    },
+    en: {
+      desc: "Maintain an uninterrupted 7-day study streak.",
+      hint: "Study consecutively every day for 7 days.",
+      action: "View Study Streak",
+    },
+  },
+  "sensei-chat": {
+    "zh-CN": {
+      desc: "与 AI Sensei 进行日语对话会话练习。",
+      hint: "完成 1 次与 AI Sensei 的会话口语互动。",
+      action: "与老师对话",
+    },
+    "zh-TW": {
+      desc: "與 AI Sensei 進行日語對話會話練習。",
+      hint: "完成 1 次與 AI Sensei 的會話口語互動。",
+      action: "與老師對話",
+    },
+    en: {
+      desc: "Practice Japanese conversation with AI Sensei.",
+      hint: "Complete 1 conversational session with AI Sensei.",
+      action: "Chat with Sensei",
+    },
+  },
+  "survival-survivor": {
+    "zh-CN": {
+      desc: "在生存模式中成功应对突发日语情景挑战。",
+      hint: "顺利通关 1 场实战情景生存挑战。",
+      action: "进入生存挑战",
+    },
+    "zh-TW": {
+      desc: "在生存模式中成功應對突發日語情景挑戰。",
+      hint: "順利通關 1 場實戰情景生存挑戰。",
+      action: "進入生存挑戰",
+    },
+    en: {
+      desc: "Survive real-time Japanese scenario challenges.",
+      hint: "Successfully clear 1 survival scenario stage.",
+      action: "Start Survival Mode",
+    },
+  },
+  "test-champion": {
+    "zh-CN": {
+      desc: "在模考中心完成日语能力 JLPT 评估。",
+      hint: "在测评中心完成任意 1 套能力测试题。",
+      action: "参加能力自测",
+    },
+    "zh-TW": {
+      desc: "在模考中心完成日語能力 JLPT 評估。",
+      hint: "在測評中心完成任意 1 套能力測試題。",
+      action: "參加能力自測",
+    },
+    en: {
+      desc: "Complete a JLPT proficiency assessment.",
+      hint: "Complete 1 proficiency exam in the Test Center.",
+      action: "Take Proficiency Test",
+    },
+  },
+};
+
 interface AchievementsClientProps {
   dbAll: DbAchievement[];
   dbOwned: DbUserAchievement[];
@@ -270,17 +511,17 @@ export function AchievementsClient({
       if (data.unlocked && data.unlocked.length > 0) {
         playCorrect();
         showToast({
-          title: `🎉 ${data.unlocked.length} badges unlocked!`,
+          title: t("badgeSyncSuccessCount", { count: data.unlocked.length }),
           type: "success",
         });
       } else {
         showToast({
-          title: "Synced achievements successfully.",
+          title: t("badgeSyncSuccessNoNew"),
           type: "info",
         });
       }
     } catch {
-      showToast({ title: "Failed to sync achievements.", type: "error" });
+      showToast({ title: t("badgeSyncError"), type: "error" });
     } finally {
       setIsSyncing(false);
     }
@@ -291,8 +532,11 @@ export function AchievementsClient({
     const ownedInfo = ownedKeyMap.get(b.key);
     return {
       ...b,
+      description: (BADGE_I18N[b.key]?.[nativeLanguage] || (nativeLanguage !== "vi" ? BADGE_I18N[b.key]?.en : undefined))?.desc || b.description,
+      requirementHint: (BADGE_I18N[b.key]?.[nativeLanguage] || (nativeLanguage !== "vi" ? BADGE_I18N[b.key]?.en : undefined))?.hint || b.requirementHint,
+      actionLabel: (BADGE_I18N[b.key]?.[nativeLanguage] || (nativeLanguage !== "vi" ? BADGE_I18N[b.key]?.en : undefined))?.action || b.actionLabel,
       isUnlocked: !!ownedInfo,
-      unlockedAt: ownedInfo?.unlockedAt ? new Date(ownedInfo.unlockedAt).toLocaleDateString(nativeLanguage === "vi" ? "vi-VN" : "en-US") : null,
+      unlockedAt: ownedInfo?.unlockedAt ? new Date(ownedInfo.unlockedAt).toLocaleDateString(nativeLanguage === "vi" ? "vi-VN" : nativeLanguage.startsWith("zh") ? "zh-CN" : "en-US") : null,
     };
   });
 
