@@ -289,7 +289,7 @@ export function StatsClient({
               </span>
             </div>
             <p className="mt-3 text-2xl font-black tracking-tight text-slate-900 dark:text-white sm:text-3xl">
-              Level {user.level}
+              {t("statsLevelPrefix") || "Level"} {user.level}
             </p>
             <span className="mt-1 inline-block text-xs font-semibold text-amber-600 dark:text-amber-400">
               {user.currentLevelXP} / {user.nextLevelXP} XP

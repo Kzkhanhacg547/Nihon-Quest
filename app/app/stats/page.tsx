@@ -289,7 +289,7 @@ export default async function StatsPage() {
         userLevel={user.level}
         userXP={user.totalXP}
         streak={user.currentStreak}
-        levelLabel={`Cấp ${user.level}`}
+        levelLabel={userLevel}
       />
 
       <main className="mx-auto max-w-[1320px] px-4 pt-4 sm:px-6 lg:px-8">

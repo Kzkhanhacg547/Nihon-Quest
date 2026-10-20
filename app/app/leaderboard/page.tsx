@@ -76,11 +76,11 @@ export default async function LeaderboardPage() {
           badge={
             botCount > 0 ? (
               <span>
-                {realCount} <LocalizedText k="lbRealLearners" fallback="học viên" /> · +{botCount} <LocalizedText k="lbRivalBots" fallback="đối thủ BOT" />
+                <LocalizedText k="lbRealLearners" fallback={`${realCount} học viên`} params={{ count: realCount }} /> · <LocalizedText k="lbRivalBots" fallback={`+${botCount} đối thủ BOT`} params={{ count: botCount }} />
               </span>
             ) : (
               <span>
-                {realCount} <LocalizedText k="lbRealLearners" fallback="học viên tham gia" />
+                <LocalizedText k="lbRealLearners" fallback={`${realCount} học viên tham gia`} params={{ count: realCount }} />
               </span>
             )
           }
