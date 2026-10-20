@@ -14,6 +14,8 @@ export interface RecentActivityItem {
   xpAwarded: number;
   dateStr: string;
   relativeTime: string;
+  createdAtIso?: string;
+  metaParam?: string;
 }
 
 export interface LearningBreakdownData {
@@ -37,6 +39,68 @@ export interface LearningBreakdownData {
     total: number;
     percent: number;
   };
+}
+
+
+const LOCALE_MAP: Record<string, string> = {
+  vi: "vi-VN",
+  en: "en-US",
+  "zh-CN": "zh-CN",
+  "zh-TW": "zh-TW",
+  ko: "ko-KR",
+  es: "es-ES",
+  fr: "fr-FR",
+  de: "de-DE",
+  id: "id-ID",
+  th: "th-TH",
+  ru: "ru-RU",
+  pt: "pt-BR",
+};
+
+function formatLocalizedActivityTitle(act: RecentActivityItem, t: (k: string, p?: any) => string): string {
+  if (act.type === "LESSON") {
+    return act.metaParam ? t("statsActivityLesson", { title: act.metaParam }) : t("statsActivityLessonGeneral");
+  }
+  if (act.type === "KANA") {
+    return act.metaParam ? t("statsActivityKana", { char: act.metaParam }) : t("statsActivityKanaGeneral");
+  }
+  if (act.type === "REVIEW") {
+    return t("statsActivityReview");
+  }
+  if (act.type === "SURVIVAL") {
+    return t("statsActivitySurvival");
+  }
+  if (act.type === "JOURNEY") {
+    return t("statsActivityJourney");
+  }
+  if (act.type === "ACHIEVEMENT") {
+    return act.metaParam ? t("statsActivityAchievement", { title: act.metaParam }) : act.title;
+  }
+  if (act.type === "OTHER" && act.title.includes("rèn luyện")) {
+    return t("statsActivityBonus");
+  }
+  return act.title || t("statsActivityOther");
+}
+
+function formatLocalizedRelativeTime(act: RecentActivityItem, t: (k: string, p?: any) => string): string {
+  if (!act.createdAtIso) return act.relativeTime || act.dateStr;
+  try {
+    const date = new Date(act.createdAtIso);
+    const diffMs = Date.now() - date.getTime();
+    const diffSec = Math.floor(diffMs / 1000);
+    const diffMin = Math.floor(diffSec / 60);
+    const diffHour = Math.floor(diffMin / 60);
+    const diffDays = Math.floor(diffHour / 24);
+
+    if (diffMin < 1) return t("statsJustNow") || "Just now";
+    if (diffMin < 60) return t("statsMinutesAgo", { min: diffMin }) || `${diffMin}m ago`;
+    if (diffHour < 24) return t("statsHoursAgo", { hour: diffHour }) || `${diffHour}h ago`;
+    if (diffDays === 1) return t("statsYesterday") || "Yesterday";
+    if (diffDays < 7) return t("statsDaysAgo", { days: diffDays }) || `${diffDays}d ago`;
+    return act.dateStr;
+  } catch {
+    return act.relativeTime || act.dateStr;
+  }
 }
 
 export interface StatsClientProps {
@@ -169,7 +233,7 @@ export function StatsClient({
         <div className="relative z-10 mt-8 grid grid-cols-2 gap-3 border-t border-white/10 pt-6 sm:grid-cols-4 sm:gap-4">
           <div className="rounded-2xl bg-white/5 p-3.5 backdrop-blur-sm border border-white/10">
             <p className="text-xs font-semibold text-slate-400">{t("statsCurrentLevel")}</p>
-            <p className="mt-1 text-xl font-black text-white sm:text-2xl">Level {user.level}</p>
+            <p className="mt-1 text-xl font-black text-white sm:text-2xl">{t("statsLevelPrefix") || "Level"} {user.level}</p>
             <p className="mt-0.5 text-[11px] text-amber-400 font-medium">{user.levelProgressPercent}% {t("statsToLevel")} {user.level + 1}</p>
           </div>
           <div className="rounded-2xl bg-white/5 p-3.5 backdrop-blur-sm border border-white/10">
@@ -308,7 +372,7 @@ export function StatsClient({
               {breakdown.kana.mastered} <span className="text-base font-bold text-slate-400">/ {breakdown.kana.total}</span>
             </p>
             <span className="mt-1 inline-block text-xs font-semibold text-rose-600 dark:text-rose-400">
-              Hiragana &amp; Katakana
+              {t("statsKanaSubtitle") || "Hiragana & Katakana"}
             </span>
           </div>
 
@@ -502,7 +566,7 @@ export function StatsClient({
                   const firstDayOfWeek = week[0];
                   const showMonth = wIdx === 0 || firstDayOfWeek.dateNumber <= 7;
                   const monthLabel = showMonth
-                    ? new Date(2026, firstDayOfWeek.month, 1).toLocaleDateString(nativeLanguage === "vi" ? "vi-VN" : "en-US", { month: "short" })
+                    ? new Date(2026, firstDayOfWeek.month, 1).toLocaleDateString(LOCALE_MAP[nativeLanguage] || "en-US", { month: "short" })
                     : "";
 
                   return (
@@ -573,7 +637,7 @@ export function StatsClient({
                 </span>
                 <div>
                   <h3 className="text-base font-bold text-slate-900 dark:text-white">{t("statsKanaAlphabet")}</h3>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">Hiragana &amp; Katakana</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">{t("statsKanaSubtitle") || "Hiragana & Katakana"}</p>
                 </div>
               </div>
               <span className="text-sm font-black text-rose-600 dark:text-rose-400">
@@ -777,7 +841,7 @@ export function StatsClient({
             </div>
 
             {/* SRS Status Cards */}
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3">
               <div className="rounded-2xl border border-emerald-200/80 bg-emerald-50/50 p-4 text-center dark:border-emerald-900/60 dark:bg-emerald-950/30">
                 <span className="text-2xl font-black text-emerald-600 dark:text-emerald-400">
                   {reviewMetrics.masteredCount}

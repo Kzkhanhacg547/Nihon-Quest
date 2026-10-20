@@ -9,6 +9,7 @@ export {
 } from "@/lib/languages";
 import { type NativeLanguage, type NativeLanguageInfo, SUPPORTED_LANGUAGES } from "@/lib/languages";
 import { PAGE_I18N_DICTIONARY } from "@/lib/pageI18nDictionary";
+import { DASHBOARD_PAGES_I18N } from "@/lib/dashboardPagesI18n";
 
 export const DAILY_QUOTE_TRANSLATIONS: Record<string, Partial<Record<NativeLanguage, string>>> = {
   "七転び八起き": {
@@ -3013,13 +3014,13 @@ const EXTENDED_DICTIONARY: Record<NativeLanguage, Record<string, string>> = {
     pathSkillLabel: "Skill",
     pathStyleLabel: "Style",
     pathTimeLabel: "Daily Time",
-    practiceHeroLine1: "身临其境",
-    practiceHeroLine2: "沉浸式攻克",
-    practiceHeroHighlight: "地道日语。",
-    learnJapaneseTag: "日语学习",
-    levelDesc_N5: "从假名发音到日常会话的阶梯式课程，配套随堂测验助你高效攻克 JLPT N5。",
-    levelDesc_N4: "初中级进阶路线：动词活用、假定形、被动与使役实战运用。",
-    levelDesc_N3: "中级核心语法：掌握精细语境表达、时间点与职场地道会话。",
+    practiceHeroLine1: "Master Japanese with a",
+    practiceHeroLine2: "real-life",
+    practiceHeroHighlight: "journey.",
+    learnJapaneseTag: "LEARN JAPANESE",
+    levelDesc_N5: "Step-by-step lessons from Kana to daily conversation, with quizzes to conquer JLPT N5.",
+    levelDesc_N4: "Intermediate roadmap: verb conjugations, conditionals, passive and causative for real-world use.",
+    levelDesc_N3: "Intermediate grammar: nuanced expressions, time references and professional workplace Japanese.",
     lessonCountUnit: "lessons",
     minsPerLesson: "mins/lesson",
     biteSizedLearning: "bite-sized",
@@ -4200,14 +4201,14 @@ const EXTENDED_DICTIONARY: Record<NativeLanguage, Record<string, string>> = {
     pathSkillLabel: "Skill",
     pathStyleLabel: "Style",
     pathTimeLabel: "Daily Time",
-    practiceHeroLine1: "身临其境",
+    practiceHeroLine1: "身臨其境",
     practiceHeroLine2: "沉浸式攻克",
-    practiceHeroHighlight: "地道日语。",
-    learnJapaneseTag: "日语学习",
-    levelDesc_N5: "从假名发音到日常会话的阶梯式课程，配套随堂测验助你高效攻克 JLPT N5。",
-    levelDesc_N4: "初中级进阶路线：动词活用、假定形、被动与使役实战运用。",
-    levelDesc_N3: "中级核心语法：掌握精细语境表达、时间点与职场地道会话。",
-    lessonCountUnit: "lessons",
+    practiceHeroHighlight: "地道日語。",
+    learnJapaneseTag: "日語學習",
+    levelDesc_N5: "從假名發音到日常會話的階梯式課程，配套隨堂測驗助你高效攻克 JLPT N5。",
+    levelDesc_N4: "初中級進階路線：動詞活用、假定形、被動與使役實戰運用。",
+    levelDesc_N3: "中級核心語法：掌握精細語境表達、時間點與職場地道會話。",
+    lessonCountUnit: "課程",
     minsPerLesson: "mins/lesson",
     biteSizedLearning: "bite-sized",
     completedOfLevel: "completed in",
@@ -7324,14 +7325,16 @@ export function LanguageProvider({
   const t = useCallback(
     (key: string, params?: Record<string, string | number>): string => {
       let raw: string =
+        DASHBOARD_PAGES_I18N[nativeLanguage]?.[key] ||
         PAGE_I18N_DICTIONARY[nativeLanguage]?.[key] || EXTENDED_DICTIONARY[nativeLanguage]?.[key] ||
         DICTIONARY[nativeLanguage]?.[key] ||
         (nativeLanguage !== "vi"
-          ? PAGE_I18N_DICTIONARY.en?.[key] || EXTENDED_DICTIONARY.en?.[key] || DICTIONARY.en?.[key]
+          ? DASHBOARD_PAGES_I18N.en?.[key] || PAGE_I18N_DICTIONARY.en?.[key] || EXTENDED_DICTIONARY.en?.[key] || DICTIONARY.en?.[key]
           : "") ||
         (nativeLanguage === "vi"
-          ? PAGE_I18N_DICTIONARY.vi?.[key] || EXTENDED_DICTIONARY.vi?.[key] || DICTIONARY.vi?.[key]
+          ? DASHBOARD_PAGES_I18N.vi?.[key] || PAGE_I18N_DICTIONARY.vi?.[key] || EXTENDED_DICTIONARY.vi?.[key] || DICTIONARY.vi?.[key]
           : "") ||
+        DASHBOARD_PAGES_I18N.en?.[key] ||
         PAGE_I18N_DICTIONARY.en?.[key] || EXTENDED_DICTIONARY.en?.[key] ||
         DICTIONARY.en?.[key] ||
         key;
@@ -7364,11 +7367,13 @@ export function useNativeLanguage() {
       langInfo,
       t: (key: string, params?: Record<string, string | number>) => {
         let raw: string =
+          DASHBOARD_PAGES_I18N[fallbackLang]?.[key] ||
           PAGE_I18N_DICTIONARY[fallbackLang]?.[key] || EXTENDED_DICTIONARY[fallbackLang]?.[key] ||
           DICTIONARY[fallbackLang]?.[key] ||
           (fallbackLang !== "vi"
-            ? PAGE_I18N_DICTIONARY.en?.[key] || EXTENDED_DICTIONARY.en?.[key] || DICTIONARY.en?.[key]
+            ? DASHBOARD_PAGES_I18N.en?.[key] || PAGE_I18N_DICTIONARY.en?.[key] || EXTENDED_DICTIONARY.en?.[key] || DICTIONARY.en?.[key]
             : "") ||
+          DASHBOARD_PAGES_I18N.vi?.[key] ||
           PAGE_I18N_DICTIONARY.vi?.[key] || EXTENDED_DICTIONARY.vi?.[key] ||
           DICTIONARY.vi?.[key] ||
           key;

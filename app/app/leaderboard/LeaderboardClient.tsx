@@ -9,11 +9,11 @@ import { type EnrichedLeaderboardUser, type DirectRivalInfo } from "@/lib/rivalB
 
 const RANK_ICONS = ["🥇", "🥈", "🥉"];
 const TIER_COLORS = [
-  { min: 0, max: 100, name: "Mới Bắt Đầu", color: "from-slate-400 to-slate-600", badge: "⭐" },
-  { min: 100, max: 500, name: "Học Viên", color: "from-amber-400 to-amber-600", badge: "🎌" },
-  { min: 500, max: 1500, name: "Lữ Hành", color: "from-emerald-400 to-emerald-600", badge: "🗾" },
+  { min: 0, max: 100, name: "Beginner", color: "from-slate-400 to-slate-600", badge: "⭐" },
+  { min: 100, max: 500, name: "Learner", color: "from-amber-400 to-amber-600", badge: "🎌" },
+  { min: 500, max: 1500, name: "Traveler", color: "from-emerald-400 to-emerald-600", badge: "🗾" },
   { min: 1500, max: 5000, name: "Samurai", color: "from-fuji-400 to-fuji-700", badge: "⚔️" },
-  { min: 5000, max: Infinity, name: "Đại Sư", color: "from-sakura-400 to-rose-600", badge: "👑" },
+  { min: 5000, max: Infinity, name: "Grandmaster", color: "from-sakura-400 to-rose-600", badge: "👑" },
 ];
 
 function getTier(xp: number, t: (k: any) => string) {
@@ -45,6 +45,20 @@ export function LeaderboardClient({
   const currentUser = users.find((u) => u.id === currentUserId);
   const currentUserRank = users.findIndex((u) => u.id === currentUserId) + 1;
 
+  // Localized rival challenge message
+  const getLocalizedRivalMessage = () => {
+    if (!directRival) return "";
+    const botRank = currentUserRank - directRival.rankDiff;
+    const botName = directRival.bot.displayName || directRival.bot.name || "AI Rival";
+    if (directRival.xpDiff > 0) {
+      return t("lbRivalAhead", { bot: botName, rank: botRank, xp: directRival.xpDiff }) || directRival.message;
+    } else if (directRival.xpDiff === 0) {
+      return t("lbRivalTied", { bot: botName }) || directRival.message;
+    } else {
+      return t("lbRivalBehind", { bot: botName, rank: botRank, xp: Math.abs(directRival.xpDiff) }) || directRival.message;
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Tab Switcher */}
@@ -57,7 +71,7 @@ export function LeaderboardClient({
               : "text-slate-500 hover:text-slate-900 dark:hover:text-white"
           }`}
         >
-          {t("lbTabWeekly") || "🔥 Tuần Này (Weekly League)"}
+          {t("lbTabWeekly") || "🔥 Weekly League"}
         </button>
         <button
           onClick={() => setTab("ALL_TIME")}
@@ -67,45 +81,45 @@ export function LeaderboardClient({
               : "text-slate-500 hover:text-slate-900 dark:hover:text-white"
           }`}
         >
-          {t("lbTabAllTime") || "👑 Mọi Lúc (All-Time)"}
+          {t("lbTabAllTime") || "👑 All-Time"}
         </button>
       </div>
 
       {/* Direct Rival Challenge Banner (Only on Weekly League) */}
       {tab === "WEEKLY" && directRival && (
-        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-rose-500/10 via-amber-500/10 to-indigo-500/10 dark:from-rose-950/40 dark:via-amber-950/30 dark:to-indigo-950/40 border-2 border-rose-300/80 dark:border-rose-900/80 p-5 shadow-md">
+        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-rose-500/10 via-amber-500/10 to-indigo-500/10 dark:from-rose-950/40 dark:via-amber-950/30 dark:to-indigo-950/40 border-2 border-rose-300/80 dark:border-rose-900/80 p-4 sm:p-5 shadow-md">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div className="flex items-start sm:items-center gap-3.5">
+            <div className="flex items-start sm:items-center gap-3.5 min-w-0">
               <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-rose-500 to-amber-500 flex items-center justify-center text-2xl text-white shadow-md shadow-rose-500/30 shrink-0">
                 {directRival.bot.avatar || "⚔️"}
               </div>
-              <div className="space-y-0.5">
-                <div className="flex items-center gap-2">
-                  <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-rose-500 text-white shadow-xs">
-                    {t("lbDirectRival") || "⚔️ ĐỐI THỦ TRỰC TIẾP"}
+              <div className="space-y-0.5 min-w-0 flex-1">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-rose-500 text-white shadow-xs shrink-0">
+                    {t("lbDirectRival") || "⚔️ DIRECT RIVAL"}
                   </span>
                   <Badge variant="slate" className="shrink-0 text-[9px] uppercase tracking-wider">
-                    {t("lbSimulatedBot") || "🤖 Đối thủ AI (Mô phỏng)"}
+                    {t("lbSimulatedBot") || "🤖 AI Rival"}
                   </Badge>
-                  <span className="text-xs text-slate-500 dark:text-slate-400 font-bold">
-                    {directRival.bot.displayName || (t("lbSimulatedBot") || "Đối thủ AI")}
+                  <span className="text-xs text-slate-500 dark:text-slate-400 font-bold truncate">
+                    {directRival.bot.displayName || (t("lbSimulatedBot") || "AI Rival")}
                   </span>
                 </div>
-                <h4 className="font-black text-sm sm:text-base text-slate-900 dark:text-white">
-                  {directRival.message}
+                <h4 className="font-black text-sm sm:text-base text-slate-900 dark:text-white leading-snug">
+                  {getLocalizedRivalMessage()}
                 </h4>
                 {directRival.bot.quote && (
-                  <p className="text-xs text-slate-500 dark:text-slate-400 italic">
+                  <p className="text-xs text-slate-500 dark:text-slate-400 italic truncate">
                     &ldquo;{directRival.bot.quote}&rdquo;
                   </p>
                 )}
               </div>
             </div>
 
-            <div className="shrink-0 flex items-center gap-2">
+            <div className="shrink-0 flex items-center gap-2 self-start sm:self-center">
               <Link href="/app/practice">
-                <Button variant="sakura" size="sm" className="font-black shadow-md shadow-sakura-500/25">
-                  {t("lbOutpaceBtn") || "Học bài vượt mặt 🚀"}
+                <Button variant="sakura" size="sm" className="font-black shadow-md shadow-sakura-500/25 min-h-10 sm:min-h-9 px-4">
+                  {t("lbOutpaceBtn") || "Study to overtake 🚀"}
                 </Button>
               </Link>
             </div>
@@ -116,13 +130,13 @@ export function LeaderboardClient({
       {/* Current User Position Banner */}
       {currentUser && (
         <Card className="p-4 sm:p-5 bg-gradient-to-r from-red-50 via-rose-50 to-amber-50 dark:from-slate-900 dark:to-slate-950 border-2 border-red-200 dark:border-red-900/50 shadow-sm">
-          <div className="flex items-center gap-4">
-            <div className="relative">
+          <div className="flex items-center gap-3.5 sm:gap-4">
+            <div className="relative shrink-0">
               <UserAvatar
                 src={currentUser.avatar}
                 name={currentUser.displayName || currentUser.name}
                 fallbackText={getTier(currentUser.xp, t).badge}
-                sizeClass="w-12 h-12 text-2xl rounded-2xl"
+                sizeClass="w-11 h-11 sm:w-12 sm:h-12 text-xl sm:text-2xl rounded-2xl"
                 className={`bg-gradient-to-br ${getTier(currentUser.xp, t).color} shadow-lg rounded-2xl`}
                 imgClassName="rounded-2xl shadow-lg ring-2 ring-white dark:ring-sumi-800"
               />
@@ -131,18 +145,18 @@ export function LeaderboardClient({
               </div>
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">
-                {t("lbYourPosition") || "Vị trí của bạn"}{" "}
-                {tab === "WEEKLY" ? (t("lbThisWeek") || "trong tuần") : (t("lbAllTime") || "toàn thời gian")}
+              <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider truncate">
+                {t("lbYourPosition") || "Your standing"}{" "}
+                {tab === "WEEKLY" ? (t("lbThisWeek") || "this week") : (t("lbAllTime") || "all-time")}
               </p>
-              <p className="font-black text-slate-900 dark:text-white text-base sm:text-lg truncate">
-                {currentUser.displayName || currentUser.name || "Bạn"}{" "}
+              <p className="font-black text-slate-900 dark:text-white text-sm sm:text-base truncate">
+                {currentUser.displayName || currentUser.name || (t("lbYou") || "You")}{" "}
                 <span className="text-red-600 dark:text-red-400">#{currentUserRank}</span>
               </p>
-              <div className="flex items-center gap-3 mt-0.5 text-xs text-slate-500 flex-wrap font-semibold">
+              <div className="flex items-center gap-2.5 sm:gap-3 mt-0.5 text-xs text-slate-500 flex-wrap font-semibold">
                 <span>⚡ {currentUser.xp.toLocaleString("en-US")} XP</span>
                 <span>🎯 Lv.{currentUser.level}</span>
-                <span>🔥 {currentUser.currentStreak} {t("lbDaysUnit") || "ngày"}</span>
+                <span>🔥 {currentUser.currentStreak} {t("lbDaysUnit") || "days"}</span>
               </div>
             </div>
           </div>
@@ -155,12 +169,12 @@ export function LeaderboardClient({
           const rank = idx + 1;
           const isMe = user.id === currentUserId;
           const tier = getTier(user.xp, t);
-          const displayName = user.displayName || user.name || "Học Viên";
+          const displayName = user.displayName || user.name || (t("lbDefaultLearner") || "Learner");
 
           return (
             <Card
               key={user.id}
-              className={`p-3.5 transition-all ${
+              className={`p-3 sm:p-3.5 transition-all ${
                 isMe
                   ? "border-2 border-sakura-400 dark:border-sakura-800 bg-sakura-50/60 dark:bg-sakura-950/30 shadow-sm scale-[1.01]"
                   : rank <= 3
@@ -168,13 +182,13 @@ export function LeaderboardClient({
                   : "border border-slate-200 dark:border-slate-800"
               }`}
             >
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2.5 sm:gap-3">
                 {/* Rank number or medal */}
-                <div className="w-8 text-center shrink-0">
+                <div className="w-7 sm:w-8 text-center shrink-0">
                   {rank <= 3 ? (
-                    <span className="text-xl">{RANK_ICONS[rank - 1]}</span>
+                    <span className="text-lg sm:text-xl">{RANK_ICONS[rank - 1]}</span>
                   ) : (
-                    <span className="text-sm font-black text-slate-400">#{rank}</span>
+                    <span className="text-xs sm:text-sm font-black text-slate-400">#{rank}</span>
                   )}
                 </div>
 
@@ -183,32 +197,32 @@ export function LeaderboardClient({
                   src={user.avatar}
                   name={displayName}
                   fallbackText={tier.badge}
-                  sizeClass="w-10 h-10 text-lg rounded-2xl"
+                  sizeClass="w-9 h-9 sm:w-10 sm:h-10 text-base sm:text-lg rounded-2xl"
                   className={`bg-gradient-to-br ${tier.color} shadow-sm rounded-2xl`}
                   imgClassName="rounded-2xl shadow-sm ring-1 ring-slate-200 dark:ring-slate-700"
                 />
 
                 {/* Info */}
                 <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className={`font-black text-sm truncate ${isMe ? "text-sakura-600 dark:text-sakura-400" : "text-slate-900 dark:text-white"}`}>
+                  <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                    <span className={`font-black text-xs sm:text-sm truncate max-w-[120px] sm:max-w-[200px] ${isMe ? "text-sakura-600 dark:text-sakura-400" : "text-slate-900 dark:text-white"}`}>
                       {displayName}
-                      {isMe && ` ${t("lbYou") || "(Bạn)"}`}
+                      {isMe && ` ${t("lbYou") || "(You)"}`}
                     </span>
-                    <Badge variant={rank <= 3 ? "amber" : "slate"} className="text-[10px] shrink-0">
+                    <Badge variant={rank <= 3 ? "amber" : "slate"} className="text-[9px] sm:text-[10px] shrink-0 py-0 px-1.5 sm:px-2">
                       {tier.name}
                     </Badge>
                     {user.isBot && (
-                      <Badge variant="slate" className="text-[10px] shrink-0">
-                        {t("lbSimulatedBot") || "🤖 Đối thủ AI"}
+                      <Badge variant="slate" className="text-[9px] sm:text-[10px] shrink-0 py-0 px-1.5 sm:px-2">
+                        {t("lbSimulatedBot") || "🤖 AI Rival"}
                       </Badge>
                     )}
                   </div>
-                  <div className="flex items-center gap-2.5 mt-0.5 text-xs text-slate-500 font-medium">
+                  <div className="flex items-center gap-2 mt-0.5 text-[11px] sm:text-xs text-slate-500 font-medium flex-wrap">
                     <span>🎯 Lv.{user.level}</span>
-                    <span>🔥 {user.currentStreak}d</span>
+                    <span>🔥 {user.currentStreak}{t("lbDaysUnit") || "d"}</span>
                     {user.quote && (
-                      <span className="hidden sm:inline text-slate-400 truncate max-w-[180px]">
+                      <span className="hidden md:inline text-slate-400 truncate max-w-[160px]">
                         · &ldquo;{user.quote}&rdquo;
                       </span>
                     )}
@@ -217,11 +231,11 @@ export function LeaderboardClient({
 
                 {/* XP earned */}
                 <div className="text-right shrink-0">
-                  <div className="font-black text-sm text-amber-600 dark:text-amber-400">
+                  <div className="font-black text-xs sm:text-sm text-amber-600 dark:text-amber-400">
                     ⚡ {user.xp.toLocaleString("en-US")}
                   </div>
-                  <div className="text-[10px] text-slate-400 font-mono">
-                    {tab === "WEEKLY" ? (t("lbWeeklyXp") || "XP tuần") : "XP"}
+                  <div className="text-[9px] sm:text-[10px] text-slate-400 font-mono">
+                    {tab === "WEEKLY" ? (t("lbWeeklyXp") || "Weekly XP") : "XP"}
                   </div>
                 </div>
               </div>
@@ -233,10 +247,10 @@ export function LeaderboardClient({
           <Card className="p-8 text-center border-dashed border-2 border-slate-200 dark:border-slate-800">
             <p className="text-4xl mb-2">🏆</p>
             <p className="font-black text-slate-700 dark:text-slate-200">
-              {t("lbEmptyTitle") || "Chưa có hoạt động trong tuần này!"}
+              {t("lbEmptyTitle") || "No activity yet this week!"}
             </p>
             <p className="text-xs text-slate-500 mt-1">
-              {t("lbEmptyDesc") || "Hãy hoàn thành một bài học hoặc ôn tập để dẫn đầu bảng xếp hạng！🌸"}
+              {t("lbEmptyDesc") || "Complete a lesson or review to take the top spot on the leaderboard! 🌸"}
             </p>
           </Card>
         )}
@@ -244,11 +258,10 @@ export function LeaderboardClient({
         {users.some((u) => u.isBot) && (
           <p className="rounded-xl border border-slate-200/80 bg-slate-50/70 px-3.5 py-2.5 text-[11px] leading-relaxed text-slate-500 dark:border-slate-800 dark:bg-sumi-900/60 dark:text-slate-400">
             {t("lbBotDisclaimer") ||
-              "💡 Các tài khoản có nhãn 🤖 Đối thủ AI là nhân vật mô phỏng do hệ thống tạo ra để duy trì nhịp độ luyện tập cạnh tranh — không phải người dùng thật."}
+              "💡 Accounts marked with 🤖 AI Rival are simulated characters to keep up a competitive practice pace — not real users."}
           </p>
         )}
       </div>
     </div>
   );
 }
-

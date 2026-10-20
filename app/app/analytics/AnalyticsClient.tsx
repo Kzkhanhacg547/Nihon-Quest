@@ -63,7 +63,7 @@ export interface AnalyticsClientProps {
   learningVelocity: {
     dailyXpAverage: number;
     weeklyLessonsPace: number;
-    adherencePercent: number; // Tỷ lệ duy trì so với mục tiêu phút/ngày
+    adherencePercent: number;
   };
   skills: SkillProficiencyItem[];
   lifecycleStages: LifecycleProgressStage[];
@@ -115,14 +115,25 @@ export function AnalyticsClient({
   const { playClick } = useSoundAndTheme();
   const { t } = useNativeLanguage();
 
+  const getBadgeText = (status: SkillProficiencyItem["levelStatus"]) => {
+    if (status === "MASTERED") return t("analyticsStatusMastered") || "Mastered";
+    if (status === "GOOD") return t("analyticsStatusGood") || "Good";
+    if (status === "DEVELOPING") return t("analyticsStatusDeveloping") || "Developing";
+    return t("analyticsStatusNeedsWork") || "Needs Urgent Work";
+  };
+
+  const getLocalizedGoal = (val: string) => t("goal_" + val) || GOAL_LABELS[val] || val;
+  const getLocalizedSkill = (val: string) => t("skill_" + val) || SKILL_LABELS[val] || val;
+  const getLocalizedStyle = (val: string) => t("style_" + val) || STYLE_LABELS[val] || val;
+
   return (
     <div className="space-y-6 sm:space-y-8">
       {/* ================= 1. HERO BANNER ================= */}
-      <section className="relative overflow-hidden rounded-3xl border border-red-500/20 bg-gradient-to-br from-slate-900 via-sumi-900 to-red-950 p-6 text-white shadow-xl sm:p-8">
+      <section className="relative overflow-hidden rounded-3xl border border-red-500/20 bg-gradient-to-br from-slate-900 via-sumi-900 to-red-950 p-5 text-white shadow-xl sm:p-8">
         {/* Japanese Calligraphy / Kanji Watermark */}
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute -right-6 -top-10 select-none text-[150px] font-black leading-none text-white/[0.04] sm:text-[220px]"
+          className="pointer-events-none absolute -right-6 -top-10 select-none text-[130px] font-black leading-none text-white/[0.04] sm:text-[220px]"
         >
           進歩
         </div>
@@ -131,58 +142,60 @@ export function AnalyticsClient({
           <div className="max-w-2xl">
             <div className="inline-flex items-center gap-2 rounded-full border border-red-400/30 bg-red-500/10 px-3.5 py-1 text-xs font-bold text-red-300 backdrop-blur-md">
               <span className="flex h-2 w-2 rounded-full bg-red-400 animate-pulse" />
-              <span>BƯỚC 8 · CHU TRÌNH HỌC KHOA HỌC</span>
+              <span>{t("analyticsStepBadge") || "STEP 8 · SCIENTIFIC LEARNING CYCLE"}</span>
               <span>•</span>
               <span>JLPT {user.learningLevel}</span>
             </div>
 
-            <h1 className="mt-3 text-3xl font-black tracking-tight sm:text-4xl lg:text-5xl">
-              Đánh Giá <span className="text-red-400">Tiến Bộ</span>
+            <h1 className="mt-3 text-2xl font-black tracking-tight sm:text-4xl lg:text-5xl">
+              {t("analyticsHeroTitle") || "Progress"}{" "}
+              <span className="text-red-400">{t("analyticsHeroTitleSub") || "Evaluation"}</span>
             </h1>
-            <p className="mt-2 text-sm leading-relaxed text-slate-300 sm:text-base">
-              Phân tích đa chiều năng lực tiếng Nhật: Đo lường độ sẵn sàng JLPT, chẩn đoán lỗ hổng kiến thức, và đồng bộ lộ trình cá nhân hóa của <b>{user.displayName}</b>.
+            <p className="mt-2 text-xs leading-relaxed text-slate-300 sm:text-sm lg:text-base">
+              {t("analyticsHeroDesc", { name: user.displayName }) ||
+                `Multi-dimensional Japanese competency analysis: Measure JLPT readiness, diagnose knowledge gaps, and sync personalized learning path for ${user.displayName}.`}
             </p>
 
             {/* User Strategy Chips */}
             <div className="mt-4 flex flex-wrap items-center gap-2 text-xs">
               <span className="rounded-xl border border-white/10 bg-white/5 px-2.5 py-1 text-slate-300">
-                🎯 Mục tiêu: <b className="text-white">{GOAL_LABELS[user.learningGoal] || user.learningGoal}</b>
+                🎯 {t("analyticsGoalLabel") || "Goal:"} <b className="text-white">{getLocalizedGoal(user.learningGoal)}</b>
               </span>
               <span className="rounded-xl border border-white/10 bg-white/5 px-2.5 py-1 text-slate-300">
-                ⚡ Trọng tâm: <b className="text-white">{SKILL_LABELS[user.focusSkill] || user.focusSkill}</b>
+                ⚡ {t("analyticsFocusLabel") || "Focus:"} <b className="text-white">{getLocalizedSkill(user.focusSkill)}</b>
               </span>
               <span className="rounded-xl border border-white/10 bg-white/5 px-2.5 py-1 text-slate-300">
-                🧭 Phong cách: <b className="text-white">{STYLE_LABELS[user.learningStyle] || user.learningStyle}</b>
+                🧭 {t("analyticsStyleLabel") || "Style:"} <b className="text-white">{getLocalizedStyle(user.learningStyle)}</b>
               </span>
               <span className="rounded-xl border border-white/10 bg-white/5 px-2.5 py-1 text-slate-300">
-                ⏱️ Nhịp học: <b className="text-white">{user.dailyGoalMinutes} phút/ngày</b>
+                ⏱️ {t("analyticsPaceLabel") || "Pace:"} <b className="text-white">{user.dailyGoalMinutes} {t("analyticsPaceUnit") || "min/day"}</b>
               </span>
             </div>
           </div>
 
           {/* Quick Action Navigation */}
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2.5 sm:gap-3">
             <Link
               href="/app/test"
               onClick={playClick}
-              className="inline-flex min-h-11 items-center gap-2 rounded-2xl bg-gradient-to-r from-red-600 to-rose-500 px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-red-900/40 transition hover:brightness-110 active:scale-95"
+              className="inline-flex min-h-11 items-center gap-2 rounded-2xl bg-gradient-to-r from-red-600 to-rose-500 px-4 sm:px-5 py-2.5 text-xs sm:text-sm font-bold text-white shadow-lg shadow-red-900/40 transition hover:brightness-110 active:scale-95"
             >
-              <span>🎯 Thi thử 4 kỹ năng</span>
+              <span>{t("analyticsActionTest") || "🎯 4-Skill Mock Exam"}</span>
               <span aria-hidden="true">→</span>
             </Link>
             <Link
               href="/app/path"
               onClick={playClick}
-              className="inline-flex min-h-11 items-center gap-2 rounded-2xl border border-white/20 bg-white/10 px-5 py-2.5 text-sm font-bold text-white backdrop-blur-sm transition hover:bg-white/20 active:scale-95"
+              className="inline-flex min-h-11 items-center gap-2 rounded-2xl border border-white/20 bg-white/10 px-4 sm:px-5 py-2.5 text-xs sm:text-sm font-bold text-white backdrop-blur-sm transition hover:bg-white/20 active:scale-95"
             >
-              <span>🧭 Lộ trình cá nhân</span>
+              <span>{t("analyticsActionPath") || "🧭 Personal Roadmap"}</span>
             </Link>
             <Link
               href="/app/stats"
               onClick={playClick}
-              className="inline-flex min-h-11 items-center gap-2 rounded-2xl border border-white/20 bg-white/10 px-5 py-2.5 text-sm font-bold text-white backdrop-blur-sm transition hover:bg-white/20 active:scale-95"
+              className="inline-flex min-h-11 items-center gap-2 rounded-2xl border border-white/20 bg-white/10 px-4 sm:px-5 py-2.5 text-xs sm:text-sm font-bold text-white backdrop-blur-sm transition hover:bg-white/20 active:scale-95"
             >
-              <span>📊 Thống kê biểu đồ</span>
+              <span>{t("analyticsActionStats") || "📊 Charts & Stats"}</span>
             </Link>
           </div>
         </div>
@@ -190,42 +203,52 @@ export function AnalyticsClient({
         {/* Highlight Score Cards */}
         <div className="relative z-10 mt-8 grid grid-cols-2 gap-3 border-t border-white/10 pt-6 sm:grid-cols-4 sm:gap-4">
           {/* JLPT Readiness */}
-          <div className="rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur-sm">
-            <p className="text-xs font-semibold text-slate-400">Độ sẵn sàng {user.learningLevel}</p>
+          <div className="rounded-2xl border border-white/10 bg-white/5 p-3.5 sm:p-4 backdrop-blur-sm">
+            <p className="text-xs font-semibold text-slate-400">
+              {t("analyticsReadinessLabel", { level: user.learningLevel }) || `Readiness ${user.learningLevel}`}
+            </p>
             <div className="mt-1 flex items-baseline gap-2">
               <span className="text-2xl font-black text-rose-400 sm:text-3xl">{readinessScore}%</span>
               <span className="rounded-full bg-red-500/20 px-2 py-0.5 text-[10px] font-bold text-red-300">
                 {readinessTier.tag}
               </span>
             </div>
-            <p className="mt-1 text-[11px] text-slate-300">{readinessTier.label}</p>
+            <p className="mt-1 text-[11px] text-slate-300 truncate">{readinessTier.label}</p>
           </div>
 
           {/* Time to Target */}
-          <div className="rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur-sm">
-            <p className="text-xs font-semibold text-slate-400">{t("analyticsForecastCompletion") || "Dự báo hoàn thành"}</p>
-            <p className="mt-1 text-2xl font-black text-amber-400 sm:text-3xl">
-              ~{estWeeksToTarget} {t("weeks") || "tuần"}
+          <div className="rounded-2xl border border-white/10 bg-white/5 p-3.5 sm:p-4 backdrop-blur-sm">
+            <p className="text-xs font-semibold text-slate-400">
+              {t("analyticsForecastCompletion") || "Estimated Completion"}
             </p>
-            <p className="mt-1 text-[11px] text-slate-300">~{estDaysToTarget} {t("daysUnit") || "ngày"}</p>
+            <p className="mt-1 text-2xl font-black text-amber-400 sm:text-3xl">
+              ~{estWeeksToTarget} {t("weeks") || "weeks"}
+            </p>
+            <p className="mt-1 text-[11px] text-slate-300">
+              ~{estDaysToTarget} {t("daysUnit") || "days"}
+            </p>
           </div>
 
           {/* Path Completion */}
-          <div className="rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur-sm">
-            <p className="text-xs font-semibold text-slate-400">{t("analyticsPathProgress") || "Tiến độ Lộ trình"}</p>
+          <div className="rounded-2xl border border-white/10 bg-white/5 p-3.5 sm:p-4 backdrop-blur-sm">
+            <p className="text-xs font-semibold text-slate-400">
+              {t("analyticsPathProgress") || "Roadmap Progress"}
+            </p>
             <p className="mt-1 text-2xl font-black text-emerald-400 sm:text-3xl">
               {pathSummary.percentComplete}%
             </p>
             <p className="mt-1 text-[11px] text-slate-300">
-              {pathSummary.completedModules}/{pathSummary.totalModules} {t("topics") || "mô-đun"}
+              {pathSummary.completedModules}/{pathSummary.totalModules} {t("topics") || "modules"}
             </p>
           </div>
 
           {/* Habit Adherence */}
-          <div className="rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur-sm">
-            <p className="text-xs font-semibold text-slate-400">{t("analyticsAdherence") || "Độ kiên trì (Adherence)"}</p>
+          <div className="rounded-2xl border border-white/10 bg-white/5 p-3.5 sm:p-4 backdrop-blur-sm">
+            <p className="text-xs font-semibold text-slate-400">
+              {t("analyticsAdherence") || "Habit Adherence"}
+            </p>
             <p className="mt-1 text-2xl font-black text-orange-400 sm:text-3xl">
-              🔥 {user.currentStreak} {t("streakUnit") || "ngày"}
+              🔥 {user.currentStreak} {t("streakUnit") || "days"}
             </p>
             <p className="mt-1 text-[11px] text-slate-300">{learningVelocity.adherencePercent}%</p>
           </div>
@@ -233,13 +256,13 @@ export function AnalyticsClient({
       </section>
 
       {/* ================= 2. INTERACTIVE NAVIGATION TABS ================= */}
-      <div className="flex flex-wrap items-center gap-2 border-b border-slate-200/80 pb-3 dark:border-slate-800">
+      <div className="flex items-center gap-2 border-b border-slate-200/80 pb-3 dark:border-slate-800 overflow-x-auto no-scrollbar py-1">
         {[
-          { key: "OVERVIEW", label: t("analyticsTabOverview") || "Tổng quan & Dự báo JLPT", glyph: "進" },
-          { key: "SKILLS", label: t("analyticsTabSkills") || "Ma trận 5 Kỹ năng", glyph: "技" },
-          { key: "LIFECYCLE", label: t("analyticsTabLifecycle") || "Chu trình 8 Bước", glyph: "環" },
-          { key: "MEMORY", label: t("analyticsTabMemory") || "Trí nhớ SRS & Quên", glyph: "記" },
-          { key: "REMEDIATION", label: `${t("analyticsTabRemediation") || "Trạm Củng cố"} (${remediationItems.length})`, glyph: "🩺" },
+          { key: "OVERVIEW", label: t("analyticsTabOverview") || "Overview & JLPT Forecast", glyph: "進" },
+          { key: "SKILLS", label: t("analyticsTabSkills") || "5 Skills Matrix", glyph: "技" },
+          { key: "LIFECYCLE", label: t("analyticsTabLifecycle") || "8-Step Cycle", glyph: "環" },
+          { key: "MEMORY", label: t("analyticsTabMemory") || "SRS Memory & Forgetting", glyph: "記" },
+          { key: "REMEDIATION", label: `${t("analyticsTabRemediation") || "Remediation Station"} (${remediationItems.length})`, glyph: "🩺" },
         ].map((tab) => {
           const isActive = activeTab === tab.key;
           return (
@@ -249,14 +272,14 @@ export function AnalyticsClient({
                 playClick();
                 setActiveTab(tab.key as any);
               }}
-              className={`flex items-center gap-2 rounded-2xl px-4 py-2.5 text-xs font-extrabold transition sm:text-sm ${
+              className={`flex items-center gap-2 rounded-2xl px-3.5 sm:px-4 py-2 sm:py-2.5 text-xs font-extrabold transition shrink-0 ${
                 isActive
                   ? "bg-red-600 text-white shadow-md shadow-red-600/20"
                   : "bg-white text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:bg-sumi-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white"
               }`}
             >
               <span className="jp-text text-sm">{tab.glyph}</span>
-              <span>{tab.label}</span>
+              <span className="whitespace-nowrap">{tab.label}</span>
             </button>
           );
         })}
@@ -268,24 +291,28 @@ export function AnalyticsClient({
           {/* Main Evaluation Grid */}
           <div className="grid gap-6 lg:grid-cols-3">
             {/* JLPT Readiness Meter */}
-            <div className="flex flex-col justify-between rounded-3xl border border-slate-200/80 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-sumi-900 lg:col-span-2">
+            <div className="flex flex-col justify-between rounded-3xl border border-slate-200/80 bg-white p-5 sm:p-6 shadow-sm dark:border-slate-800 dark:bg-sumi-900 lg:col-span-2">
               <div>
                 <div className="flex items-center justify-between">
                   <div>
-                    <h2 className="text-lg font-black text-slate-900 dark:text-white">
-                      🎯 Chỉ Số Năng Lực Chuẩn Bị JLPT {user.learningLevel}
+                    <h2 className="text-base sm:text-lg font-black text-slate-900 dark:text-white">
+                      {t("analyticsReadinessTitle", { level: user.learningLevel }) ||
+                        `🎯 JLPT ${user.learningLevel} Readiness Competency Index`}
                     </h2>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">
-                      Tính toán tự động dựa trên: Hoàn thành bài học, độ chính xác bài tập, thẻ nhớ SRS và tính kỷ luật.
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                      {t("analyticsReadinessDesc") ||
+                        "Automatically calculated from: Lesson completion, quiz accuracy, SRS flashcards, and study discipline."}
                     </p>
                   </div>
-                  <span className="text-2xl">🇯🇵</span>
+                  <span className="text-2xl shrink-0 ml-2">🇯🇵</span>
                 </div>
 
                 {/* Big Progress Bar */}
                 <div className="mt-6">
                   <div className="flex items-baseline justify-between">
-                    <span className="text-xs font-bold text-slate-500 dark:text-slate-400">Mức độ sẵn sàng</span>
+                    <span className="text-xs font-bold text-slate-500 dark:text-slate-400">
+                      {t("analyticsReadinessLevel") || "Readiness level"}
+                    </span>
                     <span className="text-2xl font-black text-red-600 dark:text-red-400">{readinessScore}/100</span>
                   </div>
                   <div className="mt-2 h-4 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
@@ -294,11 +321,11 @@ export function AnalyticsClient({
                       style={{ width: `${Math.max(4, readinessScore)}%` }}
                     />
                   </div>
-                  <div className="mt-2 flex justify-between text-[11px] text-slate-400">
-                    <span>Khởi động (0-39)</span>
-                    <span>Tăng tốc (40-69)</span>
-                    <span>Tiệm cận (70-84)</span>
-                    <span>Sẵn sàng thi đỗ (85-100)</span>
+                  <div className="mt-2 flex justify-between text-[10px] sm:text-[11px] text-slate-400 flex-wrap gap-1">
+                    <span>{t("analyticsLvlWarmup") || "Warm-up (0-39)"}</span>
+                    <span>{t("analyticsLvlAccelerating") || "Accelerating (40-69)"}</span>
+                    <span>{t("analyticsLvlApproaching") || "Approaching (70-84)"}</span>
+                    <span>{t("analyticsLvlExamReady") || "Exam Ready (85-100)"}</span>
                   </div>
                 </div>
 
@@ -316,27 +343,35 @@ export function AnalyticsClient({
                 {/* Sub-components of readiness */}
                 <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
                   <div className="rounded-2xl border border-slate-100 bg-slate-50 p-3 text-center dark:border-slate-800 dark:bg-slate-800/40">
-                    <small className="block text-[11px] text-slate-500 dark:text-slate-400">Độ phủ lộ trình</small>
+                    <small className="block text-[11px] text-slate-500 dark:text-slate-400">
+                      {t("analyticsPathCoverage") || "Path Coverage"}
+                    </small>
                     <b className="mt-1 block text-base font-black text-slate-900 dark:text-white">
                       {pathSummary.percentComplete}%
                     </b>
                   </div>
                   <div className="rounded-2xl border border-slate-100 bg-slate-50 p-3 text-center dark:border-slate-800 dark:bg-slate-800/40">
-                    <small className="block text-[11px] text-slate-500 dark:text-slate-400">Trí nhớ SRS</small>
+                    <small className="block text-[11px] text-slate-500 dark:text-slate-400">
+                      {t("analyticsSrsMemory") || "SRS Memory"}
+                    </small>
                     <b className="mt-1 block text-base font-black text-slate-900 dark:text-white">
-                      {memoryRetention.retentionRate != null ? `${memoryRetention.retentionRate}%` : "Chưa đủ dữ liệu"}
+                      {memoryRetention.retentionRate != null ? `${memoryRetention.retentionRate}%` : (t("analyticsInsufficientData") || "Insufficient data")}
                     </b>
                   </div>
                   <div className="rounded-2xl border border-slate-100 bg-slate-50 p-3 text-center dark:border-slate-800 dark:bg-slate-800/40">
-                    <small className="block text-[11px] text-slate-500 dark:text-slate-400">Tốc độ học (Velocity)</small>
+                    <small className="block text-[11px] text-slate-500 dark:text-slate-400">
+                      {t("analyticsVelocity") || "Study Velocity"}
+                    </small>
                     <b className="mt-1 block text-base font-black text-slate-900 dark:text-white">
-                      {learningVelocity.dailyXpAverage} XP/ngày
+                      {learningVelocity.dailyXpAverage} {t("analyticsVelocityUnit") || "XP/day"}
                     </b>
                   </div>
                   <div className="rounded-2xl border border-slate-100 bg-slate-50 p-3 text-center dark:border-slate-800 dark:bg-slate-800/40">
-                    <small className="block text-[11px] text-slate-500 dark:text-slate-400">Thói quen đều đặn</small>
+                    <small className="block text-[11px] text-slate-500 dark:text-slate-400">
+                      {t("analyticsHabit") || "Study Habit"}
+                    </small>
                     <b className="mt-1 block text-base font-black text-slate-900 dark:text-white">
-                      {user.currentStreak} ngày liên tục
+                      {t("analyticsConsecutiveDays", { days: user.currentStreak }) || `${user.currentStreak} days streak`}
                     </b>
                   </div>
                 </div>
@@ -344,40 +379,43 @@ export function AnalyticsClient({
 
               <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-4 dark:border-slate-800">
                 <span className="text-xs text-slate-500 dark:text-slate-400">
-                  💡 Bạn muốn rút ngắn thời gian? Làm bài kiểm tra năng lực để được miễn học phần đã vững.
+                  {t("analyticsShortenTip") || "💡 Want to accelerate? Take a placement test to test out of mastered modules."}
                 </span>
                 <Link
                   href="/app/test"
                   className="inline-flex items-center gap-1.5 text-xs font-bold text-red-600 hover:text-red-700 dark:text-red-400"
                 >
-                  Thi vượt cấp / Miễn học phần →
+                  {t("analyticsSkipBtn") || "Placement Test / Skip Module →"}
                 </Link>
               </div>
             </div>
 
             {/* Shinkansen & Milestones Journey */}
-            <div className="flex flex-col justify-between rounded-3xl border border-slate-200/80 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-sumi-900">
+            <div className="flex flex-col justify-between rounded-3xl border border-slate-200/80 bg-white p-5 sm:p-6 shadow-sm dark:border-slate-800 dark:bg-sumi-900">
               <div>
                 <div className="flex items-center justify-between">
-                  <h2 className="text-lg font-black text-slate-900 dark:text-white">
-                    🚅 Hành Trình Shinkansen
+                  <h2 className="text-base sm:text-lg font-black text-slate-900 dark:text-white">
+                    {t("analyticsShinkansenTitle") || "🚅 Shinkansen Journey"}
                   </h2>
                   <span className="rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-bold text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300">
-                    Trạm {journeyProgress.unlockedStations}/{journeyProgress.totalStations}
+                    {t("analyticsStationUnit", { current: journeyProgress.unlockedStations, total: journeyProgress.totalStations }) ||
+                      `Station ${journeyProgress.unlockedStations}/${journeyProgress.totalStations}`}
                   </span>
                 </div>
                 <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                  Mỗi điểm XP và bài hoàn thành đưa bạn tiến xa hơn trên bản đồ Nhật Bản (Tokyo → Osaka).
+                  {t("analyticsShinkansenDesc") || "Each XP and completed lesson moves you further across the map of Japan (Tokyo → Osaka)."}
                 </p>
 
                 <div className="mt-5 rounded-2xl border border-emerald-100 bg-emerald-50/50 p-4 dark:border-emerald-900/30 dark:bg-emerald-950/20">
-                  <span className="text-[11px] font-semibold text-emerald-800 dark:text-emerald-300">Trạm dừng hiện tại</span>
-                  <p className="mt-1 text-xl font-black text-slate-900 dark:text-white">
+                  <span className="text-[11px] font-semibold text-emerald-800 dark:text-emerald-300">
+                    {t("analyticsCurrentStation") || "Current Station"}
+                  </span>
+                  <p className="mt-1 text-lg sm:text-xl font-black text-slate-900 dark:text-white">
                     🗾 {journeyProgress.currentStationName}
                   </p>
                   <div className="mt-3">
                     <div className="flex justify-between text-xs font-semibold text-slate-600 dark:text-slate-300">
-                      <span>Tiến độ hành trình</span>
+                      <span>{t("analyticsJourneyProgress") || "Journey Progress"}</span>
                       <span>{journeyProgress.progressPercent}%</span>
                     </div>
                     <div className="mt-1.5 h-2 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700">
@@ -392,8 +430,10 @@ export function AnalyticsClient({
                 <div className="mt-4 rounded-2xl border border-slate-100 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-800/40">
                   <div className="flex items-center justify-between">
                     <div>
-                      <span className="text-xs font-bold text-slate-500 dark:text-slate-400">Huy hiệu thành tựu</span>
-                      <p className="mt-0.5 text-lg font-black text-slate-900 dark:text-white">
+                      <span className="text-xs font-bold text-slate-500 dark:text-slate-400">
+                        {t("analyticsAchievements") || "Achievements"}
+                      </span>
+                      <p className="mt-0.5 text-base sm:text-lg font-black text-slate-900 dark:text-white">
                         🏆 {achievements.unlocked} / {achievements.total}
                       </p>
                     </div>
@@ -401,7 +441,7 @@ export function AnalyticsClient({
                       href="/app/achievements"
                       className="rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 shadow-sm hover:bg-slate-100 dark:border-slate-700 dark:bg-sumi-800 dark:text-slate-200"
                     >
-                      Kho huy hiệu →
+                      {t("analyticsBadgeVault") || "Badge Vault →"}
                     </Link>
                   </div>
                 </div>
@@ -410,9 +450,9 @@ export function AnalyticsClient({
               <div className="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800">
                 <Link
                   href="/app/journey"
-                  className="flex w-full items-center justify-center gap-2 rounded-2xl bg-emerald-600 py-3 text-xs font-extrabold text-white transition hover:bg-emerald-700"
+                  className="flex w-full items-center justify-center gap-2 rounded-2xl bg-emerald-600 py-3 text-xs font-extrabold text-white transition hover:bg-emerald-700 active:scale-95 min-h-11"
                 >
-                  <span>Mở Bản Đồ Hành Trình 3D</span>
+                  <span>{t("analyticsOpen3dMap") || "Open 3D Journey Map"}</span>
                   <span>→</span>
                 </Link>
               </div>
@@ -420,38 +460,41 @@ export function AnalyticsClient({
           </div>
 
           {/* Quick Skill Glance in Overview */}
-          <section className="rounded-3xl border border-slate-200/80 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-sumi-900">
+          <section className="rounded-3xl border border-slate-200/80 bg-white p-5 sm:p-6 shadow-sm dark:border-slate-800 dark:bg-sumi-900">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div>
                 <h3 className="text-base font-black text-slate-900 dark:text-white">
-                  ⚡ Năng Lực 5 Kỹ Năng Cốt Lõi (Tổng Hợp)
+                  {t("analyticsCore5Skills") || "⚡ 5 Core Skills Competency (Summary)"}
                 </h3>
                 <p className="text-xs text-slate-500 dark:text-slate-400">
-                  Theo dõi sự cân bằng giữa Từ vựng, Ngữ pháp, Đọc hiểu, Nghe hiểu và Thực chiến.
+                  {t("analyticsCore5Desc") || "Track balance across Vocabulary, Grammar, Reading, Listening, and Practical application."}
                 </p>
               </div>
               <button
                 onClick={() => setActiveTab("SKILLS")}
                 className="text-xs font-extrabold text-red-600 hover:text-red-700 dark:text-red-400"
               >
-                Xem chi tiết ma trận kỹ năng →
+                {t("analyticsViewSkillsMatrix") || "View skills matrix →"}
               </button>
             </div>
 
-            <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+            <div className="mt-5 grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-5">
               {skills.map((s) => (
                 <div
                   key={s.key}
-                  className="flex flex-col justify-between rounded-2xl border border-slate-200/70 bg-slate-50/50 p-4 transition hover:border-red-200 dark:border-slate-800 dark:bg-slate-800/30"
+                  className="flex flex-col justify-between rounded-2xl border border-slate-200/70 bg-slate-50/50 p-3.5 sm:p-4 transition hover:border-red-200 dark:border-slate-800 dark:bg-slate-800/30"
                 >
                   <div>
                     <div className="flex items-center justify-between">
                       <span className="jp-text text-lg font-black text-red-600 dark:text-red-400">{s.glyph}</span>
                       <span className="text-xs font-black text-slate-900 dark:text-white">{s.score}%</span>
                     </div>
-                    <h4 className="mt-2 text-xs font-black text-slate-900 dark:text-white">{s.label}</h4>
+                    <h4 className="mt-2 text-xs font-black text-slate-900 dark:text-white truncate">
+                      {getLocalizedSkill(s.key)}
+                    </h4>
                     <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
-                      {s.learnedCount} / {s.totalTarget} đã học
+                      {t("analyticsLearnedCount", { learned: s.learnedCount, total: s.totalTarget }) ||
+                        `${s.learnedCount} / ${s.totalTarget} learned`}
                     </p>
                   </div>
                   <div className="mt-3">
@@ -472,15 +515,15 @@ export function AnalyticsClient({
       {/* ================= 4. TAB CONTENT: 5 SKILLS MATRIX ================= */}
       {activeTab === "SKILLS" && (
         <div className="space-y-6">
-          <div className="rounded-3xl border border-slate-200/80 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-sumi-900">
-            <h2 className="text-lg font-black text-slate-900 dark:text-white">
-              🥋 Ma Trận Năng Lực 5 Kỹ Năng (Goi · Bunpou · Dokkai · Choukai · Thực chiến)
+          <div className="rounded-3xl border border-slate-200/80 bg-white p-5 sm:p-6 shadow-sm dark:border-slate-800 dark:bg-sumi-900">
+            <h2 className="text-base sm:text-lg font-black text-slate-900 dark:text-white">
+              {t("analyticsMatrixTitle") || "🥋 5 Skills Competency Matrix (Vocab · Grammar · Reading · Listening · Practical)"}
             </h2>
             <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-              Đánh giá chi tiết điểm mạnh và điểm cần cải thiện của bạn kèm đề xuất học tập từ AI Sensei.
+              {t("analyticsMatrixDesc") || "Detailed breakdown of your strengths and improvement areas with AI Sensei recommendations."}
             </p>
 
-            <div className="mt-6 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {skills.map((s) => {
                 const badgeColor =
                   s.levelStatus === "MASTERED"
@@ -491,32 +534,27 @@ export function AnalyticsClient({
                     ? "bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300"
                     : "bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300";
 
-                const badgeText =
-                  s.levelStatus === "MASTERED"
-                    ? "Thuần thục (Mastered)"
-                    : s.levelStatus === "GOOD"
-                    ? "Tốt (Good)"
-                    : s.levelStatus === "DEVELOPING"
-                    ? "Đang phát triển"
-                    : "Cần cải thiện gấp";
+                const badgeText = getBadgeText(s.levelStatus);
 
                 return (
                   <div
                     key={s.key}
-                    className="flex flex-col justify-between rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm transition hover:shadow-md dark:border-slate-800 dark:bg-sumi-800/70"
+                    className="flex flex-col justify-between rounded-2xl border border-slate-200/80 bg-white p-4 sm:p-5 shadow-sm transition hover:shadow-md dark:border-slate-800 dark:bg-sumi-800/70"
                   >
                     <div>
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-red-50 text-base font-black text-red-600 dark:bg-red-950/40 dark:text-red-400">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-red-50 text-base font-black text-red-600 dark:bg-red-950/40 dark:text-red-400 shrink-0">
                             {s.glyph}
                           </span>
-                          <div>
-                            <h3 className="text-sm font-black text-slate-900 dark:text-white">{s.label}</h3>
-                            <small className="text-[10px] text-slate-400">{s.jpLabel}</small>
+                          <div className="min-w-0">
+                            <h3 className="text-sm font-black text-slate-900 dark:text-white truncate">
+                              {getLocalizedSkill(s.key)}
+                            </h3>
+                            <small className="text-[10px] text-slate-400 truncate block">{s.jpLabel}</small>
                           </div>
                         </div>
-                        <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold ${badgeColor}`}>
+                        <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold shrink-0 ${badgeColor}`}>
                           {badgeText}
                         </span>
                       </div>
@@ -524,7 +562,9 @@ export function AnalyticsClient({
                       {/* Score row */}
                       <div className="mt-4">
                         <div className="flex items-baseline justify-between text-xs font-bold">
-                          <span className="text-slate-500 dark:text-slate-400">Điểm năng lực:</span>
+                          <span className="text-slate-500 dark:text-slate-400">
+                            {t("analyticsCompetencyScore") || "Competency Score:"}
+                          </span>
                           <span className="text-lg font-black text-red-600 dark:text-red-400">{s.score}%</span>
                         </div>
                         <div className="mt-1 h-2 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-700">
@@ -534,28 +574,34 @@ export function AnalyticsClient({
                           />
                         </div>
                         <div className="mt-2 flex justify-between text-[11px] text-slate-500 dark:text-slate-400">
-                          <span>Đã học: {s.learnedCount}/{s.totalTarget}</span>
-                          <span>Chính xác: {s.accuracyRate != null ? `${s.accuracyRate}%` : "—"}</span>
+                          <span>
+                            {t("analyticsLearnedRatio", { learned: s.learnedCount, total: s.totalTarget }) ||
+                              `Learned: ${s.learnedCount}/${s.totalTarget}`}
+                          </span>
+                          <span>
+                            {t("analyticsAccuracyLabel", { accuracy: s.accuracyRate != null ? `${s.accuracyRate}%` : "—" }) ||
+                              `Accuracy: ${s.accuracyRate != null ? `${s.accuracyRate}%` : "—"}`}
+                          </span>
                         </div>
                       </div>
 
                       {/* AI Assessment Note */}
                       <div className="mt-4 rounded-xl bg-slate-50 p-3 text-xs leading-relaxed text-slate-700 dark:bg-slate-900/60 dark:text-slate-300">
                         <b className="block text-[11px] font-extrabold text-slate-900 dark:text-white">
-                          💡 Nhận định Sensei:
+                          {t("analyticsSenseiVerdict") || "💡 Sensei's Assessment:"}
                         </b>
                         <p className="mt-0.5">{s.assessmentNote}</p>
                       </div>
 
                       <div className="mt-2 text-xs leading-relaxed text-slate-500 dark:text-slate-400">
-                        <b>Khuyến nghị:</b> {s.recommendation}
+                        <b>{t("analyticsRecommendation") || "Recommendation:"}</b> {s.recommendation}
                       </div>
                     </div>
 
                     <div className="mt-5 pt-3 border-t border-slate-100 dark:border-slate-800">
                       <Link
                         href={s.actionHref}
-                        className="flex w-full items-center justify-center gap-1.5 rounded-xl bg-slate-900 py-2.5 text-xs font-bold text-white transition hover:bg-red-600 dark:bg-slate-700 dark:hover:bg-red-600"
+                        className="flex w-full items-center justify-center gap-1.5 rounded-xl bg-slate-900 py-2.5 text-xs font-bold text-white transition hover:bg-red-600 dark:bg-slate-700 dark:hover:bg-red-600 min-h-10"
                       >
                         <span>{s.actionLabel}</span>
                         <span>→</span>
@@ -572,21 +618,22 @@ export function AnalyticsClient({
       {/* ================= 5. TAB CONTENT: 8 LIFECYCLE STAGES ================= */}
       {activeTab === "LIFECYCLE" && (
         <div className="space-y-6">
-          <div className="rounded-3xl border border-slate-200/80 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-sumi-900">
+          <div className="rounded-3xl border border-slate-200/80 bg-white p-5 sm:p-6 shadow-sm dark:border-slate-800 dark:bg-sumi-900">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div>
-                <h2 className="text-lg font-black text-slate-900 dark:text-white">
-                  🔄 Chu Trình Học Khoa Học 8 Bước (N5 → N4 → N3)
+                <h2 className="text-base sm:text-lg font-black text-slate-900 dark:text-white">
+                  {t("analyticsLifecycleTitle") || "🔄 8-Stage Scientific Learning Cycle (N5 → N4 → N3)"}
                 </h2>
                 <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                  Mô hình 8 bước được kiểm chứng giúp người học không bị ngắt quãng, nhớ lâu và sẵn sàng thi JLPT.
+                  {t("analyticsLifecycleDesc") ||
+                    "A proven 8-step cycle that helps learners avoid interruptions, retain knowledge longer, and succeed in JLPT."}
                 </p>
               </div>
               <Link
                 href="/app/test"
                 className="rounded-xl border border-red-200 bg-rose-50 px-3.5 py-1.5 text-xs font-bold text-red-600 transition hover:bg-rose-100 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-300"
               >
-                ⚡ Thi vượt cấp / Miễn học phần →
+                {t("analyticsSkipBtn") || "⚡ Placement Test / Skip Module →"}
               </Link>
             </div>
 
@@ -643,7 +690,11 @@ export function AnalyticsClient({
                             : "text-slate-400"
                         }
                       >
-                        {isActive ? "Đang thực hiện" : isCompleted ? "Đã qua" : "Sắp tới"}
+                        {isActive
+                          ? (t("analyticsStageActive") || "In Progress")
+                          : isCompleted
+                          ? (t("analyticsStageCompleted") || "Completed")
+                          : (t("analyticsStagePending") || "Upcoming")}
                       </span>
                       <span>→</span>
                     </div>
@@ -658,64 +709,81 @@ export function AnalyticsClient({
       {/* ================= 6. TAB CONTENT: MEMORY RETENTION ================= */}
       {activeTab === "MEMORY" && (
         <div className="space-y-6">
-          <div className="rounded-3xl border border-slate-200/80 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-sumi-900">
+          <div className="rounded-3xl border border-slate-200/80 bg-white p-5 sm:p-6 shadow-sm dark:border-slate-800 dark:bg-sumi-900">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div>
-                <h2 className="text-lg font-black text-slate-900 dark:text-white">
-                  🧠 Sức Khỏe Trí Nhớ & Thuật Toán Lặp Lại Ngắt Quãng SRS SM-2
+                <h2 className="text-base sm:text-lg font-black text-slate-900 dark:text-white">
+                  {t("analyticsMemoryTitle") || "🧠 Memory Health & SRS SM-2 Spaced Repetition"}
                 </h2>
                 <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                  Dựa trên đường cong quên Ebbinghaus: Ôn tập đúng điểm rơi giúp kiến thức chuyển sang trí nhớ dài hạn.
+                  {t("analyticsMemoryDesc") ||
+                    "Based on the Ebbinghaus Forgetting Curve: Timely review transfers knowledge into long-term memory."}
                 </p>
               </div>
               <Link
                 href="/app/review"
-                className="rounded-2xl bg-red-600 px-4 py-2 text-xs font-bold text-white shadow-md transition hover:bg-red-700"
+                className="rounded-2xl bg-red-600 px-4 py-2 text-xs font-bold text-white shadow-md transition hover:bg-red-700 active:scale-95"
               >
-                Vào phòng ôn tập SRS ngay →
+                {t("analyticsEnterReview") || "Enter SRS Review Room Now →"}
               </Link>
             </div>
 
-            <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              <div className="rounded-2xl border border-emerald-200/80 bg-emerald-50/50 p-4 dark:border-emerald-900/40 dark:bg-emerald-950/20">
-                <span className="text-xs font-bold text-emerald-800 dark:text-emerald-300">Đã nhớ vững (Mastered)</span>
-                <p className="mt-1 text-2xl font-black text-emerald-700 dark:text-emerald-300">
-                  {memoryRetention.masteredCount} thẻ
+            <div className="mt-6 grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-4">
+              <div className="rounded-2xl border border-emerald-200/80 bg-emerald-50/50 p-3.5 sm:p-4 dark:border-emerald-900/40 dark:bg-emerald-950/20">
+                <span className="text-xs font-bold text-emerald-800 dark:text-emerald-300">
+                  {t("analyticsSrsMastered") || "Mastered"}
+                </span>
+                <p className="mt-1 text-xl sm:text-2xl font-black text-emerald-700 dark:text-emerald-300">
+                  {t("analyticsCardsUnit", { count: memoryRetention.masteredCount }) || `${memoryRetention.masteredCount} cards`}
                 </p>
-                <small className="text-[11px] text-slate-500 dark:text-slate-400">Khoảng cách ôn &gt; 21 ngày</small>
+                <small className="text-[11px] text-slate-500 dark:text-slate-400">
+                  {t("analyticsIntervalGt21") || "Review interval > 21 days"}
+                </small>
               </div>
 
-              <div className="rounded-2xl border border-blue-200/80 bg-blue-50/50 p-4 dark:border-blue-900/40 dark:bg-blue-950/20">
-                <span className="text-xs font-bold text-blue-800 dark:text-blue-300">Đang củng cố (Reviewing)</span>
-                <p className="mt-1 text-2xl font-black text-blue-700 dark:text-blue-300">
-                  {memoryRetention.reviewingCount} thẻ
+              <div className="rounded-2xl border border-blue-200/80 bg-blue-50/50 p-3.5 sm:p-4 dark:border-blue-900/40 dark:bg-blue-950/20">
+                <span className="text-xs font-bold text-blue-800 dark:text-blue-300">
+                  {t("analyticsSrsReviewing") || "Reviewing"}
+                </span>
+                <p className="mt-1 text-xl sm:text-2xl font-black text-blue-700 dark:text-blue-300">
+                  {t("analyticsCardsUnit", { count: memoryRetention.reviewingCount }) || `${memoryRetention.reviewingCount} cards`}
                 </p>
-                <small className="text-[11px] text-slate-500 dark:text-slate-400">Khoảng cách 3 - 21 ngày</small>
+                <small className="text-[11px] text-slate-500 dark:text-slate-400">
+                  {t("analyticsInterval3to21") || "Review interval 3 - 21 days"}
+                </small>
               </div>
 
-              <div className="rounded-2xl border border-amber-200/80 bg-amber-50/50 p-4 dark:border-amber-900/40 dark:bg-amber-950/20">
-                <span className="text-xs font-bold text-amber-800 dark:text-amber-300">Mới học / Cần củng cố</span>
-                <p className="mt-1 text-2xl font-black text-amber-700 dark:text-amber-300">
-                  {memoryRetention.learningCount} thẻ
+              <div className="rounded-2xl border border-amber-200/80 bg-amber-50/50 p-3.5 sm:p-4 dark:border-amber-900/40 dark:bg-amber-950/20">
+                <span className="text-xs font-bold text-amber-800 dark:text-amber-300">
+                  {t("analyticsSrsLearning") || "Learning / Need Work"}
+                </span>
+                <p className="mt-1 text-xl sm:text-2xl font-black text-amber-700 dark:text-amber-300">
+                  {t("analyticsCardsUnit", { count: memoryRetention.learningCount }) || `${memoryRetention.learningCount} cards`}
                 </p>
-                <small className="text-[11px] text-slate-500 dark:text-slate-400">Lặp lại 0 - 1 lần</small>
+                <small className="text-[11px] text-slate-500 dark:text-slate-400">
+                  {t("analyticsInterval0to1") || "Repeated 0 - 1 times"}
+                </small>
               </div>
 
-              <div className="rounded-2xl border border-rose-200/80 bg-rose-50/50 p-4 dark:border-rose-900/40 dark:bg-rose-950/20">
-                <span className="text-xs font-bold text-rose-800 dark:text-rose-300">Đến hạn ôn (Due Today)</span>
-                <p className="mt-1 text-2xl font-black text-rose-700 dark:text-rose-300">
-                  {memoryRetention.dueCount} thẻ
+              <div className="rounded-2xl border border-rose-200/80 bg-rose-50/50 p-3.5 sm:p-4 dark:border-rose-900/40 dark:bg-rose-950/20">
+                <span className="text-xs font-bold text-rose-800 dark:text-rose-300">
+                  {t("analyticsSrsDue") || "Due Today"}
+                </span>
+                <p className="mt-1 text-xl sm:text-2xl font-black text-rose-700 dark:text-rose-300">
+                  {t("analyticsCardsUnit", { count: memoryRetention.dueCount }) || `${memoryRetention.dueCount} cards`}
                 </p>
-                <small className="text-[11px] text-slate-500 dark:text-slate-400">Cần ôn trước khi quên</small>
+                <small className="text-[11px] text-slate-500 dark:text-slate-400">
+                  {t("analyticsReviewBeforeForget") || "Review before forgetting"}
+                </small>
               </div>
             </div>
 
             {/* Retention Rate Box */}
-            <div className="mt-6 rounded-2xl border border-slate-200/80 bg-slate-50 p-5 dark:border-slate-800 dark:bg-slate-800/40">
+            <div className="mt-6 rounded-2xl border border-slate-200/80 bg-slate-50 p-4 sm:p-5 dark:border-slate-800 dark:bg-slate-800/40">
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <h3 className="text-sm font-black text-slate-900 dark:text-white">
-                    Tỷ Lệ Giữ Kiến Thức (Memory Retention Rate):{" "}
+                    {t("analyticsRetentionRate") || "Memory Retention Rate:"}{" "}
                     <span className="text-red-600 dark:text-red-400">
                       {memoryRetention.retentionRate != null ? `${memoryRetention.retentionRate}%` : "100%"}
                     </span>
@@ -726,9 +794,9 @@ export function AnalyticsClient({
                 </div>
                 <Link
                   href="/app/vocabulary"
-                  className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-xs font-bold text-slate-800 shadow-sm hover:bg-slate-50 dark:border-slate-700 dark:bg-sumi-800 dark:text-slate-200"
+                  className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-xs font-bold text-slate-800 shadow-sm hover:bg-slate-50 dark:border-slate-700 dark:bg-sumi-800 dark:text-slate-200 self-start sm:self-auto min-h-10 flex items-center justify-center"
                 >
-                  Khám phá thêm từ vựng mới →
+                  {t("analyticsExploreMoreVocab") || "Explore New Vocabulary →"}
                 </Link>
               </div>
             </div>
@@ -739,17 +807,18 @@ export function AnalyticsClient({
       {/* ================= 7. TAB CONTENT: REMEDIATION ================= */}
       {activeTab === "REMEDIATION" && (
         <div className="space-y-6">
-          <div className="rounded-3xl border border-slate-200/80 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-sumi-900">
+          <div className="rounded-3xl border border-slate-200/80 bg-white p-5 sm:p-6 shadow-sm dark:border-slate-800 dark:bg-sumi-900">
             <div className="flex items-center gap-3">
-              <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-amber-500 text-xl text-white shadow-sm">
+              <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-amber-500 text-xl text-white shadow-sm shrink-0">
                 🩺
               </span>
               <div>
-                <h2 className="text-lg font-black text-slate-900 dark:text-white">
-                  Trạm Ôn Tập Củng Cố & Khắc Phục Lỗ Hổng (Remediation)
+                <h2 className="text-base sm:text-lg font-black text-slate-900 dark:text-white">
+                  {t("analyticsRemediationTitle") || "Remediation & Gap Diagnosis Station"}
                 </h2>
                 <p className="text-xs text-slate-500 dark:text-slate-400">
-                  Hệ thống tự động phát hiện bài học có điểm &lt; 75% hoặc thẻ SRS bị trả lời sai nhiều để đề xuất ôn tập kịp thời.
+                  {t("analyticsRemediationDesc") ||
+                    "Automatically detects lessons scored < 75% or frequently forgotten SRS cards for timely review."}
                 </p>
               </div>
             </div>
@@ -758,26 +827,27 @@ export function AnalyticsClient({
               <div className="mt-8 rounded-2xl border border-emerald-200 bg-emerald-50/70 p-6 text-center dark:border-emerald-900/40 dark:bg-emerald-950/20">
                 <span className="text-3xl">🎉</span>
                 <h3 className="mt-2 text-base font-black text-emerald-900 dark:text-emerald-200">
-                  Không có lỗ hổng kiến thức nghiêm trọng!
+                  {t("analyticsNoGapsTitle") || "No critical knowledge gaps!"}
                 </h3>
-                <p className="mt-1 text-xs text-emerald-700 dark:text-emerald-300">
-                  Mọi bài học đã làm đều đạt điểm cao (≥ 75%) và không có thẻ SRS nào bị quên trầm trọng. Tiếp tục giữ vững phong độ nhé!
+                <p className="mt-1 text-xs text-emerald-700 dark:text-emerald-300 max-w-md mx-auto">
+                  {t("analyticsNoGapsDesc") ||
+                    "All completed lessons scored high (≥ 75%) and no SRS cards are severely forgotten. Keep up the great work!"}
                 </p>
                 <div className="mt-4">
                   <Link
                     href="/app/practice"
-                    className="inline-flex rounded-xl bg-emerald-700 px-4 py-2 text-xs font-bold text-white transition hover:bg-emerald-800"
+                    className="inline-flex rounded-xl bg-emerald-700 px-4 py-2 text-xs font-bold text-white transition hover:bg-emerald-800 min-h-10 items-center justify-center"
                   >
-                    Học tiếp bài mới →
+                    {t("analyticsContinueNewLesson") || "Continue to Next Lesson →"}
                   </Link>
                 </div>
               </div>
             ) : (
-              <div className="mt-6 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {remediationItems.map((item) => (
                   <div
                     key={item.id}
-                    className="flex flex-col justify-between rounded-2xl border border-amber-200/80 bg-white p-5 shadow-sm dark:border-amber-900/50 dark:bg-sumi-800/70"
+                    className="flex flex-col justify-between rounded-2xl border border-amber-200/80 bg-white p-4 sm:p-5 shadow-sm dark:border-amber-900/50 dark:bg-sumi-800/70"
                   >
                     <div>
                       <span
@@ -787,7 +857,9 @@ export function AnalyticsClient({
                             : "bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300"
                         }`}
                       >
-                        {item.urgency === "HIGH" ? "Khẩn cấp · Cần ôn ngay" : "Khuyến nghị ôn tập"}
+                        {item.urgency === "HIGH"
+                          ? (t("analyticsUrgent") || "Urgent · Review Now")
+                          : (t("analyticsRecommended") || "Recommended Review")}
                       </span>
                       <h3 className="mt-2.5 text-sm font-black text-slate-900 dark:text-white">{item.title}</h3>
                       <p className="mt-1.5 text-xs leading-relaxed text-slate-600 dark:text-slate-300">{item.reason}</p>
@@ -795,7 +867,7 @@ export function AnalyticsClient({
                     <div className="mt-5 pt-3 border-t border-slate-100 dark:border-slate-800">
                       <Link
                         href={item.href}
-                        className="inline-flex w-full items-center justify-center gap-1.5 rounded-xl bg-amber-600 py-2.5 text-xs font-bold text-white transition hover:bg-amber-700"
+                        className="inline-flex w-full items-center justify-center gap-1.5 rounded-xl bg-amber-600 py-2.5 text-xs font-bold text-white transition hover:bg-amber-700 min-h-10"
                       >
                         {item.actionLabel} →
                       </Link>
@@ -810,4 +882,3 @@ export function AnalyticsClient({
     </div>
   );
 }
-

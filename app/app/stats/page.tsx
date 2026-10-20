@@ -242,6 +242,14 @@ export default async function StatsPage() {
       title = "Mở khóa địa danh trên Bản đồ Nhật Bản";
     }
 
+    let metaParam = "";
+    if (type === "LESSON") {
+      const matchLesson = recentCompletedLessons.find((l) => l.lessonId === tx.referenceId);
+      if (matchLesson) metaParam = matchLesson.lesson.title;
+    } else if (type === "KANA") {
+      metaParam = tx.referenceId ? tx.referenceId.split(":")[1] || tx.referenceId : "";
+    }
+
     recentActivities.push({
       id: tx.id,
       type,
@@ -249,6 +257,8 @@ export default async function StatsPage() {
       xpAwarded: tx.amount,
       dateStr: tx.createdAt.toISOString().slice(0, 10),
       relativeTime: formatRelativeTime(tx.createdAt, now),
+      createdAtIso: tx.createdAt.toISOString(),
+      metaParam,
     });
   }
 
@@ -263,6 +273,8 @@ export default async function StatsPage() {
         xpAwarded: ach.achievement.xpReward,
         dateStr: ach.unlockedAt.toISOString().slice(0, 10),
         relativeTime: formatRelativeTime(ach.unlockedAt, now),
+        createdAtIso: ach.unlockedAt.toISOString(),
+        metaParam: ach.achievement.title,
       });
     }
   }
