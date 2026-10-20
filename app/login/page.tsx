@@ -36,9 +36,17 @@ function AuthErrorNotice() {
 
   const code = params.get("error");
   if (!mounted || !code) return null;
+
+  let message = t("loginErrInvalid") || "Email hoặc mật khẩu không đúng. Vui lòng thử lại.";
+  if (code === "OAuthSignin") {
+    message = "Đăng nhập Google thất bại (Chưa thiết lập GOOGLE_CLIENT_ID / NEXTAUTH_URL hoặc bị từ chối).";
+  } else if (code === "OAuthCallback") {
+    message = "Lỗi phản hồi từ Google OAuth. Vui lòng thử lại.";
+  }
+
   return (
     <div role="alert" className="nq-notice nq-notice-err" style={{ marginBottom: 14 }}>
-      {t("loginErrInvalid") || "Đăng nhập không thành công. Vui lòng thử lại."} <small>({code})</small>
+      {message} <small>({code})</small>
     </div>
   );
 }

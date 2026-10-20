@@ -8,12 +8,8 @@ import { getAuthSecret } from "@/lib/auth-secret";
 import { prisma } from "@/lib/prisma";
 import { rateLimit } from "@/lib/rateLimit";
 
-// Chỉ bật AUTH_TRUST_HOST khi chạy trên nền tảng serverless uy tín (Vercel/Netlify) hoặc môi trường dev
-if (
-  !process.env.AUTH_TRUST_HOST &&
-  (process.env.NODE_ENV !== "production" ||
-    Boolean(process.env.VERCEL || process.env.NETLIFY || process.env.DEPLOY_PRIME_URL))
-) {
+// Bật AUTH_TRUST_HOST trên Cloudflare Workers / Vercel / Netlify để NextAuth tự động nhận diện domain
+if (!process.env.AUTH_TRUST_HOST) {
   process.env.AUTH_TRUST_HOST = "true";
 }
 
