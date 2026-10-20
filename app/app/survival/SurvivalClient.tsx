@@ -1790,7 +1790,7 @@ export function SurvivalClient({
             <span className="text-5xl drop-shadow-lg" aria-hidden>⭐</span>
             <div className="min-w-0 flex-1">
               <p className="text-xs font-semibold text-white/80">{t("survivalHeroXpLabel") || "XP Survival"}</p>
-              <p className="text-3xl font-black leading-none tabular-nums">{initialEarnedXp.toLocaleString()}</p>
+              <p className="text-3xl font-black leading-none tabular-nums">{initialEarnedXp.toLocaleString("en-US")}</p>
             </div>
             <span className="rounded-full bg-white/20 px-3 py-1 text-xs font-black">
               {doneCount}/{scenarios.length}
@@ -1813,8 +1813,8 @@ export function SurvivalClient({
               ? t("survivalHeroNoChallenges") || "Chưa có thử thách nào được mở."
               : remainingXp === 0
               ? t("survivalHeroAllDone") || "Bạn đã chinh phục toàn bộ thử thách!"
-              : t("survivalHeroRemainingXp", { xp: remainingXp.toLocaleString() }) ||
-                `Còn ${remainingXp.toLocaleString()} XP để chinh phục tất cả`}
+              : t("survivalHeroRemainingXp", { xp: remainingXp.toLocaleString("en-US") }) ||
+                `Còn ${remainingXp.toLocaleString("en-US")} XP để chinh phục tất cả`}
           </p>
         </div>
       </div>

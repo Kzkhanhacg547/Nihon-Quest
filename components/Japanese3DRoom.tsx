@@ -3,6 +3,7 @@
 import React, { useState, useCallback, useEffect, useRef } from "react";
 import { Badge, Button, Card } from "@/components/ui";
 import { useSoundAndTheme } from "@/components/SoundAndThemeContext";
+import { useNativeLanguage } from "@/components/LanguageContext";
 import Image from "next/image";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -240,6 +241,7 @@ export function Japanese3DRoom({
   onProgressUpdate,
 }: Japanese3DRoomProps) {
   const { playClick, playFanfare, showToast } = useSoundAndTheme();
+  const { t } = useNativeLanguage();
 
   const [activeSection, setActiveSection] = useState<GallerySection>("GOURMET");
   const [detailItem, setDetailItem] = useState<DetailModalItem | null>(null);
@@ -439,25 +441,23 @@ export function Japanese3DRoom({
           </div>
           <div>
             <Badge variant="amber" className="mb-2">
-              Khu Vực Triển Lãm Đang Khóa
+              {t("journeyLockedTitle") || "Khu Vực Triển Lãm Đang Khóa"}
             </Badge>
             <h2 className="text-2xl font-black font-jp text-slate-900 dark:text-white">
               {data.nameJa} • {data.name}
             </h2>
             <p className="text-sm text-slate-600 dark:text-slate-400 mt-2 leading-relaxed">
-              Bạn cần tích lũy tối thiểu{" "}
-              <strong className="text-amber-600 dark:text-amber-400 font-bold">{requirementXp} XP</strong> từ các bài học
-              để được cấp vé thông hành vào tham quan không gian văn hóa thành phố này.
+              {(t("journeyLockedNotice") || "Bạn cần tích lũy tối thiểu {xp} XP từ các bài học để được cấp vé thông hành vào tham quan không gian văn hóa thành phố này.").replace("{xp}", `${requirementXp}`)}
             </p>
           </div>
 
           <div className="p-4 rounded-2xl bg-slate-50 dark:bg-sumi-950 border border-slate-200 dark:border-slate-800 text-xs text-slate-500 space-y-1">
-            <p>💡 Hoàn thành các bài tập Kana, Kanji và bài học ngữ cảnh để tích lũy XP.</p>
+            <p>{t("journeyLockedTip") || "💡 Hoàn thành các bài tập Kana, Kanji và bài học ngữ cảnh để tích lũy XP."}</p>
           </div>
 
           <div className="flex gap-3 pt-2">
             <Button variant="secondary" className="flex-1" onClick={onClose}>
-              Quay lại bản đồ
+              {t("journeyBackToMap") || "Quay lại bản đồ"}
             </Button>
             <Button
               variant="sakura"
@@ -467,7 +467,7 @@ export function Japanese3DRoom({
                 window.location.href = "/app/learn";
               }}
             >
-              Học bài ngay 🚀
+              {t("journeyLearnNow") || "Học bài ngay 🚀"}
             </Button>
           </div>
         </div>
@@ -476,12 +476,12 @@ export function Japanese3DRoom({
   }
 
   const SECTIONS: Array<{ id: GallerySection; label: string; icon: string; count: number }> = [
-    { id: "GOURMET", label: "Ẩm Thực Đặc Sản", icon: "🍱", count: data.delicacies.length },
-    { id: "HISTORY", label: "Lịch Sử & Niên Đại", icon: "📜", count: data.history?.milestones.length || 0 },
-    { id: "LANDMARKS", label: "Danh Thắng", icon: "⛩️", count: data.scenicPhotos.length },
-    { id: "ARTIFACTS", label: "Bảo Vật & Di Sản", icon: "🏺", count: data.culturalArtifacts.length },
-    { id: "ETIQUETTE", label: "Nghi Thức & Ứng Xử", icon: "🙏", count: data.culturalEtiquette?.length || 0 },
-    { id: "LANGUAGE", label: "Tiếng Nhật Bản Địa", icon: "🗣️", count: data.language.length },
+    { id: "GOURMET", label: t("journeyTabGourmet") || "Ẩm Thực Đặc Sản", icon: "🍱", count: data.delicacies.length },
+    { id: "HISTORY", label: t("journeyTabHistory") || "Lịch Sử & Niên Đại", icon: "📜", count: data.history?.milestones.length || 0 },
+    { id: "LANDMARKS", label: t("journeyTabLandmarks") || "Danh Thắng", icon: "⛩️", count: data.scenicPhotos.length },
+    { id: "ARTIFACTS", label: t("journeyTabArtifacts") || "Bảo Vật & Di Sản", icon: "🏺", count: data.culturalArtifacts.length },
+    { id: "ETIQUETTE", label: t("journeyTabEtiquette") || "Nghi Thức & Ứng Xử", icon: "🙏", count: data.culturalEtiquette?.length || 0 },
+    { id: "LANGUAGE", label: t("journeyTabLanguage") || "Tiếng Nhật Bản Địa", icon: "🗣️", count: data.language.length },
   ];
 
   return (
@@ -514,7 +514,7 @@ export function Japanese3DRoom({
                     {exploredPercent}%
                   </span>
                   <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-0.5" title="Tiến trình được lưu tự động theo thời gian thực">
-                    💾 Tự lưu
+                    {t("journeyAutoSaved") || "💾 Tự lưu"}
                   </span>
                 </div>
               </div>
@@ -536,7 +536,7 @@ export function Japanese3DRoom({
                 title="Rút quẻ may mắn Omikuji"
               >
                 <span>🎋</span>
-                <span>{isShakingOmikuji ? "Đang lắc..." : "Rút quẻ"}</span>
+                <span>{isShakingOmikuji ? (t("journeyOmikujiShaking") || "Đang lắc...") : (t("journeyOmikujiDraw") || "Rút quẻ")}</span>
               </button>
 
               {/* Eki-Stamp Button */}
@@ -551,7 +551,7 @@ export function Japanese3DRoom({
                 title="Đóng con dấu kỷ niệm ga tàu"
               >
                 <span>⛩️</span>
-                <span>{isStamped ? `${data.nameJa.slice(0, 3)} 済` : "Đóng dấu ga"}</span>
+                <span>{isStamped ? `${data.nameJa.slice(0, 3)} 済` : (t("journeyStampEkiBtn") || "Đóng dấu ga")}</span>
               </button>
             </div>
 
@@ -592,7 +592,7 @@ export function Japanese3DRoom({
         {/* ── SUBTLE CULTURAL CONTEXT STRIP ─────────────────────────────────── */}
         <div className="px-4 sm:px-6 py-2 bg-gradient-to-r from-amber-50/70 via-rose-50/30 to-amber-50/70 dark:from-sumi-900 dark:via-sakura-950/20 dark:to-sumi-900 border-b border-slate-200/80 dark:border-slate-800 flex items-center justify-between gap-3 text-xs text-slate-700 dark:text-slate-300 flex-wrap">
           <div className="flex items-center gap-2 truncate">
-            <span className="font-bold text-amber-700 dark:text-amber-400 shrink-0">💡 Bạn có biết:</span>
+            <span className="font-bold text-amber-700 dark:text-amber-400 shrink-0">{t("journeyDidYouKnow") || "💡 Bạn có biết:"}</span>
             <span className="truncate">{data.funFact}</span>
           </div>
 

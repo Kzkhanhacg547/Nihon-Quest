@@ -370,7 +370,7 @@ export function AppNav({
                     }}
                     className="flex min-h-11 w-full items-center justify-between rounded-xl bg-slate-50 px-3 py-2.5 text-left text-sm font-bold text-slate-700 dark:bg-sumi-950 dark:text-slate-200"
                   >
-                    <span>Âm thanh hiệu ứng</span>
+                    <span>{t("soundFx") || "Âm thanh hiệu ứng"}</span>
                     <span
                       className={`relative h-6 w-11 shrink-0 rounded-full transition ${soundEnabled ? "bg-red-600" : "bg-slate-300 dark:bg-slate-700"}`}
                     >
@@ -477,7 +477,7 @@ export function AppNav({
                     <Avatar name={effectiveName} image={effectiveAvatar} />
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-black text-slate-900 dark:text-white">
-                        {effectiveName || "Học viên Nihon Quest"}
+                        {effectiveName || t("learner")}
                       </p>
                       <div className="mt-0.5 flex flex-wrap items-center gap-2 text-[11px] font-bold text-slate-500 dark:text-slate-400">
                         {levelLabel ? <span>{levelLabel}</span> : effectiveLevel ? <span>Lv.{effectiveLevel}</span> : null}
@@ -502,8 +502,8 @@ export function AppNav({
                     >
                       <span className="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-slate-100 text-sm dark:bg-sumi-800">👤</span>
                       <div className="min-w-0 flex-1">
-                        <b className="block text-xs font-bold">Hồ sơ cá nhân</b>
-                        <span className="block text-[11px] text-slate-400">Ảnh đại diện, cấp độ &amp; bảo mật</span>
+                        <b className="block text-xs font-bold">{t("userProfile") || "Hồ sơ cá nhân"}</b>
+                        <span className="block text-[11px] text-slate-400">{t("userProfileDesc") || "Ảnh đại diện, cấp độ & bảo mật"}</span>
                       </div>
                     </Link>
 
@@ -521,8 +521,8 @@ export function AppNav({
                     >
                       <span className="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-slate-100 text-sm dark:bg-sumi-800">⚙️</span>
                       <div className="min-w-0 flex-1">
-                        <b className="block text-xs font-bold">Cài đặt hệ thống</b>
-                        <span className="block text-[11px] text-slate-400">Giao diện, giọng đọc &amp; mục tiêu</span>
+                        <b className="block text-xs font-bold">{t("systemSettings") || "Cài đặt hệ thống"}</b>
+                        <span className="block text-[11px] text-slate-400">{t("systemSettingsDesc") || "Giao diện, giọng đọc & mục tiêu"}</span>
                       </div>
                     </Link>
                   </div>
@@ -599,12 +599,12 @@ export function AppNav({
                 <Avatar name={effectiveName} image={effectiveAvatar} />
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-black text-slate-900 dark:text-white">
-                    {effectiveName || "Học viên Nihon Quest"}
+                    {effectiveName || t("learner")}
                   </p>
                   <div className="mt-0.5 flex flex-wrap items-center gap-2 text-[11px] font-bold text-slate-500 dark:text-slate-400">
                     {effectiveLevel ? <span>🎯 Lv.{effectiveLevel}</span> : null}
                     {effectiveXP != null && <span>⚡ {effectiveXP.toLocaleString("vi-VN")} XP</span>}
-                    {effectiveStreak != null && <span>🔥 {effectiveStreak} ngày</span>}
+                    {effectiveStreak != null && <span>🔥 {effectiveStreak} {t("streakUnit") || "ngày"}</span>}
                   </div>
                 </div>
               </div>
@@ -622,7 +622,7 @@ export function AppNav({
                   }`}
                 >
                   <span>👤</span>
-                  <span>Hồ sơ</span>
+                  <span>{t("navProfile") || "Hồ sơ"}</span>
                 </Link>
                 <Link
                   href="/app/settings"
@@ -637,7 +637,7 @@ export function AppNav({
                   }`}
                 >
                   <span>⚙️</span>
-                  <span>Cài đặt</span>
+                  <span>{t("settings") || "Cài đặt"}</span>
                 </Link>
                 <div className="col-span-2 mt-1">
                   <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-1">

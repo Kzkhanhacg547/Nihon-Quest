@@ -653,7 +653,7 @@ export function QuizRunner({
                 handleCheckAnswer();
               }
             }}
-            placeholder="Nhập câu trả lời của bạn..."
+            placeholder={t("quizEnterYourAnswer")}
             className="w-full rounded-xl border-2 border-slate-300 bg-white p-3.5 text-lg font-bold outline-none focus:border-red-500 dark:border-slate-700 dark:bg-sumi-900"
           />
         )}

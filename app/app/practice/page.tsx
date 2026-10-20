@@ -133,9 +133,9 @@ export default async function PracticePage() {
               <LocalizedText k="learnJapaneseTag" fallback="HỌC TIẾNG NHẬT" /> · JLPT {userLevel}
             </div>
             <h1 className="text-[clamp(2.25rem,8vw,4rem)] font-black leading-[1.05] tracking-tight text-slate-900 dark:text-white">
-              <LocalizedText k="practiceHeroLine1" fallback="Học theo hành" />
+              <LocalizedText k="practiceHeroLine1" fallback="Học tiếng Nhật qua" />
               <br />
-              <LocalizedText k="practiceHeroLine2" fallback="trình" />{" "}
+              <LocalizedText k="practiceHeroLine2" fallback="hành trình" />{" "}
               <span className="relative text-red-600">
                 <LocalizedText k="practiceHeroHighlight" fallback="thực tế." />
                 <svg className="absolute -bottom-2 left-0 w-full" viewBox="0 0 200 8" preserveAspectRatio="none" aria-hidden="true">

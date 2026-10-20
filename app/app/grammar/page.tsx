@@ -8,6 +8,7 @@ import { resolveCanonicalUserLevel } from "@/lib/learning-level";
 import { BASE64_IMAGES, LEVEL_IMAGES } from "@/lib/assets/base64Images";
 import { AppNav } from "@/components/AppNav";
 import { GrammarClient } from "./GrammarClient";
+import { LocalizedText } from "@/components/LocalizedText";
 
 export const metadata = { title: "Ngữ Pháp JLPT — Nihon Quest" };
 export const dynamic = "force-dynamic";
@@ -75,22 +76,22 @@ export default async function GrammarPage() {
 
           <div className="relative px-6 py-10 sm:px-10 sm:py-14 lg:py-16">
             <p className="mb-4 text-xs font-bold tracking-[0.14em] text-white/80">
-              <span className="border-b-2 border-red-500 pb-0.5">CHÀO MỪNG BẠN ĐẾN VỚI NIHON QUEST</span>
+              <span className="border-b-2 border-red-500 pb-0.5"><LocalizedText k="welcomeNihonQuest" fallback="CHÀO MỪNG BẠN ĐẾN VỚI NIHON QUEST" /></span>
             </p>
             <h1 className="max-w-xl text-[clamp(2rem,7.5vw,3.5rem)] font-black leading-[1.08] tracking-tight text-white">
-              Từ vựng, Hán tự,
+              <LocalizedText k="grammarHeroLine1" fallback="Từ vựng, Hán tự," />
               <br />
-              <span className="text-red-500">Ngữ pháp.</span>
+              <span className="text-red-500"><LocalizedText k="grammarHeroLine2" fallback="Ngữ pháp." /></span>
             </h1>
             <p className="mt-4 max-w-md text-[15px] leading-relaxed text-white/85">
-              Khám phá cấu trúc, cách dùng và hơn thế nữa – để chinh phục tiếng Nhật một cách tự tin và hiệu quả!
+              <LocalizedText k="grammarHeroDesc" fallback="Khám phá cấu trúc, cách dùng và hơn thế nữa – để chinh phục tiếng Nhật một cách tự tin và hiệu quả!" />
             </p>
             <Link
               href="#grammar-list"
               className="mt-7 inline-flex min-h-11 items-center gap-3 rounded-full bg-gradient-to-r from-red-600 to-rose-500 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-red-900/30 transition hover:brightness-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
             >
               <span aria-hidden="true">📖</span>
-              Bắt đầu học ngay
+              <LocalizedText k="btnStartLearn" fallback="Bắt đầu học ngay" />
               <span aria-hidden="true">›</span>
             </Link>
           </div>

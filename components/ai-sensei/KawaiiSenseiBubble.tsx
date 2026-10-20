@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { useUserProgress } from "@/components/UserProgressContext";
 import { useNativeLanguage, SUPPORTED_LANGUAGES, type NativeLanguage } from "@/components/LanguageContext";
 import { useSoundAndTheme } from "@/components/SoundAndThemeContext";
@@ -121,6 +122,7 @@ function getLocalizedGreeting(
 
 export function KawaiiSenseiBubble() {
   const pathname = usePathname();
+  const { data: session, status } = useSession();
   const { progress } = useUserProgress();
   const { nativeLanguage, setNativeLanguage, langInfo, t } = useNativeLanguage();
   const { playClick, speak, speakingText, showToast } = useSoundAndTheme();
@@ -372,15 +374,30 @@ export function KawaiiSenseiBubble() {
   const currentPortrait =
     character === "aoi" ? BASE64_IMAGES.aoiPortrait : BASE64_IMAGES.renPortrait;
 
-  const isFullSenseiPage = pathname === "/app/sensei";
+  const isExcluded =
+    !pathname ||
+    pathname === "/" ||
+    pathname.startsWith("/login") ||
+    pathname.startsWith("/register") ||
+    pathname.startsWith("/signup") ||
+    pathname.startsWith("/auth") ||
+    pathname.startsWith("/forgot-password") ||
+    pathname.startsWith("/reset-password") ||
+    pathname === "/app/sensei" ||
+    !pathname.startsWith("/app");
 
-  if (!mounted) return null;
+  const shouldShow =
+    mounted &&
+    status === "authenticated" &&
+    Boolean(session?.user) &&
+    !isExcluded;
+
+  if (!shouldShow) return null;
 
   return (
     <>
       {/* ================= FLOATING CIRCULAR BUBBLE BUTTON ================= */}
-      {!isFullSenseiPage && (
-        <aside
+      <aside
           aria-label="Kawaii Sensei Assistant"
           className="fixed bottom-20 right-4 sm:bottom-6 sm:right-6 z-40 select-none flex flex-col items-end gap-2"
         >
@@ -429,7 +446,6 @@ export function KawaiiSenseiBubble() {
             )}
           </button>
         </aside>
-      )}
 
       {/* ================= CHAT POPUP WINDOW ================= */}
       {isOpen && (
@@ -640,10 +656,10 @@ export function KawaiiSenseiBubble() {
                             speak(jaPart);
                           }}
                           className="hover:text-red-500 font-bold flex items-center gap-1 transition"
-                          title="Nghe Sensei phát âm"
+                          title={t("listenToSensei") || "Nghe Sensei phát âm"}
                         >
                           <span>🔊</span>
-                          <span>Nghe đọc</span>
+                          <span>{t("listenAudio") || "Nghe đọc"}</span>
                         </button>
                         <span>
                           {new Date(m.timestamp).toLocaleTimeString([], {

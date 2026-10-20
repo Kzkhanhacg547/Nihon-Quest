@@ -3,9 +3,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { KanaStrokeGuide } from "@/components/KanaStrokeGuide";
 import { useSoundAndTheme } from "@/components/SoundAndThemeContext";
+import { useNativeLanguage } from "@/components/LanguageContext";
 import { notifyProgressUpdated } from "@/components/UserProgressContext";
 import { loadGlyph, type GlyphStroke, type Pt } from "@/lib/kana-strokes";
 import { loadTf, PASS_SCORE, scoreKana, type ScoreResult } from "@/lib/kana-score";
+import { getKanaI18n } from "@/lib/kana-i18n";
 
 interface Props {
   character: string;
@@ -28,11 +30,15 @@ function readFlag(key: string, fallback: boolean) {
   }
 }
 function writeFlag(key: string, v: boolean) {
-  try { localStorage.setItem(key, v ? "1" : "0"); } catch {}
+  try {
+    localStorage.setItem(key, v ? "1" : "0");
+  } catch {}
 }
 
 export function KanaWriter({ character, romaji, script, onPass, onClose }: Props) {
   const { playClick, playCorrect, showToast, speak } = useSoundAndTheme();
+  const { nativeLanguage } = useNativeLanguage();
+  const i18n = getKanaI18n(nativeLanguage);
 
   // undefined = đang tải · null = thiếu dữ liệu nét · mảng = sẵn sàng
   const [glyph, setGlyph] = useState<GlyphStroke[] | null | undefined>(undefined);
@@ -65,7 +71,9 @@ export function KanaWriter({ character, romaji, script, onPass, onClose }: Props
     loadGlyph(character)
       .then((g) => !off && setGlyph(g))
       .catch(() => !off && setGlyph(null));
-    return () => { off = true; };
+    return () => {
+      off = true;
+    };
   }, [character]);
 
   /* ---------- vẽ mượt: đường cong bậc 2 qua trung điểm + DPR ---------- */
@@ -98,6 +106,7 @@ export function KanaWriter({ character, romaji, script, onPass, onClose }: Props
       ctx.stroke();
     }
   }, []);
+
   const schedule = useCallback(() => {
     cancelAnimationFrame(raf.current);
     raf.current = requestAnimationFrame(redraw);
@@ -116,13 +125,17 @@ export function KanaWriter({ character, romaji, script, onPass, onClose }: Props
     resize();
     const ro = new ResizeObserver(resize);
     ro.observe(c);
-    return () => { ro.disconnect(); cancelAnimationFrame(raf.current); };
+    return () => {
+      ro.disconnect();
+      cancelAnimationFrame(raf.current);
+    };
   }, [redraw]);
 
   const pt = (e: { clientX: number; clientY: number }): Pt => {
     const r = canvasRef.current!.getBoundingClientRect();
     return { x: (e.clientX - r.left) / r.width, y: (e.clientY - r.top) / r.height };
   };
+
   const changed = (count: number) => {
     setStrokeCount(count);
     setResult(null);
@@ -130,12 +143,15 @@ export function KanaWriter({ character, romaji, script, onPass, onClose }: Props
 
   const onDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
     e.preventDefault();
-    try { e.currentTarget.setPointerCapture(e.pointerId); } catch {}
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId);
+    } catch {}
     drawing.current = true;
     strokes.current.push([pt(e)]);
     changed(strokes.current.length);
     schedule();
   };
+
   const onMove = (e: React.PointerEvent<HTMLCanvasElement>) => {
     if (!drawing.current) return;
     const cur = strokes.current[strokes.current.length - 1];
@@ -148,6 +164,7 @@ export function KanaWriter({ character, romaji, script, onPass, onClose }: Props
     }
     schedule();
   };
+
   const onUp = () => {
     drawing.current = false;
   };
@@ -158,6 +175,7 @@ export function KanaWriter({ character, romaji, script, onPass, onClose }: Props
     changed(strokes.current.length);
     schedule();
   };
+
   const clear = () => {
     playClick();
     strokes.current = [];
@@ -177,10 +195,18 @@ export function KanaWriter({ character, romaji, script, onPass, onClose }: Props
       setSaved(true);
       playCorrect();
       notifyProgressUpdated();
-      showToast({ title: `Đã học: ${character} (${romaji})!`, description: "Đã thêm vào hàng đợi ôn tập Spaced Repetition!", type: "xp" });
+      showToast({
+        title: i18n.learnedTitle.replace("{char}", character).replace("{romaji}", romaji),
+        description: i18n.savedSuccess,
+        type: "xp",
+      });
       onPass?.();
     } catch {
-      showToast({ title: "Chấm đạt nhưng chưa lưu được.", description: "Kiểm tra kết nối rồi bấm chấm điểm lại.", type: "error" });
+      showToast({
+        title: "Chưa lưu được kết quả.",
+        description: "Kiểm tra kết nối và thử lại.",
+        type: "error",
+      });
     }
   };
 
@@ -189,20 +215,39 @@ export function KanaWriter({ character, romaji, script, onPass, onClose }: Props
     playClick();
     setChecking(true);
     try {
-      const r = await scoreKana(strokes.current, glyph);
+      const r = await scoreKana(strokes.current, glyph, nativeLanguage);
       setResult(r);
       if (r.passed) await savePass();
     } catch {
-      showToast({ title: "Không chấm được.", description: "Không tải được TensorFlow.js. Vui lòng thử lại.", type: "error" });
+      showToast({
+        title: "Không thể chấm điểm.",
+        description: "Vui lòng thử lại sau giây lát.",
+        type: "error",
+      });
     } finally {
       setChecking(false);
     }
   };
 
-  const tone = !result ? "" : result.score >= 90 ? "is-great" : result.passed ? "is-ok" : result.score >= 50 ? "is-near" : "is-low";
+  const tone = !result
+    ? ""
+    : result.score >= 90
+      ? "is-great"
+      : result.passed
+        ? "is-ok"
+        : result.score >= 50
+          ? "is-near"
+          : "is-low";
+
   const verdict = !result
     ? ""
-    : result.score >= 90 ? "Tuyệt vời!" : result.passed ? "Đạt — viết tốt lắm!" : result.score >= 50 ? "Gần đúng rồi, thử lại nhé" : "Cần luyện thêm";
+    : result.score >= 90
+      ? i18n.great
+      : result.passed
+        ? i18n.passed
+        : result.score >= 50
+          ? i18n.almost
+          : i18n.needPractice;
 
   return (
     <div className="kw">
@@ -212,36 +257,57 @@ export function KanaWriter({ character, romaji, script, onPass, onClose }: Props
           className="kw-toggle"
           aria-pressed={guide}
           disabled={!glyph}
-          onClick={() => { playClick(); setGuide((v) => { writeFlag(LS_GUIDE, !v); return !v; }); }}
+          onClick={() => {
+            playClick();
+            setGuide((v) => {
+              writeFlag(LS_GUIDE, !v);
+              return !v;
+            });
+          }}
         >
           <span className="kw-switch" aria-hidden="true" />
-          Hướng dẫn nét <b>{guide ? "Bật" : "Tắt"}</b>
+          {i18n.strokeGuide} <b>{guide ? "ON" : "OFF"}</b>
         </button>
         <button
           type="button"
           className="kw-toggle"
           aria-pressed={ghost}
           disabled={!glyph}
-          onClick={() => { playClick(); setGhost((v) => { writeFlag(LS_GHOST, !v); return !v; }); }}
+          onClick={() => {
+            playClick();
+            setGhost((v) => {
+              writeFlag(LS_GHOST, !v);
+              return !v;
+            });
+          }}
         >
           <span className="kw-switch" aria-hidden="true" />
-          Chữ mờ gợi ý <b>{ghost ? "Bật" : "Tắt"}</b>
+          {i18n.ghostOutline} <b>{ghost ? "ON" : "OFF"}</b>
         </button>
-        <button type="button" className="kw-btn" disabled={!glyph} onClick={() => { playClick(); setAnimKey((k) => k + 1); }}>
-          ▶ Xem thứ tự nét
+        <button
+          type="button"
+          className="kw-btn"
+          disabled={!glyph}
+          onClick={() => {
+            playClick();
+            setAnimKey((k) => k + 1);
+          }}
+        >
+          {i18n.watchOrder}
         </button>
       </div>
 
       {glyph === null && (
         <p className="kw-warn" role="status">
-          Chưa có dữ liệu thứ tự nét cho “{character}”. Bạn vẫn có thể tập viết tự do, nhưng chưa chấm điểm được.
+          {i18n.noDataWarn.replace("{char}", character)}
         </p>
       )}
 
       <div className="kw-boards">
         <figure className="kw-board is-model">
           <figcaption>
-            Chữ mẫu{glyph ? ` · ${glyph.length} nét` : ""}
+            {i18n.modelChar}
+            {glyph ? ` · ${glyph.length} ${i18n.strokesUnit}` : ""}
           </figcaption>
           <div className="kw-surface">
             {glyph ? (
@@ -254,7 +320,9 @@ export function KanaWriter({ character, romaji, script, onPass, onClose }: Props
         </figure>
 
         <figure className="kw-board is-draw">
-          <figcaption>Viết tại đây · {strokeCount} nét</figcaption>
+          <figcaption>
+            {i18n.drawHere} · {strokeCount} {i18n.strokesUnit}
+          </figcaption>
           <div className="kw-surface">
             {glyph && ghost && <KanaStrokeGuide glyph={glyph} ghost className="kw-svg" />}
             <canvas
@@ -264,7 +332,7 @@ export function KanaWriter({ character, romaji, script, onPass, onClose }: Props
               onPointerMove={onMove}
               onPointerUp={onUp}
               onPointerCancel={onUp}
-              aria-label={`Vùng viết chữ ${character}`}
+              aria-label={`${i18n.drawHere}: ${character}`}
             />
             {glyph && guide && <KanaStrokeGuide glyph={glyph} guide className="kw-svg kw-over" />}
           </div>
@@ -272,12 +340,28 @@ export function KanaWriter({ character, romaji, script, onPass, onClose }: Props
       </div>
 
       <div className="kw-actions">
-        <button type="button" className="kw-icon" onClick={() => speak(character)} aria-label="Nghe phát âm">🔊</button>
+        <button
+          type="button"
+          className="kw-icon"
+          onClick={() => speak(character)}
+          aria-label={i18n.audioSpeak}
+        >
+          🔊
+        </button>
         <span className="kw-say">{romaji}</span>
-        <button type="button" className="kw-btn" onClick={undo} disabled={strokeCount === 0}>↶ Hoàn tác nét</button>
-        <button type="button" className="kw-btn" onClick={clear} disabled={strokeCount === 0}>🗑 Xóa hết</button>
-        <button type="button" className="kw-primary" onClick={check} disabled={!glyph || strokeCount === 0 || checking}>
-          {checking ? "Đang chấm…" : "Chấm điểm →"}
+        <button type="button" className="kw-btn" onClick={undo} disabled={strokeCount === 0}>
+          {i18n.undo}
+        </button>
+        <button type="button" className="kw-btn" onClick={clear} disabled={strokeCount === 0}>
+          {i18n.clear}
+        </button>
+        <button
+          type="button"
+          className="kw-primary"
+          onClick={check}
+          disabled={!glyph || strokeCount === 0 || checking}
+        >
+          {checking ? i18n.checking : i18n.check}
         </button>
       </div>
 
@@ -290,19 +374,24 @@ export function KanaWriter({ character, romaji, script, onPass, onClose }: Props
             <div className="kw-result-body">
               <h4>{verdict}</h4>
               <p>
-                Phủ nét mẫu <b>{result.coverage}%</b> · Đúng vị trí <b>{result.precision}%</b> · {result.got}/{result.expected} nét
+                {i18n.coverageLabel} <b>{result.coverage}%</b> · {i18n.precisionLabel}{" "}
+                <b>{result.precision}%</b> · {result.got}/{result.expected} {i18n.strokesUnit}
               </p>
               {result.issues.length > 0 ? (
                 <ul>
-                  {result.issues.slice(0, 4).map((i, k) => <li key={k}>{i.message}</li>)}
+                  {result.issues.slice(0, 4).map((item, idx) => (
+                    <li key={idx}>{item.message}</li>
+                  ))}
                 </ul>
               ) : (
-                <p className="kw-good">Thứ tự và hướng các nét đều đúng.</p>
+                <p className="kw-good">{i18n.allCorrect}</p>
               )}
               <small>
                 {result.passed
-                  ? saved ? "Đã lưu vào ôn tập SRS." : "Đang lưu…"
-                  : `Cần từ ${PASS_SCORE} điểm để lưu. Bấm “Xóa hết” và thử lại.`}
+                  ? saved
+                    ? i18n.savedSuccess
+                    : "..."
+                  : i18n.passScoreHint.replace("{passScore}", String(PASS_SCORE))}
               </small>
             </div>
           </section>
@@ -311,8 +400,10 @@ export function KanaWriter({ character, romaji, script, onPass, onClose }: Props
 
       {onClose && (
         <div className="kw-foot">
-          <button type="button" className="kw-btn" onClick={onClose}>Đóng</button>
-          <small>Dữ liệu nét: KanjiVG (CC BY-SA 3.0)</small>
+          <button type="button" className="kw-btn" onClick={onClose}>
+            {i18n.close}
+          </button>
+          <small>{i18n.creditNote}</small>
         </div>
       )}
     </div>

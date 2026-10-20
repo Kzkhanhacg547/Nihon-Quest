@@ -10,6 +10,7 @@ import { SenseiSideRail, type RecentLesson } from "./SenseiSideRail";
 import { SenseiAvatar, type AvatarEmotion, type AvatarState } from "@/components/SenseiAvatar";
 import { SenseiDailyDungeon } from "@/components/SenseiDailyDungeon";
 import { N3_KAIWA_SCENARIOS, type KaiwaScenario } from "@/lib/n3KaiwaScenarios";
+import { getLocalizedScenario, getLocalizedSenseiGreeting } from "@/lib/senseiLocalization";
 import { useSoundAndTheme } from "@/components/SoundAndThemeContext";
 import { kanaToRomaji } from "@/lib/romajiConverter";
 import { SENSEI_CHARACTERS, DEFAULT_SENSEI_ID, type SenseiCharacterId } from "@/lib/senseiCharacters";
@@ -150,19 +151,22 @@ export function SenseiKaiwaClient({ recentLessons = [] }: SenseiKaiwaClientProps
   const [activeSenseiTab, setActiveSenseiTab] = useState<"KAIWA" | "DUNGEON">("KAIWA");
 
   // Selected scenario
-  const [selectedScenario, setSelectedScenario] = useState<KaiwaScenario>(N3_KAIWA_SCENARIOS[0]);
+  const [selectedScenario, setSelectedScenario] = useState<KaiwaScenario>(() => getLocalizedScenario(N3_KAIWA_SCENARIOS[0], nativeLanguage));
 
   // Messages in current conversation
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: "init_1",
-      role: "assistant",
-      content: N3_KAIWA_SCENARIOS[0].initialMessage,
-      furigana: N3_KAIWA_SCENARIOS[0].initialFurigana,
-      meaning: N3_KAIWA_SCENARIOS[0].initialMeaning,
-      createdAt: new Date().toISOString(),
-    },
-  ]);
+  const [messages, setMessages] = useState<Message[]>(() => {
+    const sc = getLocalizedScenario(N3_KAIWA_SCENARIOS[0], nativeLanguage);
+    return [
+      {
+        id: "init_1",
+        role: "assistant",
+        content: sc.initialMessage,
+        furigana: sc.initialFurigana,
+        meaning: sc.initialMeaning,
+        createdAt: new Date().toISOString(),
+      },
+    ];
+  });
 
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [input, setInput] = useState("");
@@ -463,6 +467,7 @@ export function SenseiKaiwaClient({ recentLessons = [] }: SenseiKaiwaClientProps
           conversationId: conversationId || undefined,
           history: historyPayload,
           scenarioId: selectedScenario.id,
+          nativeLanguage: nativeLanguage,
           apiKey: activeKey,
           model: selectedModel || "gemini-2.5-flash",
           userProgress: progress
@@ -478,7 +483,6 @@ export function SenseiKaiwaClient({ recentLessons = [] }: SenseiKaiwaClientProps
                 stats: progress.stats,
               }
             : undefined,
-          nativeLanguage: nativeLanguage || "vi",
         }),
       });
 
@@ -601,7 +605,7 @@ export function SenseiKaiwaClient({ recentLessons = [] }: SenseiKaiwaClientProps
       <div className="flex justify-center">
         <div
           role="tablist"
-          aria-label="Chế độ luyện tập với Sensei"
+          aria-label={t("senseiTitle")}
           className="inline-flex rounded-full border border-white/80 bg-white/80 p-1 shadow-sm backdrop-blur dark:border-slate-800 dark:bg-sumi-900/80"
         >
           {(
@@ -674,7 +678,7 @@ export function SenseiKaiwaClient({ recentLessons = [] }: SenseiKaiwaClientProps
                       </span>
                       <span className="text-sm font-extrabold text-rose-600 dark:text-rose-400">{character.nameRomaji}</span>
                     </h2>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">Giáo viên dạy tiếng Nhật N3</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">{t("senseiTeacherTitle")}</p>
                   </div>
                 </div>
 
@@ -714,9 +718,9 @@ export function SenseiKaiwaClient({ recentLessons = [] }: SenseiKaiwaClientProps
                     </span>
                     <span className="min-w-0 leading-tight">
                       <span className="block truncate text-[13px] font-extrabold">
-                        {isListening ? "Dừng nghe" : "Nói với Sensei"}
+                        {isListening ? t("senseiStopListening") : t("senseiSpeakToSensei")}
                       </span>
-                      <span className="block text-[10px] opacity-90">{isListening ? "Đang thu âm" : "Giọng nói"}</span>
+                      <span className="block text-[10px] opacity-90">{isListening ? t("senseiRecording") : t("senseiVoiceLabel")}</span>
                     </span>
                   </button>
                   <button
@@ -733,8 +737,8 @@ export function SenseiKaiwaClient({ recentLessons = [] }: SenseiKaiwaClientProps
                       <Icon name="speaker" className="h-4 w-4" />
                     </span>
                     <span className="min-w-0 leading-tight">
-                      <span className="block truncate text-[13px] font-extrabold text-slate-800 dark:text-white">Nghe lại</span>
-                      <span className="block text-[10px] text-slate-500 dark:text-slate-400">Câu gần nhất</span>
+                      <span className="block truncate text-[13px] font-extrabold text-slate-800 dark:text-white">{t("senseiVoiceListenAgain")}</span>
+                      <span className="block text-[10px] text-slate-500 dark:text-slate-400">{t("senseiRecentLine")}</span>
                     </span>
                   </button>
                 </div>
@@ -748,11 +752,11 @@ export function SenseiKaiwaClient({ recentLessons = [] }: SenseiKaiwaClientProps
                   className="mt-2.5 flex w-full items-center justify-center gap-2 rounded-2xl border border-rose-200 bg-rose-50/80 py-2.5 text-xs font-bold text-rose-600 transition hover:bg-rose-100 active:scale-98 dark:border-rose-900/60 dark:bg-rose-950/40 dark:text-rose-300 lg:hidden"
                 >
                   <Icon name="chat" className="h-4 w-4" />
-                  <span>Vào phòng đàm thoại ngay ↓</span>
+                  <span>{t("senseiJumpToChat")} ↓</span>
                 </button>
 
                 {/* Chọn Sensei */}
-                <p className="mt-4 text-[11px] font-extrabold tracking-wide text-slate-500 dark:text-slate-400">Chọn Sensei:</p>
+                <p className="mt-4 text-[11px] font-extrabold tracking-wide text-slate-500 dark:text-slate-400">{t("senseiSelectTeacher")}</p>
                 <div role="radiogroup" aria-label="Chọn giáo viên và giọng đọc" className="mt-2 grid grid-cols-2 gap-2.5">
                   {Object.values(SENSEI_CHARACTERS).map((c) => {
                     const on = c.id === characterId;
@@ -773,7 +777,7 @@ export function SenseiKaiwaClient({ recentLessons = [] }: SenseiKaiwaClientProps
                         <span className="min-w-0 leading-tight">
                           <span className="block truncate text-[13px] font-extrabold">{c.nameRomaji}</span>
                           <span className={`block text-[10px] ${on ? "opacity-90" : "text-slate-500 dark:text-slate-400"}`}>
-                            Giọng {c.genderLabel.toLowerCase()}
+                            {c.gender === "female" ? t("senseiFemale") : t("senseiMale")}
                           </span>
                         </span>
                       </button>
@@ -834,7 +838,7 @@ export function SenseiKaiwaClient({ recentLessons = [] }: SenseiKaiwaClientProps
                               onChange={(e) => voice.setVoiceURI(e.target.value || null)}
                               className="min-h-11 w-full rounded-xl border border-slate-200 bg-white px-2.5 text-base text-slate-800 focus:outline-none focus:ring-2 focus:ring-rose-500 dark:border-slate-700 dark:bg-sumi-950 dark:text-slate-200 sm:text-xs"
                             >
-                              <option value="">Tự động chọn theo giới tính Sensei</option>
+                              <option value="">{t("senseiVoiceAuto")}</option>
                               {voice.voices.map((v) => (
                                 <option key={v.uri} value={v.uri}>
                                   {v.name} ({voiceGenderLabel(v.guess)})
@@ -863,7 +867,7 @@ export function SenseiKaiwaClient({ recentLessons = [] }: SenseiKaiwaClientProps
                     <button
                       type="button"
                       onClick={() => setIsTopicModalOpen(true)}
-                      title="Bấm để đổi chủ đề đàm thoại"
+                      title={t("senseiChangeTopic")}
                       className="grid h-10 w-10 sm:h-12 sm:w-12 shrink-0 place-items-center rounded-2xl bg-rose-50 text-xl sm:text-2xl transition hover:scale-105 hover:bg-rose-100 active:scale-95 dark:bg-rose-950/40"
                     >
                       {selectedScenario.icon || <BriefcaseIcon className="h-5 w-5 text-rose-500" />}
@@ -877,14 +881,14 @@ export function SenseiKaiwaClient({ recentLessons = [] }: SenseiKaiwaClientProps
                           type="button"
                           onClick={() => setIsTopicModalOpen(true)}
                           className="inline-flex shrink-0 items-center gap-1 rounded-full bg-rose-50 px-2 py-0.5 text-[10px] sm:text-xs font-bold text-rose-600 transition hover:bg-rose-100 active:scale-95 dark:bg-rose-950/50 dark:text-rose-300"
-                          title="Đổi chủ đề đàm thoại"
+                          title={t("senseiChangeTopic")}
                         >
-                          <span>Đổi chủ đề</span>
+                          <span>{t("senseiChangeTopic")}</span>
                           <ChevronRight className="h-3 w-3 rotate-90" />
                         </button>
                       </div>
                       <div className="flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400">
-                        <span className="truncate">với {character.nameRomaji}</span>
+                        <span className="truncate">{t("senseiWithTeacher", { name: character.nameRomaji })}</span>
                         <span aria-hidden="true" className={`inline-block h-1.5 w-1.5 shrink-0 rounded-full ${statusDot}`} />
                         <span className="truncate text-[10px] sm:text-[11px]" role="status" aria-live="polite">{statusLabel}</span>
                       </div>
@@ -903,7 +907,7 @@ export function SenseiKaiwaClient({ recentLessons = [] }: SenseiKaiwaClientProps
                       }`}
                     >
                       <StarIcon className="h-3.5 w-3.5" filled={isSaved} />
-                      <span className="hidden xs:inline">{isSaved ? "Đã lưu" : "Lưu"}</span>
+                      <span className="hidden xs:inline">{isSaved ? t("vocabSavedBtn") : t("vocabSaveBtn")}</span>
                     </button>
 
                     <div className="relative" ref={menuRef}>
@@ -958,7 +962,7 @@ export function SenseiKaiwaClient({ recentLessons = [] }: SenseiKaiwaClientProps
                             className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-xs font-bold text-slate-700 hover:bg-rose-50 dark:text-slate-200 dark:hover:bg-sumi-900"
                           >
                             <Icon name="settings" className="h-4 w-4 text-slate-500" />
-                            <span className="flex-1">{apiKey ? "AI Key: Đã kết nối" : "Cài đặt AI Key"}</span>
+                            <span className="flex-1">{apiKey ? t("senseiAiKeySet") : t("senseiAiKey")}</span>
                             {apiKey && <span aria-hidden="true" className="h-2 w-2 rounded-full bg-emerald-500" />}
                           </button>
                         </div>
@@ -979,7 +983,7 @@ export function SenseiKaiwaClient({ recentLessons = [] }: SenseiKaiwaClientProps
                       setShowFurigana(!showFurigana);
                       playClick();
                     }}
-                    title="Bật/Tắt Furigana"
+                    title={t("senseiFuriganaToggle")}
                     icon={<span lang="ja" className="font-jp font-black">あ</span>}
                   >
                     Furigana
@@ -990,7 +994,7 @@ export function SenseiKaiwaClient({ recentLessons = [] }: SenseiKaiwaClientProps
                       setShowRomaji(!showRomaji);
                       playClick();
                     }}
-                    title="Bật/Tắt Phiên âm Romaji"
+                    title={t("senseiRomajiToggle")}
                     icon={<span className="text-[11px] font-black">Aa</span>}
                   >
                     Romaji
@@ -1001,8 +1005,8 @@ export function SenseiKaiwaClient({ recentLessons = [] }: SenseiKaiwaClientProps
                       setShowTranslations(!showTranslations);
                       playClick();
                     }}
-                    title="Bật/Tắt Dịch nghĩa tiếng Việt"
-                    icon={<span className="text-[11px] font-black">VI</span>}
+                    title={t("senseiTranslationToggle")}
+                    icon={<span className="text-[11px] font-black uppercase">{nativeLanguage.split("-")[0]}</span>}
                   >
                     Dịch nghĩa
                   </Pill>
@@ -1012,10 +1016,10 @@ export function SenseiKaiwaClient({ recentLessons = [] }: SenseiKaiwaClientProps
                       setAutoVoice(!autoVoice);
                       playClick();
                     }}
-                    title="Tự động phát giọng nói khi Sensei trả lời"
+                    title={t("senseiAutoVoiceToggle")}
                     icon={<Icon name="speaker" className="h-3.5 w-3.5 sm:h-4 sm:w-4" />}
                   >
-                    {autoVoice ? "Tự đọc" : "Tắt đọc"}
+                    {autoVoice ? t("senseiAutoSpeechOn") : t("senseiAutoSpeechOff")}
                   </Pill>
                 </div>
 
@@ -1107,7 +1111,7 @@ export function SenseiKaiwaClient({ recentLessons = [] }: SenseiKaiwaClientProps
                         <SparkleIcon className="h-3 w-3 text-rose-500" />
                         Gợi ý đối đáp nhanh:
                       </span>
-                      <span className="text-[10px] text-slate-400">Chạm để gửi</span>
+                      <span className="text-[10px] text-slate-400">{t("senseiTapToSend")}</span>
                     </div>
                     <div className="no-scrollbar flex items-center gap-2 overflow-x-auto pb-1" aria-label="Gợi ý trả lời nhanh">
                       {selectedScenario.suggestedReplies.map((reply, idx) => (
@@ -1193,7 +1197,7 @@ export function SenseiKaiwaClient({ recentLessons = [] }: SenseiKaiwaClientProps
                     aria-label="Gửi tin nhắn"
                     className={`grid h-10 w-10 shrink-0 place-items-center rounded-full bg-gradient-to-r from-[#ff3d6e] to-[#f0245a] text-white shadow-md shadow-rose-500/25 transition hover:brightness-105 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40 disabled:shadow-none sm:h-11 sm:w-auto sm:px-5 sm:inline-flex sm:items-center sm:gap-2 sm:rounded-full ${focusRing}`}
                   >
-                    <span className="hidden sm:inline text-xs sm:text-sm font-black">Gửi</span>
+                    <span className="hidden sm:inline text-xs sm:text-sm font-black">{t("senseiSend")}</span>
                     <SendIcon className="h-4 w-4" />
                   </button>
                 </div>
@@ -1215,7 +1219,8 @@ export function SenseiKaiwaClient({ recentLessons = [] }: SenseiKaiwaClientProps
                   </button>
                 </div>
                 <div className="no-scrollbar flex items-stretch gap-2 overflow-x-auto pb-1">
-                  {N3_KAIWA_SCENARIOS.map((sc) => {
+                  {N3_KAIWA_SCENARIOS.map((rawSc) => {
+                    const sc = getLocalizedScenario(rawSc, nativeLanguage);
                     const on = selectedScenario.id === sc.id;
                     return (
                       <button
@@ -1257,7 +1262,7 @@ export function SenseiKaiwaClient({ recentLessons = [] }: SenseiKaiwaClientProps
           </div>
 
           {/* Mẫu câu N3 trọng tâm (mở từ "Ngữ pháp hôm nay") */}
-          <Modal isOpen={grammarOpen} onClose={closeGrammarModal} title="Mẫu câu N3 trọng tâm" maxWidth="md">
+          <Modal isOpen={grammarOpen} onClose={closeGrammarModal} title={t("senseiKeyGrammarModalTitle")} maxWidth="md">
             <ul className="divide-y divide-slate-100 dark:divide-slate-800">
               {selectedScenario.keyGrammar.map((g, idx) => (
                 <li key={idx} className="py-3 first:pt-0 last:pb-0">
@@ -1271,13 +1276,14 @@ export function SenseiKaiwaClient({ recentLessons = [] }: SenseiKaiwaClientProps
           </Modal>
 
           {/* Modal Chọn chủ đề đàm thoại N3 */}
-          <Modal isOpen={isTopicModalOpen} onClose={closeTopicModal} title="Chọn chủ đề đàm thoại N3" maxWidth="lg">
+          <Modal isOpen={isTopicModalOpen} onClose={closeTopicModal} title={t("senseiChooseScenarioTitle")} maxWidth="lg">
             <div className="space-y-3">
               <p className="text-xs text-slate-600 dark:text-slate-400">
-                Chọn một tình huống thực tế để cùng {character.nameRomaji} đàm thoại phản xạ:
+                {t("senseiChooseScenarioSub", { name: character.nameRomaji })}
               </p>
               <div className="no-scrollbar max-h-[60vh] space-y-2.5 overflow-y-auto pr-1">
-                {N3_KAIWA_SCENARIOS.map((sc) => {
+                {N3_KAIWA_SCENARIOS.map((rawSc) => {
+                  const sc = getLocalizedScenario(rawSc, nativeLanguage);
                   const on = selectedScenario.id === sc.id;
                   return (
                     <button
@@ -1342,7 +1348,7 @@ export function SenseiKaiwaClient({ recentLessons = [] }: SenseiKaiwaClientProps
               <div className="space-y-2">
                 <label htmlFor="nq-ai-keys" className="flex items-center justify-between text-xs font-bold text-slate-700 dark:text-slate-300">
                   <span>API Key (Hỗ trợ Bể nhiều Key & Đa nền tảng):</span>
-                  <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400">Tự động đảo Key khi hết hạn ngạch</span>
+                  <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400">{t("senseiAiKeyAutoRotate")}</span>
                 </label>
                 <textarea
                   id="nq-ai-keys"
@@ -1360,7 +1366,7 @@ export function SenseiKaiwaClient({ recentLessons = [] }: SenseiKaiwaClientProps
               <div className="space-y-2">
                 <label htmlFor="nq-ai-model" className="flex items-center justify-between text-xs font-bold text-slate-700 dark:text-slate-300">
                   <span>Chọn Mô hình AI (Gemini 3 / Groq):</span>
-                  <span className="text-[10px] font-normal text-amber-600">Tự động chuyển model nếu 503</span>
+                  <span className="text-[10px] font-normal text-amber-600">{t("senseiAiKeyAutoModel")}</span>
                 </label>
                 <select
                   id="nq-ai-model"
@@ -1419,7 +1425,7 @@ export function SenseiKaiwaClient({ recentLessons = [] }: SenseiKaiwaClientProps
                     Xóa Key đã lưu
                   </button>
                 ) : (
-                  <span className="text-[11px] text-slate-400">Chưa cài đặt</span>
+                  <span className="text-[11px] text-slate-400">{t("senseiAiKeyNotConfigured")}</span>
                 )}
 
                 <div className="flex items-center gap-2">

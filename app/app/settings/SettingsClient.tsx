@@ -106,6 +106,7 @@ export function SettingsClient({ initial }: { initial: SettingsInitialData }) {
           learningStyle,
           theme,
           soundEnabled,
+          nativeLanguage,
         }),
       });
 

@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Button } from "@/components/ui";
 import { notifyProgressUpdated } from "@/components/UserProgressContext";
+import { useNativeLanguage } from "@/components/LanguageContext";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 interface KanaCard {
@@ -117,6 +118,7 @@ function ResultCard({ result }: { result: RoundResult }) {
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 export function KanaBattleCard() {
+  const { t } = useNativeLanguage();
   const [phase, setPhase] = useState<GamePhase>("LOBBY");
   const [script, setScript] = useState<ScriptOption>("mixed");
   const [cards, setCards] = useState<KanaCard[]>([]);
@@ -175,7 +177,7 @@ export function KanaBattleCard() {
       setServerResult(data);
       notifyProgressUpdated();
     } catch {
-      setSubmitError("Không thể lưu kết quả. Vui lòng thử lại.");
+      setSubmitError(t("errorSaveResult"));
     } finally {
       setPhase("RESULT");
     }
@@ -309,18 +311,17 @@ export function KanaBattleCard() {
           <div className="text-center space-y-1.5">
             <div className="text-5xl mb-1 animate-pulse">🃏</div>
             <h2 className="text-2xl font-black text-white tracking-tight">Kana Battle Card</h2>
-            <p className="text-sm text-slate-400 max-w-xs">
-              Gõ Romaji đúng trong <span className="text-amber-400 font-bold">3 giây</span> cho mỗi thẻ Kana.<br />
-              Combo 5+ liên tiếp → <span className="text-violet-400 font-bold">XP ×2</span>!
+            <p className="text-sm text-slate-400 max-w-xs whitespace-pre-line">
+              {t("kanaBattleIntro")}
             </p>
           </div>
 
           {/* Stats preview */}
           <div className="grid grid-cols-3 gap-3 w-full text-center">
             {[
-              { icon: "🎴", label: "Số thẻ", value: `${CARDS_PER_ROUND}` },
-              { icon: "⏱️", label: "Thời gian", value: "3s / thẻ" },
-              { icon: "✨", label: "XP tối đa", value: "~200 XP" },
+              { icon: "🎴", label: t("kanaBattleCardCount"), value: `${CARDS_PER_ROUND}` },
+              { icon: "⏱️", label: t("kanaBattleCardTime"), value: t("timePerCard") },
+              { icon: "✨", label: t("kanaBattleMaxXp"), value: "~200 XP" },
             ].map((s) => (
               <div key={s.label} className="bg-white/5 rounded-2xl p-3 border border-white/10">
                 <div className="text-xl mb-0.5">{s.icon}</div>
@@ -332,7 +333,7 @@ export function KanaBattleCard() {
 
           {/* Script selector */}
           <div className="w-full space-y-2">
-            <p className="text-xs font-bold text-slate-400 text-center uppercase tracking-wider">Chọn loại chữ</p>
+            <p className="text-xs font-bold text-slate-400 text-center uppercase tracking-wider">{t("chooseScriptType")}</p>
             <div className="grid grid-cols-3 gap-2">
               {(["hiragana", "katakana", "mixed"] as ScriptOption[]).map((s) => (
                 <button
@@ -353,13 +354,13 @@ export function KanaBattleCard() {
 
           {/* XP rules */}
           <div className="w-full bg-white/5 rounded-2xl border border-white/10 p-3.5 space-y-1.5 text-xs">
-            <p className="font-black text-white text-[11px] uppercase tracking-wider mb-2">Luật XP</p>
+            <p className="font-black text-white text-[11px] uppercase tracking-wider mb-2">{t("kanaBattleXPRules")}</p>
             {[
-              { icon: "✅", text: "Đúng → +10 XP base" },
-              { icon: "⚡", text: "Dưới 1.5s → thêm +5 XP tốc độ" },
-              { icon: "🔥", text: "Combo 3+ → Badge cháy!" },
-              { icon: "×2", text: "Combo 5+ → Nhân đôi XP mỗi câu" },
-              { icon: "🏆", text: "10/10 Perfect → +50 XP bonus" },
+              { icon: "✅", text: t("kanaRuleCorrect") },
+              { icon: "⚡", text: t("kanaRuleSpeed") },
+              { icon: "🔥", text: t("kanaRuleCombo3") },
+              { icon: "×2", text: t("kanaRuleCombo5") },
+              { icon: "🏆", text: t("kanaRulePerfect") },
             ].map((r) => (
               <div key={r.text} className="flex items-center gap-2 text-slate-300">
                 <span className="w-6 text-center font-black text-amber-400 shrink-0">{r.icon}</span>
@@ -376,7 +377,7 @@ export function KanaBattleCard() {
             className="w-full text-base font-black"
             id="kana-battle-start-btn"
           >
-            {isLoading ? "Đang tải..." : "⚔️ Bắt đầu chiến đấu!"}
+            {isLoading ? t("loading") : t("kanaBattleStart")}
           </Button>
         </div>
       </div>
@@ -452,13 +453,13 @@ export function KanaBattleCard() {
 
               {/* Romaji Phonetic Reading */}
               <div className="mt-3 text-xs font-black text-amber-300 tracking-wider font-mono bg-amber-400/10 px-3 py-1 rounded-xl border border-amber-400/30 flex items-center gap-1.5 shadow-sm">
-                <span>🔤 Phiên âm:</span>
+                <span>🔤 {t("kanaPhonetic")}</span>
                 <span className="text-sm text-white font-bold underline">{currentCard.romaji}</span>
               </div>
 
               <div className="text-xs text-slate-400 mt-2 font-medium">
-                {currentCard.kind === "BASIC" ? "Cơ bản" : currentCard.kind === "DAKUTEN" ? "Âm đục" : currentCard.kind === "COMBO" ? "Âm ghép" : currentCard.kind}
-                {currentCard.row ? ` · Hàng ${currentCard.row.toUpperCase()}` : ""}
+                {currentCard.kind === "BASIC" ? t("kanaKindBasic") : currentCard.kind === "DAKUTEN" ? t("kanaKindDakuten") : currentCard.kind === "COMBO" ? t("kanaKindCombo") : currentCard.kind}
+                {currentCard.row ? ` · ${t("kanaRow")} ${currentCard.row.toUpperCase()}` : ""}
               </div>
             </div>
 
@@ -474,7 +475,7 @@ export function KanaBattleCard() {
                     handleAnswer(input.trim());
                   }
                 }}
-                placeholder="Gõ Romaji rồi nhấn Enter..."
+                placeholder={t("kanaBattleInputPlaceholder")}
                 autoComplete="off"
                 autoCorrect="off"
                 spellCheck={false}
@@ -482,7 +483,7 @@ export function KanaBattleCard() {
                 id="kana-battle-input"
               />
               <p className="text-center text-[11px] text-slate-500 mt-2">
-                Nhấn <kbd className="bg-white/10 px-1.5 py-0.5 rounded text-slate-400">Enter</kbd> để xác nhận
+                {t("pressEnterToConfirm")}
               </p>
             </div>
 
@@ -494,12 +495,12 @@ export function KanaBattleCard() {
               disabled={!input.trim()}
               className="w-full sm:hidden"
             >
-              Xác nhận →
+              {t("confirmAction")}
             </Button>
 
             {/* Stats row */}
             <div className="flex items-center justify-between w-full text-xs font-bold text-slate-400">
-              <span>✅ {correctSoFar}/{cardIndex} đúng</span>
+              <span>✅ {correctSoFar}/{cardIndex} {t("correctCountSoFar")}</span>
               <span>🔥 Combo: {combo}</span>
               <span>⏱ {(timeLeft / 1000).toFixed(1)}s</span>
             </div>
@@ -514,8 +515,8 @@ export function KanaBattleCard() {
     return (
       <div className="flex flex-col items-center justify-center min-h-[420px] gap-4">
         <div className="text-5xl animate-bounce">⏳</div>
-        <p className="text-white font-black text-lg">Đang lưu kết quả...</p>
-        <p className="text-slate-400 text-sm">Cập nhật SRS và tính XP</p>
+        <p className="text-white font-black text-lg">{t("savingResult")}</p>
+        <p className="text-slate-400 text-sm">{t("updatingSRSAndXP")}</p>
       </div>
     );
   }
@@ -537,7 +538,7 @@ export function KanaBattleCard() {
               {isPerfect ? "🏆" : accuracy >= 80 ? "🎉" : accuracy >= 50 ? "👍" : "💪"}
             </div>
             <h3 className="text-xl font-black text-white">
-              {isPerfect ? "PERFECT ROUND!" : accuracy >= 80 ? "Xuất sắc!" : accuracy >= 50 ? "Tốt lắm!" : "Cố gắng thêm!"}
+              {isPerfect ? "PERFECT ROUND!" : accuracy >= 80 ? t("excellent") : accuracy >= 50 ? t("wellDone") : t("keepTrying")}
             </h3>
             {submitError && (
               <p className="text-rose-400 text-xs bg-rose-950/50 px-3 py-1.5 rounded-xl border border-rose-700/30">
@@ -549,10 +550,10 @@ export function KanaBattleCard() {
           {/* Stats grid */}
           <div className="grid grid-cols-2 gap-3 w-full">
             {[
-              { icon: "🎯", label: "Độ chính xác", value: `${accuracy}%`, color: accuracy >= 80 ? "text-emerald-400" : "text-amber-400" },
-              { icon: "✨", label: "XP kiếm được", value: `+${xp} XP`, color: "text-amber-400" },
-              { icon: "🔥", label: "Combo cao nhất", value: `×${serverResult?.maxCombo ?? maxCombo}`, color: "text-violet-400" },
-              { icon: "✅", label: "Đúng / Tổng", value: `${correctCount}/${results.length}`, color: "text-white" },
+              { icon: "🎯", label: t("quizAccuracyStat"), value: `${accuracy}%`, color: accuracy >= 80 ? "text-emerald-400" : "text-amber-400" },
+              { icon: "✨", label: t("quizXpStat"), value: `+${xp} XP`, color: "text-amber-400" },
+              { icon: "🔥", label: t("highestCombo"), value: `×${serverResult?.maxCombo ?? maxCombo}`, color: "text-violet-400" },
+              { icon: "✅", label: t("correctOverTotal"), value: `${correctCount}/${results.length}`, color: "text-white" },
             ].map((s) => (
               <div key={s.label} className="bg-white/5 rounded-2xl p-3.5 border border-white/10 text-center">
                 <div className="text-xl mb-1">{s.icon}</div>
@@ -564,8 +565,8 @@ export function KanaBattleCard() {
 
           {isPerfect && (
             <div className="w-full bg-gradient-to-r from-amber-500/20 to-yellow-500/20 border border-amber-500/30 rounded-2xl px-4 py-3 text-center">
-              <p className="text-amber-400 font-black text-sm">🏆 Perfect Bonus: +50 XP đặc biệt!</p>
-              <p className="text-amber-300/70 text-xs mt-0.5">10/10 câu đúng — Đỉnh của đỉnh!</p>
+              <p className="text-amber-400 font-black text-sm">{t("perfectBonusNotice")}</p>
+              <p className="text-amber-300/70 text-xs mt-0.5">{t("perfectBonusDesc")}</p>
             </div>
           )}
         </div>
@@ -573,15 +574,12 @@ export function KanaBattleCard() {
         {/* SRS notice */}
         <div className="w-full flex items-start gap-2 text-xs text-slate-400 bg-slate-900/50 rounded-2xl border border-slate-800 px-4 py-3">
           <span className="text-base shrink-0">🧠</span>
-          <span>
-            Thẻ sai đã được thêm vào <strong className="text-violet-400">hàng đợi ôn tập SRS</strong> để bạn ôn lại sớm.
-            Thẻ đúng sẽ được lên lịch ôn tiếp theo tự động.
-          </span>
+          <span>{t("kanaSrsNotice")}</span>
         </div>
 
         {/* Card-by-card breakdown */}
         <div className="w-full space-y-1.5">
-          <p className="text-xs font-black text-slate-500 uppercase tracking-wider px-1">Chi tiết từng thẻ</p>
+          <p className="text-xs font-black text-slate-500 uppercase tracking-wider px-1">{t("cardByCardDetail")}</p>
           {results.map((r, i) => (
             <ResultCard key={i} result={r} />
           ))}
@@ -590,10 +588,10 @@ export function KanaBattleCard() {
         {/* Action buttons */}
         <div className="flex gap-3 w-full">
           <Button variant="fuji" size="md" onClick={startGame} loading={isLoading} className="flex-1 font-black" id="kana-battle-retry-btn">
-            ⚔️ Chơi lại
+            {t("playAgain")}
           </Button>
           <Button variant="secondary" size="md" onClick={resetToLobby} className="flex-1 font-black" id="kana-battle-lobby-btn">
-            🏠 Về Lobby
+            {t("backToLobby")}
           </Button>
         </div>
       </div>

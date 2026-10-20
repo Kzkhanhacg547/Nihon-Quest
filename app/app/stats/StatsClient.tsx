@@ -174,7 +174,7 @@ export function StatsClient({
           </div>
           <div className="rounded-2xl bg-white/5 p-3.5 backdrop-blur-sm border border-white/10">
             <p className="text-xs font-semibold text-slate-400">{t("statsTotalXp")}</p>
-            <p className="mt-1 text-xl font-black text-rose-400 sm:text-2xl">{user.totalXP.toLocaleString()} XP</p>
+            <p className="mt-1 text-xl font-black text-rose-400 sm:text-2xl">{user.totalXP.toLocaleString("en-US")} XP</p>
             <p className="mt-0.5 text-[11px] text-slate-400 font-medium">{t("statsAccumulatedLessons")}</p>
           </div>
           <div className="rounded-2xl bg-white/5 p-3.5 backdrop-blur-sm border border-white/10">
@@ -209,7 +209,7 @@ export function StatsClient({
               </span>
             </div>
             <p className="mt-3 text-2xl font-black tracking-tight text-slate-900 dark:text-white sm:text-3xl">
-              {user.totalXP.toLocaleString()}
+              {user.totalXP.toLocaleString("en-US")}
             </p>
             <span className="mt-1 inline-block text-xs font-semibold text-rose-600 dark:text-rose-400">
               {t("statsXpPoints")}
@@ -338,7 +338,7 @@ export function StatsClient({
               {t("statsChartTitle")}
             </h2>
             <p className="text-xs text-slate-500 dark:text-slate-400">
-              {t("statsTotalAccumulated")}: <strong className="text-slate-900 dark:text-white font-bold">{totalRangeXp.toLocaleString()} XP</strong> {t("statsInThisPeriod")}
+              {t("statsTotalAccumulated")}: <strong className="text-slate-900 dark:text-white font-bold">{totalRangeXp.toLocaleString("en-US")} XP</strong> {t("statsInThisPeriod")}
             </p>
           </div>
 
@@ -832,7 +832,7 @@ export function StatsClient({
                 <span>{t("statsHighestXpDay")}</span>
               </dt>
               <dd className="font-black text-rose-600 dark:text-rose-400">
-                {personalRecords.mostXpInOneDay.toLocaleString()} XP
+                {personalRecords.mostXpInOneDay.toLocaleString("en-US")} XP
                 {personalRecords.bestDayDate ? (
                   <span className="ml-1 text-[11px] font-normal text-slate-500 dark:text-slate-400">({personalRecords.bestDayDate})</span>
                 ) : null}

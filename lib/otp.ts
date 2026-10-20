@@ -16,6 +16,7 @@ function getIdentifier(type: OtpType, email: string): string {
 export async function requestOtp(
   email: string,
   type: OtpType,
+  nativeLanguage?: string
 ): Promise<{ success: boolean; error?: string; devCode?: string }> {
   const normalizedEmail = email.trim().toLowerCase();
   const identifier = getIdentifier(type, normalizedEmail);
@@ -61,6 +62,7 @@ export async function requestOtp(
     to: normalizedEmail,
     code,
     type,
+    nativeLanguage,
   });
 
   // Never expose devCode in production even if mailRes.devPreview is set

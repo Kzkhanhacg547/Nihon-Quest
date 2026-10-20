@@ -6,6 +6,7 @@ import { KanaWriter } from "@/components/KanaWriter";
 import { useSoundAndTheme } from "@/components/SoundAndThemeContext";
 import { notifyProgressUpdated } from "@/components/UserProgressContext";
 import { useNativeLanguage } from "@/components/LanguageContext";
+import { getLocalizedRowLabel } from "@/lib/lessonLocalization";
 
 export interface KanaRow {
   id: string;
@@ -57,7 +58,7 @@ export function KanaLab({ kana, practiced }: { kana: KanaRow[]; practiced: strin
   const [doneSet, setDoneSet] = useState<Set<string>>(new Set(practiced));
   const [pendingKey, setPendingKey] = useState<string | null>(null);
   const { playClick, playCorrect, showToast, speak: globalSpeak } = useSoundAndTheme();
-  const { t } = useNativeLanguage();
+  const { t, nativeLanguage } = useNativeLanguage();
 
   const activeKanaList = useMemo(
     () => kana.filter((k) => inTab(k, activeTab, subScript)),
@@ -78,9 +79,11 @@ export function KanaLab({ kana, practiced }: { kana: KanaRow[]; practiced: strin
         const cells: (KanaRow | null)[] = colOrder.map((colKey) =>
           rowKey === "n" && colKey === "a" ? rowKana.find((k) => k.row === "n") || null : rowKana.find((k) => k.column === colKey) || null,
         );
-        return { rowKey, label: ROW_LABELS[rowKey] || `Hàng ${rowKey.toUpperCase()}`, cells };
+        const baseLabel = ROW_LABELS[rowKey] || `Hàng ${rowKey.toUpperCase()}`;
+        const label = getLocalizedRowLabel(rowKey, nativeLanguage, baseLabel);
+        return { rowKey, label, cells };
       }),
-    [activeKanaList, rowOrder, colOrder],
+    [activeKanaList, rowOrder, colOrder, nativeLanguage],
   );
 
   const speak = (character: string) => {
@@ -218,7 +221,7 @@ export function KanaLab({ kana, practiced }: { kana: KanaRow[]; practiced: strin
       </div>
 
       {writingTarget && (
-        <Modal isOpen onClose={() => setWritingTarget(null)} title={`Luyện viết — ${writingTarget.character}`} maxWidth="2xl" closeOnBackdrop={false}>
+        <Modal isOpen onClose={() => setWritingTarget(null)} title={`${t("practiceWritingKana")} — ${writingTarget.character}`} maxWidth="2xl" closeOnBackdrop={false}>
           <KanaWriter
             key={writingTarget.id}
             character={writingTarget.character}

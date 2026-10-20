@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { useSoundAndTheme } from "@/components/SoundAndThemeContext";
+import { useNativeLanguage } from "@/components/LanguageContext";
 import {
   LEVEL_LABELS,
   GOAL_LABELS,
@@ -112,6 +113,7 @@ export function AnalyticsClient({
 }: AnalyticsClientProps) {
   const [activeTab, setActiveTab] = useState<"OVERVIEW" | "SKILLS" | "LIFECYCLE" | "MEMORY" | "REMEDIATION">("OVERVIEW");
   const { playClick } = useSoundAndTheme();
+  const { t } = useNativeLanguage();
 
   return (
     <div className="space-y-6 sm:space-y-8">
@@ -201,31 +203,31 @@ export function AnalyticsClient({
 
           {/* Time to Target */}
           <div className="rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur-sm">
-            <p className="text-xs font-semibold text-slate-400">Dự báo hoàn thành</p>
+            <p className="text-xs font-semibold text-slate-400">{t("analyticsForecastCompletion") || "Dự báo hoàn thành"}</p>
             <p className="mt-1 text-2xl font-black text-amber-400 sm:text-3xl">
-              ~{estWeeksToTarget} tuần
+              ~{estWeeksToTarget} {t("weeks") || "tuần"}
             </p>
-            <p className="mt-1 text-[11px] text-slate-300">Khoảng {estDaysToTarget} ngày theo nhịp học</p>
+            <p className="mt-1 text-[11px] text-slate-300">~{estDaysToTarget} {t("daysUnit") || "ngày"}</p>
           </div>
 
           {/* Path Completion */}
           <div className="rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur-sm">
-            <p className="text-xs font-semibold text-slate-400">Tiến độ Lộ trình</p>
+            <p className="text-xs font-semibold text-slate-400">{t("analyticsPathProgress") || "Tiến độ Lộ trình"}</p>
             <p className="mt-1 text-2xl font-black text-emerald-400 sm:text-3xl">
               {pathSummary.percentComplete}%
             </p>
             <p className="mt-1 text-[11px] text-slate-300">
-              {pathSummary.completedModules}/{pathSummary.totalModules} mô-đun
+              {pathSummary.completedModules}/{pathSummary.totalModules} {t("topics") || "mô-đun"}
             </p>
           </div>
 
           {/* Habit Adherence */}
           <div className="rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur-sm">
-            <p className="text-xs font-semibold text-slate-400">Độ kiên trì (Adherence)</p>
+            <p className="text-xs font-semibold text-slate-400">{t("analyticsAdherence") || "Độ kiên trì (Adherence)"}</p>
             <p className="mt-1 text-2xl font-black text-orange-400 sm:text-3xl">
-              🔥 {user.currentStreak} ngày
+              🔥 {user.currentStreak} {t("streakUnit") || "ngày"}
             </p>
-            <p className="mt-1 text-[11px] text-slate-300">Duy trì {learningVelocity.adherencePercent}% mục tiêu</p>
+            <p className="mt-1 text-[11px] text-slate-300">{learningVelocity.adherencePercent}%</p>
           </div>
         </div>
       </section>
@@ -233,11 +235,11 @@ export function AnalyticsClient({
       {/* ================= 2. INTERACTIVE NAVIGATION TABS ================= */}
       <div className="flex flex-wrap items-center gap-2 border-b border-slate-200/80 pb-3 dark:border-slate-800">
         {[
-          { key: "OVERVIEW", label: "Tổng quan & Dự báo JLPT", glyph: "進" },
-          { key: "SKILLS", label: "Ma trận 5 Kỹ năng", glyph: "技" },
-          { key: "LIFECYCLE", label: "Chu trình 8 Bước", glyph: "環" },
-          { key: "MEMORY", label: "Trí nhớ SRS & Quên", glyph: "記" },
-          { key: "REMEDIATION", label: `Trạm Củng cố (${remediationItems.length})`, glyph: "🩺" },
+          { key: "OVERVIEW", label: t("analyticsTabOverview") || "Tổng quan & Dự báo JLPT", glyph: "進" },
+          { key: "SKILLS", label: t("analyticsTabSkills") || "Ma trận 5 Kỹ năng", glyph: "技" },
+          { key: "LIFECYCLE", label: t("analyticsTabLifecycle") || "Chu trình 8 Bước", glyph: "環" },
+          { key: "MEMORY", label: t("analyticsTabMemory") || "Trí nhớ SRS & Quên", glyph: "記" },
+          { key: "REMEDIATION", label: `${t("analyticsTabRemediation") || "Trạm Củng cố"} (${remediationItems.length})`, glyph: "🩺" },
         ].map((tab) => {
           const isActive = activeTab === tab.key;
           return (

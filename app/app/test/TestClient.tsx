@@ -1,5 +1,6 @@
 "use client";
 
+import { getLocalizedExamMeta, getLocalizedSubCategory, LocalizedAssessmentText } from "@/lib/testLocalization";
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import Link from "next/link";
 import { useSoundAndTheme } from "@/components/SoundAndThemeContext";
@@ -464,7 +465,7 @@ export function TestClient({
                 Trình độ hiện tại trong hồ sơ:{" "}
                 <span className="font-extrabold text-red-600 dark:text-red-400">{currentLevelState}</span> · Tổng XP:{" "}
                 <span className="font-extrabold text-amber-500">{xpState} XP</span> · Danh mục:{" "}
-                <span className="font-extrabold text-slate-700 dark:text-slate-200">{examCatalog.length} bài thi động</span>
+                <span className="font-extrabold text-slate-700 dark:text-slate-200">{examCatalog.length} {t("testDynamicExamsCount")}</span>
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-2.5">
@@ -592,21 +593,35 @@ export function TestClient({
                   <div>
                     <div className="flex items-center justify-between gap-2">
                       <span className="text-3xl">{mode.icon}</span>
-                      <div className="flex flex-wrap items-center justify-end gap-1.5">
-                        <span className="rounded-full bg-rose-50 px-2.5 py-1 text-[11px] font-bold text-red-600 dark:bg-red-950/50 dark:text-red-300">
-                          {mode.kindLabel}
-                        </span>
-                        <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-extrabold text-slate-700 dark:bg-sumi-800 dark:text-slate-300">
-                          {mode.badge}
-                        </span>
-                      </div>
+                      {(() => {
+                        const examMeta = getLocalizedExamMeta(mode, nativeLanguage);
+                        return (
+                          <>
+                            <div className="flex flex-wrap items-center justify-end gap-1.5">
+                              <span className="rounded-full bg-rose-50 px-2.5 py-1 text-[11px] font-bold text-red-600 dark:bg-red-950/50 dark:text-red-300">
+                                {examMeta.kindLabel}
+                              </span>
+                              <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-extrabold text-slate-700 dark:bg-sumi-800 dark:text-slate-300">
+                                {examMeta.badge}
+                              </span>
+                            </div>
+                          </>
+                        );
+                      })()}
                     </div>
-                    <h3 className="mt-4 text-lg font-bold text-slate-900 transition group-hover:text-red-600 dark:text-white dark:group-hover:text-red-400">
-                      {mode.title}
-                    </h3>
-                    <p className="mt-2 text-sm leading-relaxed text-slate-500 dark:text-slate-400">
-                      {mode.description}
-                    </p>
+                    {(() => {
+                      const examMeta = getLocalizedExamMeta(mode, nativeLanguage);
+                      return (
+                        <>
+                          <h3 className="mt-4 text-lg font-bold text-slate-900 transition group-hover:text-red-600 dark:text-white dark:group-hover:text-red-400">
+                            {examMeta.title}
+                          </h3>
+                          <p className="mt-2 text-sm leading-relaxed text-slate-500 dark:text-slate-400">
+                            {examMeta.description}
+                          </p>
+                        </>
+                      );
+                    })()}
 
                     {/* Authority & Source Metadata */}
                     <div className="mt-3 flex flex-wrap items-center gap-1.5">
@@ -617,11 +632,11 @@ export function TestClient({
                             : "bg-indigo-50 text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-300"
                         }`}
                       >
-                        {isOfficial ? "✅ Đáp án chính thức từ đề gốc" : "📘 Đáp án biên soạn & giải thích chi tiết"}
+                        {isOfficial ? t("testOfficialAnswerKey") : t("testCuratedAnswerKey")}
                       </span>
                       {mode.sourceDocument && (
                         <span className="truncate rounded-md bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-500 dark:bg-sumi-800 dark:text-slate-400">
-                          📄 Nguồn: {mode.sourceDocument}
+                          📄 {t("testSource")}: {mode.sourceDocument}
                         </span>
                       )}
                     </div>
@@ -716,7 +731,7 @@ export function TestClient({
             <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-4 dark:border-slate-800">
               <span className="inline-flex items-center gap-2 text-xs font-bold text-slate-600 dark:text-slate-300">
                 <span className="h-2 w-2 rounded-full bg-red-500" />
-                {SKILL_META[currentQuestion.skill].icon} {getSkillLabel(currentQuestion.skill)} ({currentQuestion.subCategory}) · {currentQuestion.level}
+                {SKILL_META[currentQuestion.skill].icon} {getSkillLabel(currentQuestion.skill)} ({getLocalizedSubCategory(currentQuestion.subCategory, nativeLanguage)}) · {currentQuestion.level}
               </span>
               <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
                 {answeredCount}/{questions.length}
@@ -767,11 +782,11 @@ export function TestClient({
 
             <div className="space-y-2">
               <h3 className="jp-text text-lg font-bold leading-relaxed text-slate-900 dark:text-white sm:text-xl">
-                {currentQuestion.question}
+                <LocalizedAssessmentText text={currentQuestion.question} />
               </h3>
               {currentQuestion.promptHint && (
                 <p className="rounded-xl bg-amber-50/80 px-3.5 py-2 text-xs font-medium text-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
-                  💡 {currentQuestion.promptHint}
+                  💡 <LocalizedAssessmentText text={currentQuestion.promptHint} />
                 </p>
               )}
             </div>
@@ -996,7 +1011,7 @@ export function TestClient({
 
               {/* SCORE BADGE */}
               <div className="flex min-w-[180px] shrink-0 flex-col items-center justify-center rounded-3xl bg-white/10 p-6 text-center backdrop-blur ring-1 ring-white/20">
-                <span className="text-xs font-bold text-slate-300">ĐIỂM TỔNG HỢP</span>
+                <span className="text-xs font-bold text-slate-300">{t("testOverallScore")}</span>
                 <span className="mt-1 text-5xl font-black text-amber-400">{scorePercent}%</span>
                 <span className="mt-2 rounded-full bg-amber-400/20 px-3 py-0.5 text-xs font-bold text-amber-300">
                   {scorePercent >= 85
@@ -1048,18 +1063,18 @@ export function TestClient({
                               : "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300"
                           }`}
                         >
-                          {stat.percent >= 80 ? "Vững vàng" : stat.percent >= 65 ? "Đạt yêu cầu" : "Điểm yếu cần ôn"}
+                          {stat.percent >= 80 ? t("testStatusSolid") : stat.percent >= 65 ? t("testStatusPass") : t("testStatusWeak")}
                         </span>
                       </div>
                       <h4 className="mt-2 text-sm font-black text-slate-900 dark:text-white">{meta.label}</h4>
                       <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
-                        Đúng {stat.correct} / {stat.total} nhiệm vụ
+                        {stat.correct} / {stat.total} {t("testTasksCorrect")}
                       </p>
                     </div>
 
                     <div className="mt-4">
                       <div className="mb-1 flex items-center justify-between text-xs font-extrabold">
-                        <span className="text-slate-600 dark:text-slate-300">Mức độ hoàn thành</span>
+                        <span className="text-slate-600 dark:text-slate-300">{t("testCompletionRate")}</span>
                         <span className={isWeak ? "text-amber-700 dark:text-amber-300" : "text-emerald-700 dark:text-emerald-300"}>
                           {stat.percent}%
                         </span>
@@ -1088,16 +1103,16 @@ export function TestClient({
                   🩺
                 </span>
                 <div>
-                  <h3 className="font-black text-slate-900 dark:text-white">Điểm Yếu & Kiến Thức Cần Ôn Tập</h3>
+                  <h3 className="font-black text-slate-900 dark:text-white">{t("testWeaknessesTitle")}</h3>
                   <p className="text-xs text-slate-500 dark:text-slate-400">
-                    Chẩn đoán tự động từ các câu trả lời chưa chính xác của bạn
+                    {t("testWeaknessesSub")}
                   </p>
                 </div>
               </div>
 
               {missedQuestions.length === 0 ? (
                 <div className="rounded-2xl border border-emerald-200 bg-emerald-50/60 p-4 text-sm font-semibold text-emerald-800 dark:border-emerald-900/50 dark:bg-emerald-950/30 dark:text-emerald-200">
-                  🎉 Tuyệt vời! Bạn không mắc lỗi nào trong bài đánh giá này. Bạn hoàn toàn đủ điều kiện chuyển sang cấp độ tiếp theo.
+                  {t("testNoMistakes")}
                 </div>
               ) : (
                 <ul className="space-y-2.5">
@@ -1110,12 +1125,12 @@ export function TestClient({
                         <span>
                           {SKILL_META[q.skill].icon} {SKILL_META[q.skill].label} · {q.level}
                         </span>
-                        <span>Cần ôn lại</span>
+                        <span>{t("testNeedReview")}</span>
                       </div>
                       <p className="mt-1 font-bold text-slate-800 dark:text-slate-100">
-                        Chủ điểm: {q.recommendedLesson.topic}
+                        {t("testTopic")}: {q.recommendedLesson.topic}
                       </p>
-                      <p className="mt-0.5 text-slate-600 dark:text-slate-300">{q.explanation}</p>
+                      <p className="mt-0.5 text-slate-600 dark:text-slate-300"><LocalizedAssessmentText text={q.explanation} /></p>
                     </li>
                   ))}
                 </ul>
@@ -1123,7 +1138,7 @@ export function TestClient({
 
               {weakSkills.length > 0 && (
                 <div className="rounded-2xl bg-slate-50 p-3.5 text-xs text-slate-600 dark:bg-sumi-800 dark:text-slate-300">
-                  <b>Kỹ năng ưu tiên cải thiện:</b>{" "}
+                  <b>{t("testPrioritySkills")}:</b>{" "}
                   {weakSkills.map((k) => SKILL_META[k].label).join(", ")}.
                 </div>
               )}
@@ -1138,7 +1153,7 @@ export function TestClient({
                 <div>
                   <h3 className="font-black text-slate-900 dark:text-white">{t("testRecommendedLessons") || "Đề Xuất Bài Học Tiếp Theo"}</h3>
                   <p className="text-xs text-slate-500 dark:text-slate-400">
-                    Bấm trực tiếp vào bài học để lấp lỗ hổng kiến thức ngay lập tức
+                    {t("testClickToReview")}
                   </p>
                 </div>
               </div>
@@ -1152,7 +1167,7 @@ export function TestClient({
                   >
                     <div className="min-w-0">
                       <span className="text-[11px] font-extrabold text-red-600 dark:text-red-400">
-                        {SKILL_META[rec.skill].icon} Bổ trợ {getSkillLabel(rec.skill)} · {rec.topic}
+                        {SKILL_META[rec.skill].icon} {t("testSupplementary")} {getSkillLabel(rec.skill)} · {rec.topic}
                       </span>
                       <h4 className="mt-0.5 truncate text-sm font-black text-slate-900 dark:text-white">
                         {rec.title}
@@ -1339,7 +1354,7 @@ export function TestClient({
 
                       {q.audioScript && (
                         <div className="flex items-center justify-between gap-2 rounded-xl bg-indigo-50/80 px-3.5 py-2 text-xs text-indigo-950 dark:bg-indigo-950/40 dark:text-indigo-200">
-                          <span className="jp-text font-semibold">🎧 Kịch bản Nghe: 「{q.audioScript}」</span>
+                          <span className="jp-text font-semibold">🎧 {t("testListeningScript")}: 「{q.audioScript}」</span>
                           <button
                             type="button"
                             onClick={() => speak(q.audioScript!)}

@@ -10,7 +10,7 @@ import { SRS_CARD_BACKS } from "@/lib/assets/base64Images";
 import { AppNav } from "@/components/AppNav";
 import { Icon, type IconName } from "@/components/ui";
 import { JapanBackdrop } from "@/components/JapanIllustration";
-import { ReviewClient, ReviewSettingsButton, SpeakButton } from "./ReviewClient";
+import { ReviewClient, ReviewSettingsButton, SpeakButton, QueueItemSubtitle } from "./ReviewClient";
 import {
   buildKanaMap,
   buildKanaPrismaWhere,
@@ -19,20 +19,21 @@ import {
   resolveReviewItems,
 } from "@/lib/review/resolveReviewItem";
 import "./review.css";
+import { LocalizedText, LocalizedQuote } from "@/components/LocalizedText";
 
-const MODES: { href: string; icon: IconName; title: string; desc: string; tone: "red" | "blue"; active?: boolean }[] = [
-  { href: "/app/review", icon: "card", title: "SRS Flashcard", desc: "Ôn tập theo tần suất lặp lại", tone: "red", active: true },
-  { href: "/app/practice", icon: "quiz", title: "Quiz bài học", desc: "Kiểm tra kiến thức đã học", tone: "blue" },
-  { href: "/app/survival", icon: "chat", title: "Hội thoại sinh tồn", desc: "Luyện phản xạ giao tiếp", tone: "blue" },
-  { href: "/app/learn#kana-full", icon: "pen", title: "Xưởng viết Kana", desc: "Luyện viết Hiragana & Katakana", tone: "red" },
+const MODES: { href: string; icon: IconName; titleKey: string; fallbackTitle: string; descKey: string; fallbackDesc: string; tone: "red" | "blue"; active?: boolean }[] = [
+  { href: "/app/review", icon: "card", titleKey: "modeSrsTitle", fallbackTitle: "SRS Flashcard", descKey: "modeSrsDesc", fallbackDesc: "Ôn tập theo tần suất lặp lại", tone: "red", active: true },
+  { href: "/app/practice", icon: "quiz", titleKey: "modeQuizTitle", fallbackTitle: "Quiz bài học", descKey: "modeQuizDesc", fallbackDesc: "Kiểm tra kiến thức đã học", tone: "blue" },
+  { href: "/app/survival", icon: "chat", titleKey: "modeSurvivalTitle", fallbackTitle: "Hội thoại sinh tồn", descKey: "modeSurvivalDesc", fallbackDesc: "Luyện phản xạ giao tiếp", tone: "blue" },
+  { href: "/app/learn#kana-full", icon: "pen", titleKey: "modeKanaTitle", fallbackTitle: "Xưởng viết Kana", descKey: "modeKanaDesc", fallbackDesc: "Luyện viết Hiragana & Katakana", tone: "red" },
 ];
 
-// 4 thẻ lối tắt dưới khung flashcard. Kiểm tra lại các href cho khớp route thật của dự án.
-const PROMOS: { href: string; glyph: string; title: string; desc: string; tone: "red" | "blue" | "violet" | "teal" }[] = [
-  { href: "/app/vocabulary", glyph: "語", title: "Từ vựng", desc: "Mở rộng vốn từ", tone: "red" },
-  { href: "/app/grammar", glyph: "文", title: "Ngữ pháp", desc: "Hiểu sâu - Dùng chuẩn", tone: "blue" },
-  { href: "/app/survival", glyph: "話", title: "Hội thoại", desc: "Tự tin giao tiếp", tone: "violet" },
-  { href: "/app/journey", glyph: "和", title: "Khám phá", desc: "Văn hóa Nhật Bản", tone: "teal" },
+// 4 thẻ lối tắt dưới khung flashcard.
+const PROMOS: { href: string; glyph: string; titleKey: string; fallbackTitle: string; descKey: string; fallbackDesc: string; tone: "red" | "blue" | "violet" | "teal" }[] = [
+  { href: "/app/vocabulary", glyph: "語", titleKey: "navVocab", fallbackTitle: "Từ vựng", descKey: "promoVocabDesc", fallbackDesc: "Mở rộng vốn từ", tone: "red" },
+  { href: "/app/grammar", glyph: "文", titleKey: "navGrammar", fallbackTitle: "Ngữ pháp", descKey: "promoGrammarDesc", fallbackDesc: "Hiểu sâu - Dùng chuẩn", tone: "blue" },
+  { href: "/app/survival", glyph: "話", titleKey: "navSurvival", fallbackTitle: "Hội thoại", descKey: "promoSurvivalDesc", fallbackDesc: "Tự tin giao tiếp", tone: "violet" },
+  { href: "/app/journey", glyph: "和", titleKey: "navJourney", fallbackTitle: "Khám phá", descKey: "promoJourneyDesc", fallbackDesc: "Văn hóa Nhật Bản", tone: "teal" },
 ];
 
 // Quét thư mục ảnh nền flashcard. Thêm / bớt ảnh trong public/images/SRS_card/back/ là tự cập nhật.
@@ -182,13 +183,13 @@ export default async function ReviewPage() {
           <div className="rv-hero-copy">
             <span className="rv-hero-kicker jp-text">一歩ずつ、夢に近づく。</span>
             <h1>
-              Đấu trường <em>luyện tập</em>
+              <LocalizedText k="reviewArenaTitle" fallback="Đấu trường" /> <em><LocalizedText k="reviewArenaEm" fallback="luyện tập" /></em>
             </h1>
-            <p>Luyện tập chủ động. Củng cố trí nhớ. Biến kiến thức thành kỹ năng thực tế.</p>
+            <p><LocalizedText k="reviewArenaDesc" fallback="Luyện tập chủ động. Củng cố trí nhớ. Biến kiến thức thành kỹ năng thực tế." /></p>
           </div>
           <div className="rv-quote" data-parallax="0.08">
             <span className="jp-text">継続は力なり</span>
-            <small>“Kiên trì sẽ thành sức mạnh.”</small>
+            <small><LocalizedQuote kanji="継続は力なり" fallback="“Kiên trì sẽ thành sức mạnh.”" /></small>
             <i className="rv-quote-more" aria-hidden="true">»</i>
           </div>
         </section>
@@ -206,8 +207,8 @@ export default async function ReviewPage() {
                 <Icon name={mode.icon} size={22} />
               </span>
               <span className="rv-tab-text">
-                <b>{mode.title}</b>
-                <small>{mode.desc}</small>
+                <b><LocalizedText k={mode.titleKey} fallback={mode.fallbackTitle} /></b>
+                <small><LocalizedText k={mode.descKey} fallback={mode.fallbackDesc} /></small>
               </span>
               <span className="rv-tab-go" aria-hidden="true">›</span>
             </Link>
@@ -222,8 +223,8 @@ export default async function ReviewPage() {
                   <Icon name="card" size={26} />
                 </span>
                 <div>
-                  <h2 id="rv-title">SRS Flashcard</h2>
-                  <p>Ôn tập thông minh theo thuật toán Spaced Repetition System (SRS).</p>
+                  <h2 id="rv-title"><LocalizedText k="modeSrsTitle" fallback="SRS Flashcard" /></h2>
+                  <p><LocalizedText k="reviewSrsFlashcardDesc" fallback="Ôn tập thông minh theo thuật toán Spaced Repetition System (SRS)." /></p>
                 </div>
                 <ReviewSettingsButton />
               </div>
@@ -236,8 +237,8 @@ export default async function ReviewPage() {
               {PROMOS.map((p) => (
                 <Link key={p.href} href={p.href} className="rv-promo" data-tone={p.tone}>
                   <span className="rv-promo-art jp-text" aria-hidden="true">{p.glyph}</span>
-                  <b>{p.title}</b>
-                  <small>{p.desc}</small>
+                  <b><LocalizedText k={p.titleKey} fallback={p.fallbackTitle} /></b>
+                  <small><LocalizedText k={p.descKey} fallback={p.fallbackDesc} /></small>
                   <span className="rv-promo-go" aria-hidden="true">
                     <Icon name="arrowRight" size={18} />
                   </span>
@@ -249,7 +250,7 @@ export default async function ReviewPage() {
               <ToriiMini />
               <span className="jp-text">また、がんばりましょう！</span>
               <i aria-hidden="true" />
-              <span>Cố gắng lên nhé!</span>
+              <span><LocalizedText k="reviewCtaKeepGoing" fallback="Cố gắng lên nhé!" /></span>
             </p>
           </div>
 
@@ -268,13 +269,13 @@ export default async function ReviewPage() {
                   <Icon name="calendar" size={22} />
                 </span>
                 <div>
-                  <b>Hôm nay đến hạn</b>
-                  <small>Các thẻ từ cần ôn tập theo lịch SRS</small>
+                  <b><LocalizedText k="srsDueToday" fallback="Hôm nay đến hạn" /></b>
+                  <small><LocalizedText k="srsDueSub" fallback="Các thẻ từ cần ôn tập theo lịch SRS" /></small>
                 </div>
               </div>
               <div className="rv-due-row">
                 <strong>{sessionCount}</strong>
-                <span>/ {totalDue} thẻ</span>
+                <span>/ {totalDue} <LocalizedText k="srsCardsUnit" fallback="thẻ" /></span>
                 <b>{duePercent}%</b>
               </div>
               <div className="rv-bar" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={duePercent}>
@@ -283,7 +284,7 @@ export default async function ReviewPage() {
               <a className="rv-cta" href="#review-card">
                 <span>
                   <Icon name="play" size={16} />
-                  Bắt đầu ôn tập
+                  <LocalizedText k="srsStartReview" fallback="Bắt đầu ôn tập" />
                 </span>
                 <Icon name="arrowRight" size={18} />
               </a>
@@ -295,8 +296,8 @@ export default async function ReviewPage() {
                   <TrendIcon />
                 </span>
                 <div>
-                  <b>Tỉ lệ ghi nhớ</b>
-                  <small>Dựa trên {totalGrades} lượt ôn đã ghi nhận</small>
+                  <b><LocalizedText k="srsRetentionRate" fallback="Tỉ lệ ghi nhớ" /></b>
+                  <small><LocalizedText k="srsBasedOnReviews" fallback={`Dựa trên ${totalGrades} lượt ôn đã ghi nhận`} params={{ count: totalGrades }} /></small>
                 </div>
                 <span className="rv-stat-trend" aria-hidden="true">
                   <TrendIcon size={18} />
@@ -305,20 +306,20 @@ export default async function ReviewPage() {
               <div className="rv-retention">
                 <div className="rv-ring" style={{ "--retention": `${retention * 3.6}deg` } as CSSProperties}>
                   <strong>{retention}%</strong>
-                  <small>Đúng</small>
+                  <small><LocalizedText k="srsCorrect" fallback="Đúng" /></small>
                 </div>
                 <ul className="rv-legend">
                   <li data-tone="good">
                     <i />
-                    Đúng ngay <b>{matureCount}</b>
+                    <LocalizedText k="srsCorrectNow" fallback="Đúng ngay" /> <b>{matureCount}</b>
                   </li>
                   <li data-tone="hard">
                     <i />
-                    Cần ôn lại <b>{Math.max(0, sessionCount - matureCount)}</b>
+                    <LocalizedText k="srsNeedReview" fallback="Cần ôn lại" /> <b>{Math.max(0, sessionCount - matureCount)}</b>
                   </li>
                   <li data-tone="again">
                     <i />
-                    Quên <b>{forgottenCount}</b>
+                    <LocalizedText k="srsForgotten" fallback="Quên" /> <b>{forgottenCount}</b>
                   </li>
                 </ul>
               </div>
@@ -330,10 +331,10 @@ export default async function ReviewPage() {
                   <span className="rv-stat-icon is-indigo">
                     <Icon name="quiz" size={22} />
                   </span>
-                  <b>Hàng đợi ôn tập</b>
+                  <b><LocalizedText k="srsReviewQueue" fallback="Hàng đợi ôn tập" /></b>
                 </div>
                 <Link href="/app/vocabulary">
-                  Xem tất cả <Icon name="arrowRight" size={15} />
+                  <LocalizedText k="srsViewAll" fallback="Xem tất cả" /> <Icon name="arrowRight" size={15} />
                 </Link>
               </div>
               {queue.length ? (
@@ -343,14 +344,14 @@ export default async function ReviewPage() {
                     <div className="rv-queue-row" key={item.id}>
                       <span>{index + 1}</span>
                       <strong className="jp-text">{promptText}</strong>
-                      <small className="jp-text">{item.subtitle}</small>
+                      <QueueItemSubtitle subtitle={item.subtitle} contentType={item.contentType} />
                       <em className="rv-pill">{item.contentType === "KANA" ? "KANA" : `JLPT ${item.level || "N5"}`}</em>
                       <SpeakButton text={promptText} />
                     </div>
                   );
                 })
               ) : (
-                <p className="rv-queue-empty">Không có thẻ đến hạn. Hẹn bạn ở phiên ôn tiếp theo.</p>
+                <p className="rv-queue-empty"><LocalizedText k="srsNoCardsDue" fallback="Không có thẻ đến hạn. Hẹn bạn ở phiên ôn tiếp theo." /></p>
               )}
             </section>
           </aside>

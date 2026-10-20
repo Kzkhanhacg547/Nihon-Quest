@@ -6,6 +6,8 @@ import { BASE64_IMAGES } from "@/lib/assets/base64Images";
 import Link from "next/link";
 import { useSoundAndTheme } from "@/components/SoundAndThemeContext";
 import { useNativeLanguage } from "@/components/LanguageContext";
+import { LocalizedVocabMeaning } from "@/lib/vocabLocalization";
+import { LocalizedGrammarText } from "@/lib/grammarLocalization";
 
 interface GrammarExample {
   id: string;
@@ -90,13 +92,13 @@ function GrammarDetail({ item }: { item: GrammarItem }) {
     <div className="space-y-4">
       <section>
         <h4 className="text-[11px] font-bold text-fuji-500 dark:text-fuji-400">{t("grammarMeaning")}</h4>
-        <p className="mt-1 text-sm leading-relaxed text-slate-700 dark:text-slate-200">{item.meaning}</p>
+        <p className="mt-1 text-sm leading-relaxed text-slate-700 dark:text-slate-200"><LocalizedGrammarText text={item.meaning} keyContext={item.title} /></p>
       </section>
 
       <section>
         <h4 className="text-[11px] font-bold text-matcha-600 dark:text-matcha-400">{t("grammarStructure")}</h4>
         <div className="mt-1 rounded-xl border border-matcha-200 bg-matcha-50 px-4 py-3 dark:border-matcha-900 dark:bg-matcha-950/30">
-          <p className="font-mono text-sm font-bold text-matcha-800 dark:text-matcha-200">{item.structure}</p>
+          <p className="font-mono text-sm font-bold text-matcha-800 dark:text-matcha-200"><LocalizedGrammarText text={item.structure} /></p>
         </div>
       </section>
 
@@ -104,7 +106,7 @@ function GrammarDetail({ item }: { item: GrammarItem }) {
         <section>
           <h4 className="text-[11px] font-bold text-amber-600 dark:text-amber-400">{t("grammarMistakes")}</h4>
           <div className="mt-1 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-900 dark:bg-amber-950/30">
-            <p className="text-sm leading-relaxed text-amber-800 dark:text-amber-200">{item.commonMistakes}</p>
+            <p className="text-sm leading-relaxed text-amber-800 dark:text-amber-200"><LocalizedGrammarText text={item.commonMistakes} /></p>
           </div>
         </section>
       )}
@@ -121,7 +123,7 @@ function GrammarDetail({ item }: { item: GrammarItem }) {
                 <div className="min-w-0">
                   <p className="jp-text text-base font-black text-slate-900 dark:text-white">{ex.japanese}</p>
                   {ex.romaji && <p className="mt-0.5 text-xs italic text-fuji-500 dark:text-fuji-400">{ex.romaji}</p>}
-                  <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">{ex.meaning}</p>
+                  <p className="mt-1 text-sm text-slate-600 dark:text-slate-300"><LocalizedGrammarText text={ex.meaning} /></p>
                 </div>
                 <button
                   onClick={() => speak(ex.japanese)}
@@ -478,7 +480,7 @@ export function GrammarClient({ grammar, defaultLevel = "N5", displayName = "báº
                         </span>
                         <span className="min-w-0 flex-1">
                           <span className="jp-text block truncate text-sm font-black text-slate-900 dark:text-white">{item.title}</span>
-                          <span className="mt-0.5 block truncate text-xs text-slate-500 dark:text-slate-400">{item.meaning}</span>
+                          <span className="mt-0.5 block truncate text-xs text-slate-500 dark:text-slate-400"><LocalizedGrammarText text={item.meaning} keyContext={item.title} /></span>
                         </span>
                         <span className="shrink-0 rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-bold text-amber-600 dark:bg-amber-950/40 dark:text-amber-400">
                           {item.level}

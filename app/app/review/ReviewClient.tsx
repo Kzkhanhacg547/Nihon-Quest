@@ -10,6 +10,7 @@ import { notifyProgressUpdated } from "@/components/UserProgressContext";
 import { getReviewFrontPrompt, type EnrichedReviewItem } from "@/lib/review/resolveReviewItem";
 import { updateSrs } from "@/lib/srs";
 import { useNativeLanguage } from "@/components/LanguageContext";
+import { LocalizedVocabMeaning } from "@/lib/vocabLocalization";
 
 type Grade = "AGAIN" | "HARD" | "GOOD" | "EASY";
 
@@ -43,13 +44,14 @@ const GRADES: readonly {
   grade: Grade;
   key: string;
   label: string;
+  labelKey: string;
   tone: "again" | "hard" | "good" | "easy";
   icon: IconName;
 }[] = [
-  { grade: "AGAIN", key: "1", label: "Again", tone: "again", icon: "refresh" },
-  { grade: "HARD", key: "2", label: "Hard", tone: "hard", icon: "bars" },
-  { grade: "GOOD", key: "3", label: "Good", tone: "good", icon: "minusCircle" },
-  { grade: "EASY", key: "4", label: "Easy", tone: "easy", icon: "sparkle" },
+  { grade: "AGAIN", key: "1", label: "Again", labelKey: "srsGradeAgain", tone: "again", icon: "refresh" },
+  { grade: "HARD", key: "2", label: "Hard", labelKey: "srsGradeHard", tone: "hard", icon: "bars" },
+  { grade: "GOOD", key: "3", label: "Good", labelKey: "srsGradeGood", tone: "good", icon: "minusCircle" },
+  { grade: "EASY", key: "4", label: "Easy", labelKey: "srsGradeEasy", tone: "easy", icon: "sparkle" },
 ];
 
 const RATES = [0.6, 0.75, 0.85, 1, 1.2];
@@ -86,6 +88,7 @@ export function SpeakButton({ text, className = "rv-icon-btn", size = 16 }: { te
 // ======================== Nút + hộp thoại "Cài đặt ôn tập" ========================
 export function ReviewSettingsButton() {
   const [open, setOpen] = useState(false);
+  const { t, nativeLanguage } = useNativeLanguage();
   const {
     soundEnabled,
     setSoundEnabled,
@@ -119,28 +122,28 @@ export function ReviewSettingsButton() {
         aria-haspopup="dialog"
       >
         <Icon name="settings" size={17} />
-        Cài đặt ôn tập
+        {t("srsSettingsTitle")}
       </button>
 
       {open &&
         createPortal(
           <div className="rv-page">
-            <Modal isOpen={open} onClose={() => setOpen(false)} title="Cài đặt ôn tập" maxWidth="md">
+            <Modal isOpen={open} onClose={() => setOpen(false)} title={t("srsSettingsTitle")} maxWidth="md">
               <div className="rv-set">
                 <div className="rv-set-row">
-                  <span>Âm thanh hiệu ứng</span>
+                  <span>{t("srsSoundEffects")}</span>
                   <button
                     type="button"
                     role="switch"
                     aria-checked={soundEnabled}
-                    aria-label="Âm thanh hiệu ứng"
+                    aria-label={t("srsSoundEffects")}
                     className="rv-switch"
                     onClick={() => setSoundEnabled(!soundEnabled)}
                   />
                 </div>
 
                 <div>
-                  <h4>Tốc độ đọc</h4>
+                  <h4>{t("srsSpeechRate")}</h4>
                   <div className="rv-set-chips">
                     {RATES.map((rate) => (
                       <button
@@ -159,9 +162,9 @@ export function ReviewSettingsButton() {
                 </div>
 
                 <div>
-                  <h4>Giọng đọc</h4>
+                  <h4>{t("srsSpeechVoice")}</h4>
                   <select value={speechVoiceURI} onChange={(e) => setSpeechVoiceURI(e.target.value)}>
-                    <option value="">Mặc định hệ thống</option>
+                    <option value="">{t("srsDefaultVoice")}</option>
                     {availableVoices.map((voice) => (
                       <option key={voice.voiceURI} value={voice.voiceURI}>
                         {voice.name} ({voice.lang})
@@ -171,19 +174,13 @@ export function ReviewSettingsButton() {
                 </div>
 
                 <div>
-                  <h4>Phím tắt</h4>
-                  <p>
-                    <kbd>Space</kbd> lật thẻ · <kbd>←</kbd> <kbd>→</kbd> đổi thẻ · <kbd>1</kbd> Again · <kbd>2</kbd> Hard · <kbd>3</kbd> Good · <kbd>4</kbd> Easy
-                    (chấm điểm sau khi đã lật thẻ).
-                  </p>
+                  <h4>{t("srsShortcuts")}</h4>
+                  <p>{t("srsShortcutsDesc")}</p>
                 </div>
 
                 <div>
-                  <h4>SRS hoạt động thế nào?</h4>
-                  <p>
-                    Chọn <b>Good</b> hoặc <b>Easy</b> để giãn cách lần ôn tiếp theo (1 ngày → 3 ngày → 7 ngày…). Chọn{" "}
-                    <b>Again</b> và thẻ quay về cuối hàng đợi hôm nay để bạn làm quen lại ngay.
-                  </p>
+                  <h4>{t("srsHowItWorks")}</h4>
+                  <p>{t("srsHowItWorksDesc")}</p>
                 </div>
               </div>
             </Modal>
@@ -195,10 +192,30 @@ export function ReviewSettingsButton() {
 }
 
 // ======================== Phiên ôn tập ========================
+function formatSubtitle(subtitle: string, contentType: string, t: (k: string) => string): string {
+  if (contentType === "KANJI") return t("vocabTabKanji") || "Kanji";
+  if (contentType === "GRAMMAR") return t("navGrammar") || "Grammar";
+  if (contentType === "EXERCISE") return t("practiceQuestion") || "Exercise";
+  if (contentType === "KANA") return subtitle;
+  if (contentType === "VOCAB") {
+    const parts = subtitle.split("·");
+    const pos = parts[1]?.trim() || "";
+    const posKey = pos ? `pos${pos.charAt(0).toUpperCase() + pos.slice(1)}` : "";
+    const posLabel = posKey ? t(posKey) : pos;
+    return `${t("navVocab")}${posLabel ? ` · ${posLabel}` : ""}`;
+  }
+  return subtitle;
+}
+
+export function QueueItemSubtitle({ subtitle, contentType }: { subtitle: string; contentType: string }) {
+  const { t } = useNativeLanguage();
+  return <small className="jp-text">{formatSubtitle(subtitle, contentType, t)}</small>;
+}
+
 export function ReviewClient({ initial, backgrounds = [] }: { initial: EnrichedReviewItem[]; backgrounds?: string[] }) {
   const router = useRouter();
   const { playClick, playCorrect, playIncorrect, playFanfare, showToast } = useSoundAndTheme();
-  const { t } = useNativeLanguage();
+  const { t, nativeLanguage } = useNativeLanguage();
 
   const [items, setItems] = useState<EnrichedReviewItem[]>(initial);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -349,10 +366,10 @@ export function ReviewClient({ initial, backgrounds = [] }: { initial: EnrichedR
 
         <Card className="p-4 border-dashed border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-sumi-900/50 space-y-2">
           <h4 className="font-bold text-xs text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
-            <Icon name="bulb" size={15} /> Cơ chế Spaced Repetition (SRS)
+            <Icon name="bulb" size={15} /> {t("srsMechanismTitle")}
           </h4>
           <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-            Hệ thống tự động điều chỉnh giãn cách ôn tập (1 ngày ➔ 3 ngày ➔ 7 ngày ➔ 14 ngày ➔ 30 ngày) dựa theo mức độ ghi nhớ bạn đánh giá, giúp bạn ghi nhớ kiến thức trọn đời mà không tốn công học dồn.
+            {t("srsMechanismDesc")}
           </p>
         </Card>
       </div>
@@ -374,8 +391,8 @@ export function ReviewClient({ initial, backgrounds = [] }: { initial: EnrichedR
   const meaning = currentItem.extra || currentItem.subtitle;
   const tip =
     currentItem.contentType === "KANA"
-      ? `Đọc to “${frontPrompt}” ba lần rồi viết ra giấy một lần — vừa nghe vừa viết giúp bạn nhớ nét chữ lâu hơn.`
-      : `Hãy liên tưởng “${frontPrompt}” với một hình ảnh hoặc tình huống thật bạn từng gặp. Hình ảnh cụ thể sẽ giúp bạn nhớ lâu hơn!`;
+      ? (nativeLanguage === "zh-CN" || nativeLanguage === "zh-TW" ? `大声朗读“${frontPrompt}”三遍，并在纸上书写一次——视听写结合能让笔顺记忆更深刻。` : nativeLanguage === "en" ? `Read "${frontPrompt}" out loud three times and write it once — multi-sensory practice locks stroke memory in.` : `Đọc to “${frontPrompt}” ba lần rồi viết ra giấy một lần — vừa nghe vừa viết giúp bạn nhớ nét chữ lâu hơn.`)
+      : (nativeLanguage === "zh-CN" || nativeLanguage === "zh-TW" ? `尝试将“${frontPrompt}”与你经历过的真实生活场景或具象画面联系起来，生动的联想能让记忆更牢固！` : nativeLanguage === "en" ? `Associate "${frontPrompt}" with a concrete real-life image or situation — visual associations anchor long-term recall!` : `Hãy liên tưởng “${frontPrompt}” với một hình ảnh hoặc tình huống thật bạn từng gặp. Hình ảnh cụ thể sẽ giúp bạn nhớ lâu hơn!`);
 
   const flip = () => setIsFlipped((f) => !f);
 
@@ -395,7 +412,9 @@ export function ReviewClient({ initial, backgrounds = [] }: { initial: EnrichedR
         <div className="rv-paper">
           <div className="rv-paper-body">
             <span className={`rv-type-tag ${back ? "is-answer" : ""}`}>
-              {back ? `Đáp án · ${currentItem.subtitle}` : currentItem.subtitle}
+              {back
+                ? `${t("srsAnswer")} · ${formatSubtitle(currentItem.subtitle, currentItem.contentType, t)}`
+                : formatSubtitle(currentItem.subtitle, currentItem.contentType, t)}
             </span>
             {back ? (
               <>
@@ -415,8 +434,12 @@ export function ReviewClient({ initial, backgrounds = [] }: { initial: EnrichedR
                 </p>
 
                 {/* 3. Nghĩa tiếng Việt & Hán Việt tách biệt */}
-                {meaning && <p className="rv-meaning">{meaning}</p>}
-                {currentItem.hanVietNote && (
+                {meaning && (
+                  <p className="rv-meaning">
+                    <LocalizedVocabMeaning japanese={currentItem.title} kana={currentItem.reading} fallback={meaning} />
+                  </p>
+                )}
+                {currentItem.hanVietNote && nativeLanguage === "vi" && (
                   <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mt-1">
                     Hán Việt: {currentItem.hanVietNote}
                   </p>
@@ -434,11 +457,11 @@ export function ReviewClient({ initial, backgrounds = [] }: { initial: EnrichedR
             )}
             {back ? (
               <div className="rv-paper-foot">
-                <span>Đã củng cố: {currentItem.repetitions} lần</span>
-                <span>Chu kỳ hiện tại: {currentItem.interval} ngày</span>
+                <span>{t("srsReinforced")}: {currentItem.repetitions} {t("srsTimes")}</span>
+                <span>{t("srsCurrentInterval")}: {currentItem.interval} {t("srsDays")}</span>
               </div>
             ) : (
-              <span className="rv-flip-prompt">Chạm để lật xem đáp án</span>
+              <span className="rv-flip-prompt">{t("srsTapToFlip")}</span>
             )}
           </div>
         </div>
@@ -470,7 +493,7 @@ export function ReviewClient({ initial, backgrounds = [] }: { initial: EnrichedR
             <button
               type="button"
               className="rv-nav is-prev"
-              aria-label="Thẻ trước"
+              aria-label={t("srsPrevCard")}
               onClick={(e) => {
                 e.stopPropagation();
                 playClick();
@@ -482,7 +505,7 @@ export function ReviewClient({ initial, backgrounds = [] }: { initial: EnrichedR
             <button
               type="button"
               className="rv-nav is-next"
-              aria-label="Thẻ kế tiếp"
+              aria-label={t("srsNextCard")}
               onClick={(e) => {
                 e.stopPropagation();
                 playClick();
@@ -497,11 +520,11 @@ export function ReviewClient({ initial, backgrounds = [] }: { initial: EnrichedR
 
       <div className="rv-hint">
         <Icon name="tap" size={18} />
-        <span>{isFlipped ? "Nhấn vào thẻ để lật lại" : "Nhấn vào thẻ để xem nghĩa"}</span>
+        <span>{isFlipped ? t("srsTapToFlipBack") : t("srsTapToSeeMeaning")}</span>
         <kbd>Space</kbd>
       </div>
 
-      <div className="rv-grades" role="group" aria-label="Đánh giá mức độ ghi nhớ">
+      <div className="rv-grades" role="group" aria-label={t("srsGradeAria")}>
         {GRADES.map((g) => (
           <button
             key={g.grade}
@@ -515,7 +538,7 @@ export function ReviewClient({ initial, backgrounds = [] }: { initial: EnrichedR
             onClick={() => handleGrade(g.grade)}
           >
             <Icon name={g.icon} size={26} strokeWidth={2.1} />
-            <b>{g.label}</b>
+            <b>{t(g.labelKey) || g.label}</b>
             <small>{describeInterval(g.grade, currentItem.ease, currentItem.interval, currentItem.repetitions, t)}</small>
           </button>
         ))}
@@ -524,12 +547,12 @@ export function ReviewClient({ initial, backgrounds = [] }: { initial: EnrichedR
       <div className="rv-tip">
         <Icon name="bulb" size={24} className="rv-tip-icon" />
         <div>
-          <b>Mẹo ghi nhớ</b>
+          <b>{t("srsMemoryTip")}</b>
           <small>{tip}</small>
         </div>
         <Link href="/app/vocabulary">
           <Icon name="image" size={16} />
-          Xem ví dụ
+          {t("srsViewExamples")}
           <Icon name="external" size={15} />
         </Link>
       </div>

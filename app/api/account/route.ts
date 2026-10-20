@@ -18,6 +18,7 @@ const updateSchema = z.object({
   theme: z.enum(["light", "dark", "system"]).optional(),
   soundEnabled: z.boolean().optional(),
   onboardingCompleted: z.boolean().optional(),
+  nativeLanguage: z.string().optional(),
 });
 
 export async function PATCH(req: Request) {
@@ -91,7 +92,15 @@ export async function PATCH(req: Request) {
   });
 
   const { passwordHash: _omit, ...safe } = updatedUser;
-  return NextResponse.json({ ok: true, user: safe });
+  const res = NextResponse.json({ ok: true, user: safe });
+  if (parsed.data.nativeLanguage) {
+    res.cookies.set("nq_native_language", parsed.data.nativeLanguage, {
+      path: "/",
+      maxAge: 31536000,
+      sameSite: "lax",
+    });
+  }
+  return res;
 }
 
 export async function DELETE() {

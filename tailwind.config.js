@@ -69,9 +69,26 @@ module.exports = {
           "0%, 100%": { transform: "translateY(0)" },
           "50%": { transform: "translateY(-6px)" },
         },
+        fadeIn: {
+          "0%": { opacity: "0", transform: "translateY(6px)" },
+          "100%": { opacity: "1", transform: "translateY(0)" },
+        },
+        indeterminate: {
+          "0%": { transform: "translateX(-100%) scaleX(0.2)" },
+          "50%": { transform: "translateX(0%) scaleX(0.7)" },
+          "100%": { transform: "translateX(100%) scaleX(0.2)" },
+        },
+        pop: {
+          "0%": { transform: "scale(0.96)" },
+          "50%": { transform: "scale(1.02)" },
+          "100%": { transform: "scale(1)" },
+        },
       },
       animation: {
         float: "float 3s ease-in-out infinite",
+        fadeIn: "fadeIn 0.28s ease-out forwards",
+        indeterminate: "indeterminate 1.8s cubic-bezier(0.65, 0.815, 0.735, 0.395) infinite",
+        pop: "pop 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards",
       },
     },
   },

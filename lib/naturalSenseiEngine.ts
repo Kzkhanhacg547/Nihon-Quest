@@ -43,8 +43,8 @@ const LANGUAGE_NAMES: Record<NativeLanguage, string> = {
 };
 
 export function getLanguageName(lang?: NativeLanguage): string {
-  if (!lang) return "Tiếng Việt";
-  return LANGUAGE_NAMES[lang] || "Tiếng Việt";
+  if (!lang) return "English";
+  return LANGUAGE_NAMES[lang] || "English";
 }
 
 export function generateNaturalJapaneseResponse({
@@ -52,7 +52,7 @@ export function generateNaturalJapaneseResponse({
   userMessage,
   userProgress,
   mistakes,
-  nativeLanguage = "vi",
+  nativeLanguage = "en",
 }: DialogueContext): string {
   const msg = userMessage.trim();
   const isVi = nativeLanguage === "vi";
@@ -90,29 +90,29 @@ export function generateNaturalJapaneseResponse({
         : "";
 
       if (isVi) {
-        return `Sensei đã rà soát các bài tập và thẻ ôn gần đây của bạn nè: 🌸\n\n${
-          vocabList ? `**Các từ vựng bạn hay nhầm hoặc quên:**\n${vocabList}\n` : ""
-        }${exSample}\n\n**Mẹo khắc phục từ Sensei:**\nKhi gặp từ khó, hãy đặt câu với từ đó trong ngữ cảnh đời thường để nhớ lâu hơn! Bạn có muốn cùng Sensei làm 1 câu đố nhỏ để ôn lại ngay các điểm trên không? Hãy trả lời Sensei nhé! ✨`;
+        return `Sensei điểm nhanh các từ vựng bạn hay nhầm gần đây nhé: 🌸\n\n${
+          vocabList ? `${vocabList}\n` : ""
+        }${exSample}\n\n💡 **Mẹo khắc phục từ Sensei:** Đặt 1 câu ngắn trong đời sống với từ này để nhớ ngay nhé! Cùng thử không? ✨`;
       }
 
       if (isZh) {
-        return `Sensei 帮你复查了最近的练习记录与错题库：🌸\n\n${
-          vocabList ? `**近期易混淆或遗忘的高频词汇：**\n${vocabList}\n` : ""
-        }${exSample}\n\n**Sensei 的巩固建议：**\n遇到容易遗忘的词句，可以尝试将其代入日常生活场景造句，记忆会深刻得多！想和 Sensei 一起来做一道小练习加深印象吗？随时回复我哦！✨`;
+        return `Sensei 帮你整理了近期的薄弱词汇：🌸\n\n${
+          vocabList ? `${vocabList}\n` : ""
+        }${exSample}\n\n💡 **建议：** 尝试用这些词造一个日常短句，记忆会深刻得多！想试一下吗？✨`;
       }
 
-      return `Sensei noticed a few weak spots in your recent reviews: 🌸\n\n${
-        vocabList ? `**Words that need reinforcement:**\n${vocabList}\n` : ""
-      }${exSample}\n\n**Sensei's Tip:** Repetition right before you forget is the key! Let's try 1 quick practice: What is the meaning or reading of one of these words? Reply right here and I'll grade it for you!`;
+      return `Here are a few words to reinforce from your recent practice: 🌸\n\n${
+        vocabList ? `${vocabList}\n` : ""
+      }${exSample}\n\n💡 **Tip:** Try using one of these words in a short sentence today! Reply and I'll check it! ✨`;
     }
 
     if (isVi) {
-      return `Tin vui đây! Sensei đã kiểm tra và thấy **bạn không có lỗi sai nào chưa xử lý**! ✨ Tỷ lệ làm bài của bạn đang rất chuẩn xác. Hãy tiếp tục giữ vững phong độ bằng bài học tiếp theo trên [Lộ trình](/app/path) nhé!`;
+      return `Sensei đã kiểm tra: **Bạn không có lỗi sai nào chưa xử lý!** ✨ Phong độ làm bài rất tốt. Tiếp tục với bài học tiếp theo trên [Lộ trình](/app/path) nhé!`;
     }
     if (isZh) {
-      return `太棒了！Sensei 检查了你的学习记录，发现**最近没有未掌握的错题或薄弱卡片**！✨ 你的做题正确率非常扎实。请继续在[个人学习路径](/app/path)开启新一课吧！`;
+      return `Sensei 检查了你的记录：**目前没有未解决的错题！** ✨ 正确率非常扎实，继续前往[学习路径](/app/path)开启新一课吧！`;
     }
-    return `Awesome news! Sensei checked your records and found **no recent critical mistakes or weak cards**! ✨ Your accuracy is solid. Keep moving forward on your [Learning Path](/app/path)!`;
+    return `Great news: **No pending mistakes found!** ✨ Your accuracy is solid. Keep moving forward on your [Learning Path](/app/path)!`;
   }
 
   // 1. PROGRESS, STUDY ADVICE & TUTOR ASSISTANCE
@@ -130,50 +130,26 @@ export function generateNaturalJapaneseResponse({
     const totalLessons = userProgress?.totalLessonsInLevel ?? userProgress?.stats?.totalLessonsInLevel ?? 50;
 
     if (isVi) {
-      return `Konnichiwa! Sensei đã kiểm tra hồ sơ học tập của bạn rồi nè: 🌸✨
-- **Cấp độ JLPT:** Trình độ ${level} (Level ${pLevel})
-- **Điểm tích lũy:** ${xp.toLocaleString("vi-VN")} XP | **Chuỗi Streak:** 🔥 ${streak} ngày
-- **Bài học giáo trình:** Đã hoàn thành ${completed}/${totalLessons} bài
-- **Ôn tập SRS:** ${due > 0 ? `⏰ Đang có **${due} thẻ từ vựng** đến hạn ôn tập hôm nay!` : "✨ Bạn đã ôn tập sạch sẽ các thẻ hôm nay rồi!"}
+      return `Chào bạn! Hồ sơ của bạn: Trình độ **${level}** | 🔥 Streak **${streak} ngày** | ${due > 0 ? `⏰ **${due} thẻ SRS** cần ôn` : "✨ Đã hoàn thành thẻ hôm nay"}.
 
-**Lời khuyên học tập từ Sensei hôm nay:**
-${
-  due > 0
-    ? `1. Dành ngay 5-10 phút vào mục [Ôn tập Flashcard SRS](/app/review) để giải quyết ${due} thẻ đến hạn, giúp từ vựng ghi nhớ sâu vào tiềm thức!\n2. Học tiếp 1 bài học mới trong [Lộ trình](/app/path).\n3. Nếu có lỗi sai hay mẫu câu nào chưa hiểu, hãy bấm nút "Khắc phục lỗi sai" hoặc gõ câu hỏi để Sensei phân tích cặn kẽ cho bạn nhé!`
-    : `1. Không có thẻ từ vựng nào bị nợ—tinh thần học của bạn quá tuyệt vời! Hãy duy trì chuỗi Streak bằng cách học 1 bài mới trong [Lộ trình](/app/path).\n2. Luyện phản xạ đối thoại tiếng Nhật ngay tại đây cùng Sensei nhé!`
-}
-*(一緒に頑張りましょう！ Hãy cùng nhau cố gắng nhé! 🎌)*`;
+💡 **Kế hoạch hôm nay:**
+${due > 0 ? `1. Dành 5 phút hoàn thành **${due} thẻ** tại [Ôn tập SRS](/app/review).\n2. Học tiếp 1 bài mới trên [Lộ trình](/app/path)!` : `Duy trì phong độ bằng 1 bài mới trên [Lộ trình](/app/path) nhé!`}
+*一緒に頑張りましょう！ (Cùng cố gắng nhé! 🌸)*`;
     }
 
     if (isZh) {
-      return `Konnichiwa！Sensei 已经为你调取了学习档案：🌸✨
-- **JLPT 等级：** 当前 ${level}（Level ${pLevel}）
-- **累计经验：** ${xp.toLocaleString()} XP | **连续打卡：** 🔥 ${streak} 天
-- **大纲课程进度：** 已完成 ${completed}/${totalLessons} 课
-- **SRS 间隔复习：** ${due > 0 ? `⏰ 今天有 **${due} 张单词卡片** 到期需要复习！` : "✨ 今天的复习卡片已经全部清空！"}
+      return `你好！你的学习概况：**${level}** 级 | 🔥 连续打卡 **${streak} 天** | ${due > 0 ? `⏰ **${due} 张卡片** 待复习` : "✨ 今日卡片已清空"}.
 
-**Sensei 的今日学习建议：**
-${
-  due > 0
-    ? `1. 建议先花 5-10 分钟在 [SRS 间隔重复复习](/app/review) 清空这 ${due} 张卡片，在记忆临界点强化认知！\n2. 接着前往 [个人学习路径](/app/path) 攻克下一课新知识。\n3. 如果对语法点有疑问或想练习会话，随时回复我，Sensei 为你详细解答！`
-    : `1. 当前没有积压的复习卡片，你的自律习惯非常棒！在 [个人学习路径](/app/path) 开启新课程来保持连续打卡吧。\n2. 也可以直接用日语回复我，在这里练习口语和打字反应！`
-}
-*(一緒に頑張りましょう！ 我们一起加油吧！ 🎌)*`;
+💡 **今日建议：**
+${due > 0 ? `1. 花 5 分钟在 [SRS 间隔复习](/app/review) 清空这 ${due} 张卡片。\n2. 前往 [学习路径](/app/path) 攻克下一课！` : `在 [学习路径](/app/path) 开启新一课保持连胜吧！`}
+*一緒に頑張りましょう！ (我们一起加油！ 🌸)*`;
     }
 
-    return `Konnichiwa! Sensei has reviewed your Nihon Quest learning profile: 🌸✨
-- **Current JLPT:** Level ${level} (Tier ${pLevel})
-- **Total XP:** ${xp} XP | **Daily Streak:** 🔥 ${streak} days
-- **Curriculum Lessons:** ${completed}/${totalLessons} completed
-- **SRS Flashcards:** ${due > 0 ? `⏰ **${due} cards** due for review today!` : "✨ All caught up for today!"}
+    return `Hello! Your stats: **${level}** | 🔥 Streak: **${streak} days** | ${due > 0 ? `⏰ **${due} cards** due` : "✨ All reviews cleared"}.
 
-**Sensei's Personal Recommendation:**
-${
-  due > 0
-    ? `1. First, spend 5-10 minutes on [Spaced Repetition Review](/app/review) to clear your ${due} due cards so they lock into long-term memory!\n2. Next, tackle the next lesson on your [Learning Path](/app/path)!\n3. Ask me if you want me to explain any grammar point, check mistakes, or test your Japanese.`
-    : `1. You have zero review backlog—fantastic discipline! Keep up the momentum with a new lesson in your [Learning Path](/app/path).\n2. Practice conversational fluency with me right here by replying in Japanese!`
-}
-*(Keep going! Ganbatte kudasai! 🎌)*`;
+💡 **Today's plan:**
+${due > 0 ? `1. Spend 5 mins clearing **${due} cards** in [SRS Review](/app/review).\n2. Continue your next lesson on [Learning Path](/app/path)!` : `Keep your momentum with a new lesson on [Learning Path](/app/path)!`}
+*Ganbatte kudasai! 🌸*`;
   }
 
   // 2. GREETINGS & TIME OF DAY

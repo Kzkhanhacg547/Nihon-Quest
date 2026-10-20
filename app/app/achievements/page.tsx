@@ -5,6 +5,7 @@ import { authOptions } from "@/lib/auth-options";
 import { prisma } from "@/lib/prisma";
 import { resolveCanonicalUserLevel } from "@/lib/learning-level";
 import { AppNav } from "@/components/AppNav";
+import { LocalizedText } from "@/components/LocalizedText";
 import { AchievementsClient } from "./AchievementsClient";
 
 export const metadata = { title: "Huy Hiệu & Thành Tựu — Nihon Quest" };
@@ -70,13 +71,13 @@ export default async function AchievementsPage() {
 
           <div className="relative px-6 py-8 sm:px-10 sm:py-12 lg:py-14">
             <div className="inline-flex items-center gap-2 rounded-full bg-amber-500/20 px-3.5 py-1 text-xs font-bold text-amber-300 ring-1 ring-amber-400/40 backdrop-blur-md">
-              <span className="text-amber-400">🏆</span> BẢNG VÀNG THÀNH TỰU & HUY HIỆU
+              <span className="text-amber-400">🏆</span> <LocalizedText k="achPageBadge" fallback="BẢNG VÀNG THÀNH TỰU & HUY HIỆU" />
             </div>
             <h1 className="mt-3 max-w-2xl text-[clamp(1.875rem,5vw,3.25rem)] font-black leading-tight tracking-tight text-white">
-              Bộ Sưu Tập <span className="text-amber-400">Huy Hiệu Chinh Phục</span>
+              <LocalizedText k="achPageTitle1" fallback="Bộ Sưu Tập" /> <span className="text-amber-400"><LocalizedText k="achPageTitle2" fallback="Huy Hiệu Chinh Phục" /></span>
             </h1>
             <p className="mt-3 max-w-xl text-sm sm:text-base leading-relaxed text-slate-200">
-              Mỗi mốc học tập, chặng dừng chân Shinkansen và kỷ niệm trên hành trình chinh phục tiếng Nhật đều được ghi dấu bằng những huy hiệu danh giá.
+              <LocalizedText k="achPageSub" fallback="Mỗi mốc học tập, chặng dừng chân Shinkansen và kỷ niệm trên hành trình chinh phục tiếng Nhật đều được ghi dấu bằng những huy hiệu danh giá." />
             </p>
           </div>
 

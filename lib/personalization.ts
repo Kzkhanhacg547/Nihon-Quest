@@ -147,8 +147,8 @@ const K = (
 ): CatalogEntry => ({ slug, kind, target, title, description, minutes, xp, skills, tags });
 
 // --- Foundations (BEGINNER / N5) ---
-const KANA_HIRA = K(undefined, "KANA", "/app/learn", "Bảng 50 âm Hiragana Gojūon", "Luyện đọc, viết 46 ký tự Hiragana cơ bản trên canvas với âm thanh chuẩn.", 20, ["Đọc", "Viết"], ["foundations", "writing", "reading"]);
-const KANA_KATA = K(undefined, "KANA", "/app/learn", "Katakana & Từ mượn quốc tế", "Nhận diện Katakana và từ mượn Gairaigo trong đời sống.", 20, ["Đọc", "Viết"], ["foundations", "writing", "reading"]);
+const KANA_HIRA = K("kana-hiragana-vowels", "KANA", "/app/learn", "Bảng 50 âm Hiragana Gojūon", "Luyện đọc, viết 46 ký tự Hiragana cơ bản trên canvas với âm thanh chuẩn.", 20, ["Đọc", "Viết"], ["foundations", "writing", "reading"]);
+const KANA_KATA = K("katakana-basics", "KANA", "/app/learn", "Katakana & Từ mượn quốc tế", "Nhận diện Katakana và từ mượn Gairaigo trong đời sống.", 20, ["Đọc", "Viết"], ["foundations", "writing", "reading"]);
 const DAKUTEN = K("dakuten-handakuten", "LESSON", "/app/practice/dakuten-handakuten", "Biến âm đục & bán đục", "が・ざ・だ・ば và ぱ — phân biệt nghĩa bằng âm đục.", 15, ["Đọc", "Nghe"], ["foundations", "listening"]);
 const YOON = K("yoon-sokuon-chouon", "LESSON", "/app/practice/yoon-sokuon-chouon", "Ảo âm, âm ngắt & trường âm", "きゃ・しゃ・ちゃ, っ và âm kéo dài — những lỗi phát âm phổ biến.", 15, ["Đọc", "Nghe"], ["foundations", "listening"]);
 
@@ -186,11 +186,11 @@ const LISTENING_N5 = K("n5-listening-conversations", "LESSON", "/app/practice/n5
 const MOCK_N5 = K("n5-jlpt-mock-test-comprehensive", "LESSON", "/app/practice/n5-jlpt-mock-test-comprehensive", "Đề thi thử toàn diện JLPT N5", "Mô phỏng 4 kỹ năng Moji・Goi・Bunpou・Dokkai.", 30, ["Đọc", "Nghe"], ["jlpt", "mock"]);
 
 // --- Survival / immersive / AI / journey / review ---
-const SURVIVAL = K(undefined, "SURVIVAL", "/app/survival", "Survival Mode — Sinh tồn thực chiến", "Test phản xạ từ vựng & xử lý tình huống giao tiếp có thời gian thực.", 10, ["Nghe", "Nói"], ["travel", "conversation", "practical", "immersive", "listening", "speaking"]);
-const SENSEI = K(undefined, "SENSEI", "/app/sensei", "AI Kaiwa Sensei — Hội thoại AI", "Luyện đối thoại 2 chiều với giáo viên AI, không sợ sai.", 15, ["Nói", "Nghe"], ["conversation", "immersive", "speaking", "listening"]);
-const JOURNEY = K(undefined, "JOURNEY", "/app/journey", "Hành trình Shinkansen — Mở khóa địa danh", "Thuật XP mở khóa Tokyo → Kyoto → Osaka trên bản đồ Nhật Bản.", 10, ["Ôn tập"], ["gamified", "immersive"]);
-const REVIEW_SRS = K(undefined, "REVIEW", "/app/review", "Ôn tập SRS SM-2", "Thuật toán lặp lại ngắt quãng — chống quên lâu dài.", 10, ["Ôn tập"], ["structured", "gamified", "practical", "writing"]);
-const VOCAB_N5 = K(undefined, "VOCAB", "/app/vocabulary", "Kho từ vựng N5 — Lưu thẻ SRS", "Tra cứu nghĩa, âm On/Kun, ví dụ ngữ cảnh; lưu thẻ ôn 1 chạm.", 15, ["Đọc", "Viết"], ["jlpt", "travel", "conversation", "reading"]);
+const SURVIVAL = K("survival-mode", "SURVIVAL", "/app/survival", "Survival Mode — Sinh tồn thực chiến", "Test phản xạ từ vựng & xử lý tình huống giao tiếp có thời gian thực.", 10, ["Nghe", "Nói"], ["travel", "conversation", "practical", "immersive", "listening", "speaking"]);
+const SENSEI = K("ai-sensei", "SENSEI", "/app/sensei", "AI Kaiwa Sensei — Hội thoại AI", "Luyện đối thoại 2 chiều với giáo viên AI, không sợ sai.", 15, ["Nói", "Nghe"], ["conversation", "immersive", "speaking", "listening"]);
+const JOURNEY = K("shinkansen-journey", "JOURNEY", "/app/journey", "Hành trình Shinkansen — Mở khóa địa danh", "Thuật XP mở khóa Tokyo → Kyoto → Osaka trên bản đồ Nhật Bản.", 10, ["Ôn tập"], ["gamified", "immersive"]);
+const REVIEW_SRS = K("srs-review", "REVIEW", "/app/review", "Ôn tập SRS SM-2", "Thuật toán lặp lại ngắt quãng — chống quên lâu dài.", 10, ["Ôn tập"], ["structured", "gamified", "practical", "writing"]);
+const VOCAB_N5 = K("vocab-n5", "VOCAB", "/app/vocabulary", "Kho từ vựng N5 — Lưu thẻ SRS", "Tra cứu nghĩa, âm On/Kun, ví dụ ngữ cảnh; lưu thẻ ôn 1 chạm.", 15, ["Đọc", "Viết"], ["jlpt", "travel", "conversation", "reading"]);
 
 // --- N4 ---
 const N4_GRAMMAR = [

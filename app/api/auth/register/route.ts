@@ -17,6 +17,7 @@ const schema = z.object({
   focusSkill: z.string().optional().default("BALANCED"),
   learningStyle: z.string().optional().default("STRUCTURED"),
   dailyGoalMinutes: z.number().min(5).max(180).optional().default(15),
+  nativeLanguage: z.string().optional().default("vi"),
 });
 
 export async function POST(req: Request) {
@@ -66,5 +67,9 @@ export async function POST(req: Request) {
       profile: { create: { displayName: parsed.data.displayName.trim() } },
     },
   });
-  return NextResponse.json({ id: user.id, email: user.email }, { status: 201 });
+  const res = NextResponse.json({ id: user.id, email: user.email }, { status: 201 });
+  if (parsed.data.nativeLanguage) {
+    res.cookies.set("nq_native_language", parsed.data.nativeLanguage, { path: "/", maxAge: 31536000 });
+  }
+  return res;
 }

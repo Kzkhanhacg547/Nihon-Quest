@@ -7,6 +7,8 @@ import { evaluateLessonAccess, resolveCanonicalUserLevel } from "@/lib/learning-
 import { prisma } from "@/lib/prisma";
 import { AppNav } from "@/components/AppNav";
 import { JapanBackdrop, JapanScenicPanel } from "@/components/JapanIllustration";
+import { LocalizedText } from "@/components/LocalizedText";
+import { LocalizedTrackTitle } from "@/components/LocalizedLesson";
 import { QuizRunner } from "./QuizRunner";
 import {
   DialogueSection,
@@ -164,7 +166,7 @@ export default async function LessonRunnerPage({ params }: { params: { slug: str
               🔒
             </span>
             <p className="mt-4 text-xs font-black uppercase tracking-widest text-amber-700 dark:text-amber-300">
-              Nội dung vượt cấp · JLPT {lesson.level}
+              <LocalizedText k="higherLevelContent" fallback="Nội dung vượt cấp" /> · JLPT {lesson.level}
             </p>
             <h1 className="mt-2 text-2xl font-black text-slate-900 dark:text-white">
               {cleanLessonTitle(lesson.title)}
@@ -177,13 +179,13 @@ export default async function LessonRunnerPage({ params }: { params: { slug: str
                 href="/app/test"
                 className="inline-flex min-h-11 items-center justify-center rounded-xl bg-red-600 px-5 py-2.5 text-sm font-black text-white shadow-md shadow-red-600/25 transition hover:bg-red-700"
               >
-                Thi xếp lớp mở khóa {lesson.level} →
+                <LocalizedText k="testToUnlock" fallback="Thi xếp lớp mở khóa" /> {lesson.level} →
               </Link>
               <Link
                 href="/app/practice"
                 className="inline-flex min-h-11 items-center justify-center rounded-xl border border-slate-300 bg-white px-5 py-2.5 text-sm font-bold text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:bg-sumi-800 dark:text-slate-200"
               >
-                Về lộ trình {userLevel} hiện tại
+                <LocalizedText k="backToPath" fallback="Về lộ trình" /> {userLevel}
               </Link>
             </div>
           </div>
@@ -317,7 +319,7 @@ export default async function LessonRunnerPage({ params }: { params: { slug: str
               </Link>
               <span aria-hidden>›</span>
               <Link href="/app/practice" className="hover:text-slate-900 dark:hover:text-white">
-                Giáo trình & Bài học
+                <LocalizedText k="navLessons" fallback="Giáo trình & Bài học" />
               </Link>
               <span aria-hidden>›</span>
               <span className="font-semibold text-slate-800 dark:text-slate-100">
@@ -327,13 +329,13 @@ export default async function LessonRunnerPage({ params }: { params: { slug: str
 
             <div className="mt-4 flex flex-wrap gap-2">
               <span className="rounded-full border border-rose-200 bg-rose-50 px-3 py-1 text-xs font-bold text-red-600 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-300">
-                Định hướng JLPT {lesson.level}
+                <LocalizedText k="jlptOrientation" fallback="Định hướng" /> JLPT {lesson.level}
               </span>
               <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-bold text-slate-700 dark:border-slate-700 dark:bg-sumi-800 dark:text-slate-200">
-                📚 {curriculumMeta.shortTrackLabel}
+                📚 <LocalizedTrackTitle trackId={curriculumMeta.trackId} fallback={curriculumMeta.shortTrackLabel} />
               </span>
               <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700 dark:border-emerald-900/60 dark:bg-emerald-950/40 dark:text-emerald-300">
-                ✓ {curriculumMeta.provenanceLabelVi}
+                ✓ <LocalizedText k={curriculumMeta.provenance === "TEXTBOOK_VERIFIED" ? "badgeTextbookVerified" : "badgeSupplementaryVerified"} fallback={curriculumMeta.provenanceLabelVi} />
               </span>
             </div>
 
@@ -344,9 +346,9 @@ export default async function LessonRunnerPage({ params }: { params: { slug: str
             <p className="mt-3 max-w-xl text-base leading-relaxed text-slate-600 dark:text-slate-300">{lesson.description}</p>
 
             <div className="mt-5 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm font-medium text-slate-600 dark:text-slate-300">
-              <span className="inline-flex items-center gap-2"><IconBook width={18} height={18} /> 4 phần học</span>
-              <span className="inline-flex items-center gap-2"><IconClock width={18} height={18} /> ~15 phút</span>
-              <span className="inline-flex items-center gap-2"><IconChart width={18} height={18} /> {levelLabel}</span>
+              <span className="inline-flex items-center gap-2"><IconBook width={18} height={18} /> 4 <LocalizedText k="learningParts" fallback="phần học" /></span>
+              <span className="inline-flex items-center gap-2"><IconClock width={18} height={18} /> ~15 <LocalizedText k="minutesShort" fallback="phút" /></span>
+              <span className="inline-flex items-center gap-2"><IconChart width={18} height={18} /> <LocalizedText k={`levelLabel_${lesson.level}`} fallback={levelLabel} /></span>
             </div>
           </div>
 
@@ -378,8 +380,8 @@ export default async function LessonRunnerPage({ params }: { params: { slug: str
           <SectionShell
             id="quick-practice"
             icon={<IconTarget />}
-            title="4. Luyện tập nhanh"
-            subtitle={`Làm bài quiz để củng cố kiến thức đã học. Cần đúng ít nhất 60% để mở bài tiếp theo.`}
+            title={<LocalizedText k="quickPracticeTitle" fallback="4. Luyện tập nhanh" />}
+            subtitle={<LocalizedText k="quickPracticeSubtitle" fallback="Làm bài quiz để củng cố kiến thức đã học. Cần đúng ít nhất 60% để mở bài tiếp theo." />}
             action={
               <span className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-1.5 text-sm font-black text-amber-700 dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-300">
                 🔥 +{lesson.xpReward} XP

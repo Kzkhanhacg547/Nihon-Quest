@@ -11,6 +11,7 @@ import { PasswordForm } from "./PasswordForm";
 import { DangerZone } from "./DangerZone";
 import { panel } from "./parts";
 import { BASE64_IMAGES } from "@/lib/assets/base64Images";
+import { LocalizedText } from "@/components/LocalizedText";
 
 const FOCUS: Record<string, string> = { BALANCED: "Toàn diện", LISTENING: "Nghe", SPEAKING: "Nói", READING: "Đọc", WRITING: "Viết" };
 
@@ -26,12 +27,18 @@ export default async function ProfilePage() {
   const displayName = user.profile?.displayName ?? user.name ?? user.email.split("@")[0];
   const initial = displayName.slice(0, 1).toUpperCase();
   const avatarSrc = user.profile?.avatar ?? user.image ?? null;
-  const stats = [
-    ["Cấp độ hiện tại", `Level ${user.level} (${user.totalXP.toLocaleString("vi-VN")} XP)`],
-    ["Chuỗi ngày học", `🔥 ${user.currentStreak} ngày (Kỷ lục: ${user.longestStreak})`],
-    ["Mục tiêu mỗi ngày", `${user.dailyGoalMinutes} phút`],
-    ["Kỹ năng trọng tâm", FOCUS[user.focusSkill] ?? "Toàn diện"],
-    ["Múi giờ", user.timezone],
+  const stats: { key: string; labelKey: string; fallbackLabel: string; value: React.ReactNode }[] = [
+    { key: "level", labelKey: "currentLevelLabel", fallbackLabel: "Cấp độ hiện tại", value: `Level ${user.level} (${user.totalXP.toLocaleString("vi-VN")} XP)` },
+    { key: "streak", labelKey: "studyStreakLabel", fallbackLabel: "Chuỗi ngày học", value: <>🔥 {user.currentStreak} <LocalizedText k="streakUnit" fallback="ngày" /> (<LocalizedText k="longestStreakRecord" fallback="Kỷ lục" />: {user.longestStreak})</> },
+    { key: "goal", labelKey: "dailyGoalLabel", fallbackLabel: "Mục tiêu mỗi ngày", value: <>{user.dailyGoalMinutes} <LocalizedText k="minsPerDayUnit" fallback="phút / ngày" /></> },
+    { key: "focus", labelKey: "focusSkillLabel", fallbackLabel: "Kỹ năng trọng tâm", value: <LocalizedText k={`skill${user.focusSkill.charAt(0) + user.focusSkill.slice(1).toLowerCase()}`} fallback={FOCUS[user.focusSkill] ?? "Toàn diện"} /> },
+    { key: "tz", labelKey: "timezoneLabel", fallbackLabel: "Múi giờ", value: user.timezone },
+
+
+
+
+
+
   ];
 
   return (
@@ -49,17 +56,17 @@ export default async function ProfilePage() {
           <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200/80 bg-white/90 px-4 py-2.5 shadow-sm dark:border-slate-800 dark:bg-sumi-900/90">
             <div className="flex items-center gap-2 text-xs font-bold text-slate-500 dark:text-slate-400">
               <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300">人</span>
-              <span>Trung tâm Tài khoản &amp; Cài đặt thống nhất</span>
+              <span><LocalizedText k="profileHubTitle" fallback="Trung tâm Tài khoản & Cài đặt thống nhất" /></span>
             </div>
             <div className="inline-flex rounded-xl bg-slate-100 p-1 dark:bg-sumi-950">
               <span className="rounded-lg bg-white px-3 py-1.5 text-xs font-extrabold text-rose-600 shadow-xs dark:bg-sumi-800 dark:text-rose-400">
-                👤 Hồ sơ tổng quan
+                <LocalizedText k="profileOverviewTab" fallback="👤 Hồ sơ tổng quan" />
               </span>
               <Link
                 href="/app/settings"
                 className="rounded-lg px-3 py-1.5 text-xs font-bold text-slate-600 transition hover:text-slate-900 dark:text-slate-300 dark:hover:text-white"
               >
-                ⚙️ Cài đặt chi tiết (7 mục)
+                <LocalizedText k="settingsDetailedTab" fallback="⚙️ Cài đặt chi tiết (7 mục)" />
               </Link>
             </div>
           </div>
@@ -74,10 +81,10 @@ export default async function ProfilePage() {
               <span className="mt-3 inline-flex rounded-full bg-rose-50 px-3 py-1 text-xs font-semibold text-rose-700 dark:bg-rose-500/10 dark:text-rose-300">JLPT {canonicalLevel}</span>
 
               <dl className="mt-6 divide-y divide-slate-100 border-t border-slate-100 text-left text-sm dark:divide-slate-800 dark:border-slate-800">
-                {stats.map(([k, v]) => (
-                  <div key={k} className="flex items-center justify-between gap-4 py-3">
-                    <dt className="text-slate-500 dark:text-slate-400">{k}</dt>
-                    <dd className="truncate font-semibold">{v}</dd>
+                {stats.map((item) => (
+                  <div key={item.key} className="flex items-center justify-between gap-4 py-3">
+                    <dt className="text-slate-500 dark:text-slate-400"><LocalizedText k={item.labelKey} fallback={item.fallbackLabel} /></dt>
+                    <dd className="truncate font-semibold">{item.value}</dd>
                   </div>
                 ))}
               </dl>
@@ -86,7 +93,7 @@ export default async function ProfilePage() {
                 href="/app/settings"
                 className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-xs font-bold text-slate-700 transition hover:bg-slate-100 dark:border-slate-800 dark:bg-sumi-900 dark:text-slate-200 dark:hover:bg-sumi-800"
               >
-                ⚙️ Mở bảng Cài đặt nâng cao →
+                <LocalizedText k="openAdvancedSettings" fallback="⚙️ Mở bảng Cài đặt nâng cao →" />
               </Link>
             </aside>
 

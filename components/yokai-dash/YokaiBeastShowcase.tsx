@@ -5,6 +5,8 @@ import * as THREE from "three";
 import { SpiritBeast } from "@/lib/yokai-dash/types";
 import { createBeast3DModel, animateBeastMotion, BeastMeshBundle } from "./models/YokaiBeast3D";
 import { disposeThreeHierarchy } from "@/lib/yokai-dash/three-utils";
+import { useNativeLanguage } from "@/components/LanguageContext";
+import { getLocalizedElementMeta } from "@/lib/yokai-dash/yokaiLocalization";
 
 interface YokaiBeastShowcaseProps {
   beast: SpiritBeast;
@@ -12,6 +14,28 @@ interface YokaiBeastShowcaseProps {
 }
 
 export function YokaiBeastShowcase({ beast, isUnlocked }: YokaiBeastShowcaseProps) {
+  const { nativeLanguage } = useNativeLanguage();
+  const elementMeta = getLocalizedElementMeta(beast.element, nativeLanguage);
+  const lockedText =
+    nativeLanguage === "en"
+      ? "🔒 Locked"
+      : nativeLanguage === "zh-TW"
+      ? "🔒 尚未解鎖"
+      : nativeLanguage === "zh-CN"
+      ? "🔒 尚未解锁"
+      : nativeLanguage === "ko"
+      ? "🔒 미해금"
+      : "🔒 Chưa mở khóa";
+  const rotateHint =
+    nativeLanguage === "en"
+      ? "Swipe to rotate 360°"
+      : nativeLanguage === "zh-TW"
+      ? "滑動以 360° 旋轉靈獸"
+      : nativeLanguage === "zh-CN"
+      ? "滑动以 360° 旋转灵兽"
+      : nativeLanguage === "ko"
+      ? "360° 회전하여 영수 보기"
+      : "Vuốt để xoay 360° linh thú";
   const mountRef = useRef<HTMLDivElement>(null);
   const bundleRef = useRef<BeastMeshBundle | null>(null);
   const isDraggingRef = useRef(false);
@@ -294,12 +318,12 @@ export function YokaiBeastShowcase({ beast, isUnlocked }: YokaiBeastShowcaseProp
         }}
       >
         <span aria-hidden>{beast.avatarIcon}</span>
-        HỆ {String(beast.element).toUpperCase()}
+        {elementMeta.label}
       </div>
 
       {!isUnlocked && (
         <div className="absolute top-3 left-3 px-3 py-1 rounded-full text-[11px] font-extrabold bg-black/65 text-rose-200 border border-rose-400/50">
-          🔒 Chưa mở khoá
+          {lockedText}
         </div>
       )}
 
@@ -309,7 +333,7 @@ export function YokaiBeastShowcase({ beast, isUnlocked }: YokaiBeastShowcaseProp
           <rect x="6" y="2.5" width="12" height="19" rx="6" />
           <path d="M12 7v4" />
         </svg>
-        Vuốt để xoay 360° linh thú
+        {rotateHint}
       </div>
     </div>
   );

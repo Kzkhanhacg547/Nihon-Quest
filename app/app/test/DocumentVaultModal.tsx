@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
+import { useNativeLanguage } from "@/components/LanguageContext";
 
 export interface CatalogDocumentItem {
   id: string;
@@ -89,6 +90,24 @@ export function DocumentVaultModal({
   isOpen,
   onClose,
 }: DocumentVaultModalProps) {
+  const { t } = useNativeLanguage();
+
+  const dynamicLevelTabs = useMemo(() => [
+    { key: "ALL", label: t("grammarAllLevels") || "Tất cả cấp độ" },
+    { key: "FPT", label: "🎓 FPT JPD" },
+    { key: "N5", label: "🌸 JLPT N5" },
+    { key: "N4", label: "⛩️ JLPT N4" },
+    { key: "N3", label: "🗼 JLPT N3" },
+  ], [t]);
+
+  const dynamicCategoryTabs = useMemo(() => [
+    { key: "ALL", label: t("filterAll") || "Tất cả" },
+    { key: "TEXTBOOK", label: "📘 Giáo trình" },
+    { key: "EXAM", label: "📝 Đề thi" },
+    { key: "ANSWER_KEY", label: "✅ Đáp án" },
+    { key: "AUDIO", label: "🎧 Audio" },
+    { key: "REFERENCE", label: "🗂️ Tài liệu" },
+  ], [t]);
   const [documents, setDocuments] = useState<CatalogDocumentItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -160,7 +179,7 @@ export function DocumentVaultModal({
                 id="vault-modal-title"
                 className="text-base font-black text-slate-900 dark:text-white sm:text-lg"
               >
-                Kho Tài Liệu & Đề Thi Chuẩn Hóa (FPT JPD & JLPT N5–N3)
+                {t("testVaultTitle") || "Kho Tài Liệu & Đề Thi Chuẩn Hóa (FPT JPD & JLPT N5–N3)"}
               </h2>
             </div>
             <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
@@ -182,7 +201,7 @@ export function DocumentVaultModal({
           <div className="flex flex-wrap items-center justify-between gap-3">
             {/* Level filters */}
             <div className="flex flex-wrap gap-1.5">
-              {LEVEL_TABS.map((tab) => {
+              {dynamicLevelTabs.map((tab) => {
                 const active = levelFilter === tab.key;
                 return (
                   <button
@@ -216,7 +235,7 @@ export function DocumentVaultModal({
           {/* Category filters */}
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex flex-wrap gap-1.5">
-              {CATEGORY_TABS.map((cat) => {
+              {dynamicCategoryTabs.map((cat) => {
                 const active = categoryFilter === cat.key;
                 return (
                   <button

@@ -42,7 +42,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   let fallbackMessage = "Xin chào";
   let fallbackScenario = "general_kaiwa";
-  let fallbackLang: NativeLanguage = "vi";
+  let fallbackLang: NativeLanguage = "en";
   let fallbackProgress: Parameters<typeof generateNaturalJapaneseResponse>[0]["userProgress"] = null;
   let fallbackMistakes: Parameters<typeof generateNaturalJapaneseResponse>[0]["mistakes"] = null;
 
@@ -85,8 +85,10 @@ export async function POST(req: NextRequest) {
       };
     };
 
-    const isSupportedLang = clientLang && SUPPORTED_LANGUAGES.some((l) => l.code === clientLang);
-    const nativeLanguage: NativeLanguage = isSupportedLang ? (clientLang as NativeLanguage) : "vi";
+    const cookieLang = req.cookies.get("nq_native_language")?.value;
+    const langCandidate = clientLang || cookieLang;
+    const isSupportedLang = langCandidate && SUPPORTED_LANGUAGES.some((l) => l.code === langCandidate);
+    const nativeLanguage: NativeLanguage = isSupportedLang ? (langCandidate as NativeLanguage) : "en";
 
     if (message) fallbackMessage = message;
     if (scenarioId) fallbackScenario = scenarioId;
@@ -281,30 +283,36 @@ ${studentNameText}- Trình độ JLPT hiện tại: ${progressLevel} (Cấp đ�
 
       const baseInstruction =
         scenarioId === "business_horenso"
-          ? `Bạn là Tanaka Senpai (hoặc Aoi Sensei) tại công ty Nhật Bản. Hãy trò chuyện trực tiếp bằng tiếng Nhật lịch sự công sở N3 (Keigo/Desu/Masu). Luôn trả lời tự nhiên như người thật (2-3 câu), kèm giải thích và dịch nghĩa bằng ${nativeLangName} súc tích bên dưới.`
+          ? `Bạn là Tanaka Senpai (hoặc Aoi Sensei) tại công ty Nhật Bản. Hãy trò chuyện trực tiếp bằng tiếng Nhật lịch sự công sở N3 (Keigo/Desu/Masu). Luôn trả lời ngắn gọn (2-3 câu), kèm dịch nghĩa bằng ${nativeLangName} bên dưới.`
           : scenarioId === "casual_friends"
-            ? `Bạn là Aoi-chan, bạn thân người Nhật. Hãy trò chuyện như người thật bằng tiếng Nhật thể ngắn (タメ口), dùng thán từ tự nhiên (マジで？, そうなんだ, やばい, めっちゃ). Kèm dịch nghĩa bằng ${nativeLangName} bên dưới.`
+            ? `Bạn là Aoi-chan, bạn thân người Nhật. Hãy trò chuyện như bạn bè thật sự bằng tiếng Nhật thể ngắn (タメ口) trong 2-3 câu ngắn, dùng thán từ tự nhiên (マジで？, そうなんだ, やばい, めっちゃ). Kèm dịch nghĩa bằng ${nativeLangName} bên dưới.`
             : scenarioId === "travel_restaurant"
-              ? `Bạn là nhân viên nhà hàng / hướng dẫn viên du lịch Nhật Bản. Hãy trò chuyện nhã nhặn, tự nhiên kèm dịch nghĩa bằng ${nativeLangName}.`
-              : `Bạn là Kawaii AI Sensei (Aoi Sensei 🌸 / Ren Sensei 🦊) - trợ lý học tập cá nhân tận tâm, thấu hiểu tiến trình và sư phạm thông minh tại Nihon Quest.`;
+              ? `Bạn là nhân viên nhà hàng / hướng dẫn viên du lịch Nhật Bản. Hãy đối thoại nhã nhặn, tự nhiên trong 2-3 câu ngắn kèm dịch nghĩa bằng ${nativeLangName}.`
+              : `Bạn là AI Sensei (Aoi Sensei 🌸 / Ren Sensei 🦊) tại Nihon Quest - gia sư tiếng Nhật siêu ngắn gọn, súc tích và đúng trọng tâm.`;
 
       const systemPrompt = `${baseInstruction}${progressSnippet}${mistakesSnippet}
 CRITICAL PEDAGOGICAL & LANGUAGE DIRECTIVE:
-1. NATIVE-LANGUAGE-FIRST RULE:
+1. STRICT CONCISENESS & CLARITY (QUY TẮC BẮT BUỘC: NGẮN GỌN & TRỌNG TÂM):
+   - Trả lời NGẮN GỌN, ĐÚNG TRỌNG TÂM, tối đa 2 đến 4 câu ngắn.
+   - TUYỆT ĐỐI KHÔNG DÀI DÒNG, KHÔNG GIẢI THÍCH MÁY MÓC LAN MAN. Người học đọc trên màn hình điện thoại rất mệt nếu câu trả lời quá dài.
+   - BỎ TOÀN BỘ các câu mở đầu sáo rỗng hoặc chào hỏi lặp đi lặp lại (như "Chào bạn-san, Sensei rất vui..."). Đi thẳng vào nội dung câu trả lời ngay từ câu đầu tiên.
+   - Nếu giải thích từ vựng hoặc ngữ pháp:
+     • Dòng 1: Nghĩa hoặc quy tắc cốt lõi (1 câu duy nhất).
+     • Dòng 2: Cách dùng hoặc ngữ cảnh hay gặp (1 dòng ngắn).
+     • Dòng 3: 1 câu ví dụ tiếng Nhật duy nhất kèm dịch nghĩa bằng ${nativeLangName}.
+   - Tránh văn phong thuyết giảng như sách giáo khoa, hãy nói chuyện tự nhiên, gần gũi, súc tích như đang nhắn tin trò chuyện với học viên.
+2. NATIVE-LANGUAGE-FIRST RULE:
    - The learner's native mother tongue is: ${nativeLangName} (${nativeLanguage}).
    - You MUST explain grammar, provide meanings, analyze mistakes, give feedback, and formulate hints EXCLUSIVELY in ${nativeLangName}.
    - If the learner's language is Chinese (简体中文 / 繁體中文), you MUST write all explanations and translations in Chinese, NEVER in Vietnamese or English.
    - If the learner's language is Vietnamese, write all explanations and translations in Vietnamese.
    - Japanese MUST be preserved for the target learning content: Japanese dialogue lines, Kanji, Hiragana, Katakana, and examples.
-2. DIRECT RELEVANCE:
-   - Always answer the student's question directly and concisely first. Do not repeat greeting intros in an ongoing dialogue.
 3. PROGRESS-AWARE TUTORING:
    - Address the student warmly ${userName ? `as "${userName}-san"` : ""}.
-   - When asked what to study today or about progress, tailor your advice to their actual metrics (JLPT ${progressLevel}, ${progressStreak}-day streak, ${progressDue} due SRS cards, ${progressDone}/${progressTotal} lessons completed).
-   - When asked about mistakes, explain why the mistake happened and provide 1 focused practice sentence in ${nativeLangName}.
+   - When asked what to study today or about progress, give a quick, punchy 2-line recommendation based on their metrics (JLPT ${progressLevel}, ${progressStreak}-day streak, ${progressDue} due SRS cards).
+   - When asked about mistakes, state the exact reason in 1 sentence and give 1 quick fix.
 4. KAWAII & ENCOURAGING PERSONA:
-   - Friendly, warm, encouraging (Kawaii Sensei) with appropriate emoji 🌸✨🎌.
-   - Every Japanese sentence should be accompanied by clear translation in ${nativeLangName}.`;
+   - Friendly, warm, encouraging (Kawaii Sensei) with appropriate emoji 🌸✨🎌, but always keeping answers SHORT and PUNCHY.`;
 
       let aiSuccess = false;
 
@@ -334,8 +342,8 @@ CRITICAL PEDAGOGICAL & LANGUAGE DIRECTIVE:
                 body: JSON.stringify({
                   model: grModel,
                   messages: grokMessages,
-                  temperature: 0.85,
-                  max_tokens: 1024,
+                  temperature: 0.7,
+                  max_tokens: 380,
                 }),
                 signal: AbortSignal.timeout(3500),
               });
@@ -386,8 +394,8 @@ CRITICAL PEDAGOGICAL & LANGUAGE DIRECTIVE:
                 body: JSON.stringify({
                   model: gModel,
                   messages: groqMessages,
-                  temperature: 0.85,
-                  max_tokens: 600,
+                  temperature: 0.7,
+                  max_tokens: 380,
                 }),
                 signal: AbortSignal.timeout(3500),
               });
@@ -443,8 +451,8 @@ CRITICAL PEDAGOGICAL & LANGUAGE DIRECTIVE:
                 body: JSON.stringify({
                   model: orModel,
                   messages: orMessages,
-                  temperature: 0.85,
-                  max_tokens: 800,
+                  temperature: 0.7,
+                  max_tokens: 380,
                 }),
                 signal: AbortSignal.timeout(3500),
               });
@@ -495,7 +503,7 @@ CRITICAL PEDAGOGICAL & LANGUAGE DIRECTIVE:
           const payload = {
             system_instruction: { parts: [{ text: systemPrompt }] },
             contents: geminiContents,
-            generationConfig: { temperature: 0.85, maxOutputTokens: 800 },
+            generationConfig: { temperature: 0.7, maxOutputTokens: 380 },
           };
 
           const requestedModel =

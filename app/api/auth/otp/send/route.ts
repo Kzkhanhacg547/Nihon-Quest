@@ -7,6 +7,7 @@ import { enforceRateLimit } from "@/lib/rateLimit";
 const schema = z.object({
   email: z.string().email("Địa chỉ email không hợp lệ."),
   type: z.enum(["REGISTER", "RESET_PASSWORD"]),
+  nativeLanguage: z.string().optional(),
 });
 
 export async function POST(req: Request) {
@@ -22,7 +23,10 @@ export async function POST(req: Request) {
     );
   }
 
-  const { email, type } = parsed.data;
+  const { email, type, nativeLanguage } = parsed.data;
+  const cookieLang = req.headers.get("cookie")?.match(/nq_native_language=([^;]+)/)?.[1];
+  const lang = nativeLanguage || cookieLang || "en";
+  const isVi = lang === "vi";
   const normalizedEmail = email.trim().toLowerCase();
 
   // Per-email cap on top of the per-IP one, so one address cannot be spammed
@@ -45,18 +49,18 @@ export async function POST(req: Request) {
   if ((type === "REGISTER" && user) || (type === "RESET_PASSWORD" && !user)) {
     return NextResponse.json({
       success: true,
-      message: "Mã xác thực OTP đã được gửi đến email của bạn.",
+      message: isVi ? "Mã xác thực OTP đã được gửi đến email của bạn." : "Verification code has been sent to your email.",
     });
   }
 
-  const result = await requestOtp(normalizedEmail, type);
+  const result = await requestOtp(normalizedEmail, type, lang);
   if (!result.success) {
     return NextResponse.json({ error: result.error || "Không thể gửi mã OTP." }, { status: 429 });
   }
 
   return NextResponse.json({
     success: true,
-    message: "Mã xác thực OTP đã được gửi đến email của bạn.",
+    message: isVi ? "Mã xác thực OTP đã được gửi đến email của bạn." : "Verification code has been sent to your email.",
     // devCode only exposed in test environment (NODE_ENV=test), never in development or production
     ...(process.env.NODE_ENV === "test" && result.devCode ? { devCode: result.devCode } : {}),
   });

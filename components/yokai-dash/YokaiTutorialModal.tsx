@@ -2,6 +2,8 @@
 
 import React, { useState } from "react";
 import { Button } from "@/components/ui";
+import { useNativeLanguage } from "@/components/LanguageContext";
+import { getLocalizedTutorialSlides } from "@/lib/yokai-dash/yokaiLocalization";
 
 interface YokaiTutorialModalProps {
   isOpen: boolean;
@@ -11,60 +13,27 @@ interface YokaiTutorialModalProps {
 
 export function YokaiTutorialModal({ isOpen, onClose, onStartPlaying }: YokaiTutorialModalProps) {
   const [step, setStep] = useState<number>(0);
+  const { nativeLanguage } = useNativeLanguage();
 
   if (!isOpen) return null;
 
-  const slides = [
-    {
-      badge: "BƯỚC 1 • CƠ CHẾ CHẠY 3 LÀN",
-      title: "Chạy Vô Tận & Đổi Làn Thần Tốc",
-      desc: "Linh thú sẽ chạy theo 3 làn đường đền thờ (Trái - Giữa - Phải). Bạn có thể đổi làn bất cứ lúc nào để né chướng ngại và tiến vào đúng cổng đáp án.",
-      icon: "⛩️",
-      controls: [
-        { key: "A / D hoặc ◀ / ▶", action: "Đổi sang làn Trái / Phải" },
-        { key: "Vuốt màn hình Trái / Phải", action: "Dành cho điện thoại cảm ứng" },
-      ],
-      tip: "Mẹo: Giữ mắt nhìn xa phía trước để phát hiện cổng Torii sớm nhất có thể!",
-    },
-    {
-      badge: "BƯỚC 2 • CHIẾN THUẬT NÉ 3 LOẠI VẬT CẢN",
-      title: "Nhảy • Trượt • Đổi Làn Chuẩn Xác",
-      desc: "Mỗi nhóm chướng ngại vật đòi hỏi đúng hành động khắc chế. Căn đúng nhịp sát vật cản sẽ kích hoạt NÉ CHUẨN (+100 PTS & tăng Combo)!",
-      icon: "⚡",
-      controls: [
-        { key: "🏮 Đèn lồng / Rào tre / Hố sụt", action: "NHẢY QUA (W / Space / Vuốt Lên)" },
-        { key: "🪵 Xà gỗ / Cổng thấp / Dây thừng", action: "TRƯỢT CÚI NGƯỜI (S / Vuốt Xuống)" },
-        { key: "🪨 Đá phong ấn / Cây đổ / Đường sập", action: "BẮT BUỘC ĐỔI LÀN (A/D hoặc ◀/▶)" },
-      ],
-      tip: "Thu thập Ngọc Magatama 🟢 và Linh Ngọc ✨ trên đường chạy (hoặc lơ lửng trên cao khi nhảy) để nhận thêm +50 PTS!",
-    },
-    {
-      badge: "BƯỚC 3 • CHỌN CỔNG TRI THỨC",
-      title: "3 Cổng Torii Tương Ứng 3 Đáp Án",
-      desc: "Mỗi câu hỏi sẽ hiện 3 đáp án tương ứng trên 3 làn chạy [Cổng A - Cổng B - Cổng C]. Hãy đọc câu hỏi trên đầu màn hình và chạy vào làn có đáp án đúng!",
-      icon: "💮",
-      controls: [
-        { key: "Cổng A (Trái)", action: "Tương ứng với Đáp án số 1" },
-        { key: "Cổng B (Giữa)", action: "Tương ứng với Đáp án số 2" },
-        { key: "Cổng C (Phải)", action: "Tương ứng với Đáp án số 3" },
-      ],
-      tip: "Thanh hiển thị phụ trên đầu màn hình cũng sẽ highlight theo làn bạn đang đứng, giúp không bao giờ nhầm lẫn!",
-    },
-    {
-      badge: "BƯỚC 4 • SINH MỆNH & YŌKAI TRUY ĐUỔI",
-      title: "Giữ Vững Sinh Mệnh & Đẩy Lùi Yêu Quái",
-      desc: "Phía sau bạn luôn có Ác Quỷ Oni truy đuổi! Duy trì Combo cao sẽ đẩy lùi yêu quái ra xa, trong khi mất Tim sẽ khiến chúng áp sát sát nút.",
-      icon: "🔥",
-      controls: [
-        { key: "❤️ 3 Tim Sinh Mệnh", action: "Mất hết 3 tim màn chạy kết thúc" },
-        { key: "🛡️ Khiên Thần Yatagarasu", action: "Miễn nhiễm 1 lần va chạm đầu tiên" },
-        { key: "🐺 Bạch Lang Okami", action: "Tự động hút Ngọc Magatama & x2 điểm ngọc khi đầy tim" },
-      ],
-      tip: "Sau trận đấu, bạn sẽ được xem lại giải thích chi tiết cho từng câu hỏi đã qua!",
-    },
-  ];
+  const slides = getLocalizedTutorialSlides(nativeLanguage);
+  const current = slides[step] || slides[0];
 
-  const current = slides[step];
+  const isEn = nativeLanguage === "en";
+  const isZh = nativeLanguage === "zh-CN" || nativeLanguage === "zh-TW";
+  const isKo = nativeLanguage === "ko";
+
+  const closeAria = isEn ? "Close tutorial" : isZh ? "关闭说明" : isKo ? "가이드 닫기" : "Đóng hướng dẫn";
+  const prevLabel = isEn ? "← Back" : isZh ? "← 上一步" : isKo ? "← 이전" : "← Trước";
+  const nextLabel = isEn ? "Next →" : isZh ? "下一步 →" : isKo ? "다음 →" : "Tiếp Theo →";
+  const startLabel = isEn
+    ? "🚀 Got It, Start Playing!"
+    : isZh
+    ? "🚀 明白，开始奔跑！"
+    : isKo
+    ? "🚀 준비 완료, 시작하기!"
+    : "🚀 Đã Hiểu, Bắt Đầu Chơi!";
 
   return (
     <div className="fixed inset-0 z-50 yk-ui flex items-center justify-center p-4 bg-[#050310]/85 backdrop-blur-xl animate-in fade-in duration-200">
@@ -84,7 +53,7 @@ export function YokaiTutorialModal({ isOpen, onClose, onStartPlaying }: YokaiTut
           </div>
           <button
             onClick={onClose}
-            aria-label="Đóng hướng dẫn"
+            aria-label={closeAria}
             className="text-slate-300 hover:text-white p-2 rounded-full hover:bg-white/10 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300"
           >
             ✕
@@ -120,7 +89,7 @@ export function YokaiTutorialModal({ isOpen, onClose, onStartPlaying }: YokaiTut
               <button
                 key={i}
                 onClick={() => setStep(i)}
-                aria-label={`Bước ${i + 1}`}
+                aria-label={`Step ${i + 1}`}
                 className={`h-2 rounded-full transition-all ${
                   i === step ? "w-8 bg-amber-400" : "w-2 bg-slate-700 hover:bg-slate-600"
                 }`}
@@ -138,7 +107,7 @@ export function YokaiTutorialModal({ isOpen, onClose, onStartPlaying }: YokaiTut
             onClick={() => setStep((s) => Math.max(0, s - 1))}
             className="text-xs font-bold"
           >
-            ← Trước
+            {prevLabel}
           </Button>
 
           {step < slides.length - 1 ? (
@@ -148,7 +117,7 @@ export function YokaiTutorialModal({ isOpen, onClose, onStartPlaying }: YokaiTut
               onClick={() => setStep((s) => Math.min(slides.length - 1, s + 1))}
               className="text-xs font-bold"
             >
-              Tiếp Theo →
+              {nextLabel}
             </Button>
           ) : (
             <Button
@@ -160,7 +129,7 @@ export function YokaiTutorialModal({ isOpen, onClose, onStartPlaying }: YokaiTut
               }}
               className="text-xs font-black shadow-lg shadow-rose-600/30"
             >
-              🚀 Đã Hiểu, Bắt Đầu Chơi!
+              {startLabel}
             </Button>
           )}
         </div>

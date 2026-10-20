@@ -23,6 +23,16 @@ import {
 } from "./YokaiGameUI";
 import { useBeastThumbnails } from "./hooks/useBeastThumbnails";
 import { yokaiSound } from "@/lib/yokai-dash/sound";
+import { useNativeLanguage } from "@/components/LanguageContext";
+import {
+  getLocalizedBeast,
+  getLocalizedZone,
+  getLocalizedQuest,
+  getLocalizedElementMeta,
+  getLocalizedQuestionModes,
+  getLocalizedSpeedModes,
+  getModePreviewInfoLocalized,
+} from "@/lib/yokai-dash/yokaiLocalization";
 
 interface YokaiHubProps {
   stamina: number;
@@ -406,6 +416,33 @@ export function YokaiHub({
   onToggleGateHint,
   isLoadingQuestions,
 }: YokaiHubProps) {
+  const { nativeLanguage, t } = useNativeLanguage();
+  const isEn = nativeLanguage === "en";
+  const isZh = nativeLanguage === "zh-CN" || nativeLanguage === "zh-TW";
+  const isKo = nativeLanguage === "ko";
+  /** Chọn chuỗi theo ngôn ngữ mẹ đẻ; ngôn ngữ khác fallback tiếng Anh (không fallback tiếng Việt). */
+  const tr = (m: { vi: string; en: string; tw?: string; cn?: string; ko?: string }) =>
+    nativeLanguage === "vi"
+      ? m.vi
+      : nativeLanguage === "zh-TW"
+      ? m.tw ?? m.cn ?? m.en
+      : nativeLanguage === "zh-CN"
+      ? m.cn ?? m.tw ?? m.en
+      : nativeLanguage === "ko"
+      ? m.ko ?? m.en
+      : m.en;
+
+  const allBeasts: SpiritBeast[] = useMemo(() => SPIRIT_BEASTS.map((b) => getLocalizedBeast(b, nativeLanguage)), [nativeLanguage]);
+  const allZones: GameZone[] = useMemo(() => GAME_ZONES.map((z) => getLocalizedZone(z, nativeLanguage)), [nativeLanguage]);
+  const currentZone = useMemo(() => getLocalizedZone(selectedZone, nativeLanguage), [selectedZone, nativeLanguage]);
+  const currentBeast = useMemo(() => getLocalizedBeast(selectedBeast, nativeLanguage), [selectedBeast, nativeLanguage]);
+  const localizedQuests = useMemo(() => dailyQuests.map((q) => getLocalizedQuest(q, nativeLanguage)), [dailyQuests, nativeLanguage]);
+
+  const allQuestionModes = useMemo(() => getLocalizedQuestionModes(nativeLanguage), [nativeLanguage]);
+  const vocabQuestionModes = useMemo(() => allQuestionModes.slice(0, 4), [allQuestionModes]);
+  const sentenceQuestionModes = useMemo(() => allQuestionModes.slice(4), [allQuestionModes]);
+  const speedModesList = useMemo(() => getLocalizedSpeedModes(nativeLanguage), [nativeLanguage]);
+
   const [activeTab, setActiveTab] = useState<"zones" | "beasts" | "quests">("zones");
   const [showTutorial, setShowTutorial] = useState<boolean>(false);
   const [showLiveExample, setShowLiveExample] = useState<boolean>(false);
@@ -440,22 +477,22 @@ export function YokaiHub({
   };
 
   const tabs = [
-    { id: "zones" as const, icon: "⛩️", label: "Thế Giới Linh Giới", count: GAME_ZONES.length },
+    { id: "zones" as const, icon: "⛩️", label: tr({ vi: "Thế Giới Linh Giới", en: "Spirit Realms", tw: "靈界世界", cn: "灵界世界", ko: "영계 세계" }), count: GAME_ZONES.length },
     {
       id: "beasts" as const,
       icon: "🦊",
-      label: "Bộ Sưu Tập Linh Thú",
+      label: tr({ vi: "Bộ Sưu Tập Linh Thú", en: "Spirit Beasts", tw: "靈獸圖鑑", cn: "灵兽图鉴", ko: "영수 컬렉션" }),
       count: `${unlockedBeastIds.length}/${SPIRIT_BEASTS.length}`,
     },
     {
       id: "quests" as const,
       icon: "📜",
-      label: "Nhiệm Vụ Ngày",
+      label: tr({ vi: "Nhiệm Vụ Ngày", en: "Daily Quests", tw: "每日任務", cn: "每日任务", ko: "일일 퀘스트" }),
       count: `${doneQuests}/${dailyQuests.length || 3}`,
     },
   ];
 
-  const selectedElementMeta = ELEMENT_META[selectedBeast.element] || ELEMENT_META.FIRE;
+  const selectedElementMeta = getLocalizedElementMeta(selectedBeast.element, nativeLanguage);
 
   return (
     <div className="yk-ui w-full max-w-6xl mx-auto space-y-5 pb-24 sm:pb-12">
@@ -485,11 +522,11 @@ export function YokaiHub({
                         {selectedElementMeta.rewardTag}
                       </span>
                     </div>
-                    <p className="text-[11px] text-slate-300 truncate mt-0.5">⚡ {selectedBeast.perk}</p>
+                    <p className="text-[11px] text-slate-300 truncate mt-0.5">⚡ {currentBeast.perk}</p>
                   </div>
 
-                  <div className="flex items-center gap-1 shrink-0" role="group" aria-label="Đổi nhanh linh thú">
-                    {SPIRIT_BEASTS.map((b) => {
+                  <div className="flex items-center gap-1 shrink-0" role="group" aria-label={nativeLanguage === "zh-TW" ? "快速切換靈獸" : nativeLanguage === "zh-CN" ? "快捷切换灵兽" : nativeLanguage === "en" ? "Quick Switch Spirit Beast" : nativeLanguage === "ko" ? "영수 빠른 변경" : "Đổi nhanh linh thú"}>
+                    {allBeasts.map((b) => {
                       const unlocked = unlockedBeastIds.includes(b.id);
                       const active = selectedBeast.id === b.id;
                       return (
@@ -498,7 +535,7 @@ export function YokaiHub({
                           type="button"
                           onClick={() => unlocked && handleSelectBeastWithSound(b)}
                           disabled={!unlocked}
-                          title={unlocked ? `Chọn ${b.name}` : `${b.name} (${b.unlockRequirement})`}
+                          title={unlocked ? `${tr({ vi: "Chọn", en: "Select", tw: "選擇", cn: "选择", ko: "선택" })} ${b.name}` : `${b.name} (${b.unlockRequirement})`}
                           className={`w-8 h-8 rounded-xl text-sm flex items-center justify-center border transition ${
                             active
                               ? "bg-amber-400/25 border-amber-300 scale-105 shadow-[0_0_12px_rgba(251,191,36,.5)]"
@@ -524,20 +561,20 @@ export function YokaiHub({
                     href="/app"
                     className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 hover:bg-white/20 border border-white/15 text-slate-100 text-xs font-bold transition active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300"
                   >
-                    ← Về Dashboard
+                    {nativeLanguage === "zh-TW" ? "← 返回儀表板" : nativeLanguage === "zh-CN" ? "← 返回仪表盘" : nativeLanguage === "en" ? "← Dashboard" : nativeLanguage === "ko" ? "← 대시보드로" : "← Về Dashboard"}
                   </Link>
                   <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-rose-600/25 border border-rose-400/50 text-rose-200 text-xs font-extrabold">
                     ⛩️ Nihon Quest 3D
                   </span>
                   <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-teal-500/20 border border-teal-400/40 text-teal-200 text-xs font-bold">
-                    ✨ Học & Phản Xạ JLPT
+                    {nativeLanguage === "zh-TW" ? "✨ 日語學習與反應訓練" : nativeLanguage === "zh-CN" ? "✨ 日语学习与反应训练" : nativeLanguage === "en" ? "✨ JLPT Reflex & Learning" : nativeLanguage === "ko" ? "✨ JLPT 학습 & 순발력" : "✨ Học & Phản Xạ JLPT"}
                   </span>
                   <button
                     type="button"
                     onClick={() => setShowTutorial(true)}
                     className="ml-auto inline-flex items-center gap-1 px-3 py-1 rounded-full bg-amber-500/15 hover:bg-amber-500/30 border border-amber-400/50 text-amber-200 text-xs font-bold transition active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300"
                   >
-                    📖 Luật Chơi
+                    {nativeLanguage === "zh-TW" ? "📖 玩法說明" : nativeLanguage === "zh-CN" ? "📖 玩法说明" : nativeLanguage === "en" ? "📖 Rules" : nativeLanguage === "ko" ? "📖 플레이 방법" : "📖 Luật Chơi"}
                   </button>
                 </div>
 
@@ -546,8 +583,13 @@ export function YokaiHub({
                   <span className="text-xl sm:text-2xl text-amber-300 font-semibold">妖怪ダッシュ</span>
                 </h1>
                 <p className="mt-2 text-xs sm:text-sm text-slate-200/90 leading-relaxed max-w-xl">
-                  Hoá thân thành linh thú Kitsune phi nước đại qua hàng ngàn cổng Torii đỏ son. Né chướng ngại vật
-                  theo 3 làn và bức phá qua đúng cánh cổng đáp án tiếng Nhật!
+                  {tr({
+                    vi: "Hoá thân thành linh thú Kitsune phi nước đại qua hàng ngàn cổng Torii đỏ son. Né chướng ngại vật theo 3 làn và bức phá qua đúng cánh cổng đáp án tiếng Nhật!",
+                    en: "Become the Kitsune spirit fox and race through thousands of vermilion Torii gates. Dodge obstacles across 3 lanes and burst through the gate with the correct Japanese answer!",
+                    tw: "化身靈獸九尾狐，飛奔穿越千座朱紅鳥居。在 3 條賽道間閃避障礙，衝入正確日語答案的鳥居！",
+                    cn: "化身灵兽九尾狐，飞奔穿越千座朱红鸟居。在 3 条赛道间闪避障碍，冲入正确日语答案的鸟居！",
+                    ko: "영수 키츠네가 되어 수천 개의 붉은 토리이를 질주하세요. 3개 레인에서 장애물을 피하고 정답 일본어 토리이를 돌파하세요!",
+                  })}
                 </p>
               </div>
 
@@ -558,9 +600,9 @@ export function YokaiHub({
                   <div>
                     <div className="flex items-center gap-2">
                       <span className="text-[11px] font-extrabold text-amber-200 uppercase tracking-wider">
-                        Thể lực
+                        {tr({ vi: "Thể lực", en: "Stamina", tw: "體力", cn: "体力", ko: "스태미나" })}
                       </span>
-                      <span className="text-[10px] text-slate-300">• Hồi {formatTimeUntilReset()}</span>
+                      <span className="text-[10px] text-slate-300" suppressHydrationWarning>• {nativeLanguage === "zh-TW" ? "恢復 " : nativeLanguage === "zh-CN" ? "恢复 " : nativeLanguage === "en" ? "Reset " : nativeLanguage === "ko" ? "충전 " : "Hồi "}{formatTimeUntilReset()}</span>
                     </div>
                     <div className="mt-1 flex items-center gap-1.5">
                       {Array.from({ length: maxStamina }).map((_, i) => (
@@ -575,9 +617,9 @@ export function YokaiHub({
                   <label
                     htmlFor="practice-toggle"
                     className="flex flex-col items-end gap-1 cursor-pointer select-none border-l border-white/10 pl-3"
-                    title="Bật chế độ luyện tập miễn phí không tốn thể lực"
+                    title={tr({ vi: "Bật chế độ luyện tập miễn phí không tốn thể lực", en: "Free practice mode, no stamina cost", tw: "開啟免費自由練習，不消耗體力", cn: "开启免费自由练习，不消耗体力", ko: "스태미나 소모 없는 무료 연습 모드" })}
                   >
-                    <span className="text-[10px] font-bold text-teal-300">🍃 Luyện tập</span>
+                    <span className="text-[10px] font-bold text-teal-300">{nativeLanguage === "zh-TW" ? "🍃 自由練習" : nativeLanguage === "zh-CN" ? "🍃 自由练习" : nativeLanguage === "en" ? "🍃 Practice" : nativeLanguage === "ko" ? "🍃 연습 모드" : "🍃 Luyện tập"}</span>
                     <input
                       id="practice-toggle"
                       type="checkbox"
@@ -594,15 +636,15 @@ export function YokaiHub({
 
                 {/* Kỷ lục điểm */}
                 <div className="rounded-2xl border border-white/10 bg-black/35 px-3.5 py-2.5 flex flex-col justify-center">
-                  <span className="text-[11px] text-slate-300 font-semibold">🏆 Kỷ lục điểm</span>
+                  <span className="text-[11px] text-slate-300 font-semibold">{nativeLanguage === "zh-TW" ? "🏆 歷史最高" : nativeLanguage === "zh-CN" ? "🏆 历史最高" : nativeLanguage === "en" ? "🏆 High Score" : nativeLanguage === "ko" ? "🏆 최고 점수" : "🏆 Kỷ lục điểm"}</span>
                   <span className="yk-display text-xl font-extrabold text-amber-300 tabular-nums mt-0.5">
-                    {highScore.toLocaleString()}
+                    {highScore.toLocaleString("en-US")}
                   </span>
                 </div>
 
                 {/* Chuỗi Combo */}
                 <div className="rounded-2xl border border-white/10 bg-black/35 px-3.5 py-2.5 flex flex-col justify-center">
-                  <span className="text-[11px] text-slate-300 font-semibold">🔥 Combo cao nhất</span>
+                  <span className="text-[11px] text-slate-300 font-semibold">{nativeLanguage === "zh-TW" ? "🔥 最大連擊" : nativeLanguage === "zh-CN" ? "🔥 最大连击" : nativeLanguage === "en" ? "🔥 Max Combo" : nativeLanguage === "ko" ? "🔥 최대 콤보" : "🔥 Combo cao nhất"}</span>
                   <span className="yk-display text-xl font-extrabold text-rose-300 tabular-nums mt-0.5">
                     x{bestCombo}
                   </span>
@@ -613,10 +655,10 @@ export function YokaiHub({
               <div className="flex sm:hidden items-center justify-between gap-2 p-2.5 rounded-2xl bg-black/45 border border-amber-300/35 backdrop-blur-md">
                 <div className="min-w-0">
                   <div className="text-[10px] text-amber-300 font-extrabold uppercase truncate">
-                    ⛩️ {selectedZone.nameVi} ({selectedZone.level})
+                    ⛩️ {currentZone.nameVi} ({selectedZone.level})
                   </div>
                   <div className="text-[11px] text-slate-200 truncate font-semibold">
-                    {selectedBeast.avatarIcon} {selectedBeast.name} • {isPractice ? "Luyện tập" : `${stamina}/${maxStamina} Thể lực`}
+                    {selectedBeast.avatarIcon} {selectedBeast.name} • {isPractice ? tr({ vi: "Luyện tập", en: "Practice", tw: "自由練習", cn: "自由练习", ko: "연습" }) : `${stamina}/${maxStamina} ${tr({ vi: "Thể lực", en: "Stamina", tw: "體力", cn: "体力", ko: "스태미나" })}`}
                   </div>
                 </div>
                 <button
@@ -625,7 +667,7 @@ export function YokaiHub({
                   disabled={!canPlay || isLoadingQuestions}
                   className="yk-launch yk-display shrink-0 px-4 py-2 rounded-xl text-xs font-black text-white border border-amber-300/80 bg-[linear-gradient(180deg,#fb4a6b,#e11d48_45%,#9f1239)] shadow-md active:scale-95 transition disabled:opacity-50"
                 >
-                  {isLoadingQuestions ? "Đang tải…" : canPlay ? "⛩️ Vào Ngay" : "Hết lượt"}
+                  {isLoadingQuestions ? tr({ vi: "Đang tải…", en: "Loading…", tw: "載入中…", cn: "加载中…", ko: "로딩 중…" }) : canPlay ? tr({ vi: "⛩️ Vào Ngay", en: "⛩️ Go", tw: "⛩️ 立即出陣", cn: "⛩️ 立即出阵", ko: "⛩️ 출진" }) : tr({ vi: "Hết lượt", en: "No stamina", tw: "體力耗盡", cn: "体力耗尽", ko: "스태미나 없음" })}
                 </button>
               </div>
 
@@ -639,34 +681,34 @@ export function YokaiHub({
                   <div className="flex items-center gap-2">
                     <JapaneseFanIcon className="w-5 h-4 text-amber-300" />
                     <span className="yk-display text-xs sm:text-sm font-extrabold text-amber-200 uppercase tracking-wider">
-                      Tuỳ Chỉnh Lượt Chạy • 出陣設定
+                      {nativeLanguage === "zh-TW" ? "出陣設定 • 出陣設定" : nativeLanguage === "zh-CN" ? "出阵定制 • 出陣設定" : nativeLanguage === "en" ? "Run Settings • 出陣設定" : nativeLanguage === "ko" ? "출진 설정 • 出陣設定" : "Tuỳ Chỉnh Lượt Chạy • 出陣設定"}
                     </span>
                   </div>
-                  <OfudaBadge text="Phong Ấn" kanji="道" color="amber" className="scale-90" />
+                  <OfudaBadge text={nativeLanguage === "zh-TW" || nativeLanguage === "zh-CN" ? "封印" : nativeLanguage === "en" ? "Sealed" : nativeLanguage === "ko" ? "봉인" : "Phong Ấn"} kanji="道" color="amber" className="scale-90" />
                 </div>
 
                 {/* 1. LOẠI CÂU HỎI & NỘI DUNG ÔN LUYỆN */}
                 <div className="relative z-10 space-y-2.5">
                   <div className="flex flex-wrap items-center justify-between gap-1 text-[11px] font-bold">
                     <span className="text-amber-300 flex items-center gap-1.5">
-                      <span>📜 Thể thức câu hỏi:</span>
+                      <span>{nativeLanguage === "zh-TW" ? "📜 題目類型:" : nativeLanguage === "zh-CN" ? "📜 题目类型:" : nativeLanguage === "en" ? "📜 Question Format:" : nativeLanguage === "ko" ? "📜 질문 형식:" : "📜 Thể thức câu hỏi:"}</span>
                       <span className="px-2 py-0.5 rounded-md bg-amber-400/20 text-amber-200 border border-amber-400/40 font-bold">
-                        {getModePreviewInfo(questionMode, selectedZone.level).tag}
+                        {getModePreviewInfoLocalized(questionMode, selectedZone.level, nativeLanguage).tag}
                       </span>
                     </span>
                     <span className="text-[10px] text-slate-300">
-                      Cõi: <strong className="text-amber-300 font-extrabold">{selectedZone.nameVi}</strong> ({selectedZone.level})
+                      {nativeLanguage === "zh-TW" ? "領域: " : nativeLanguage === "zh-CN" ? "领域: " : nativeLanguage === "en" ? "Realm: " : nativeLanguage === "ko" ? "영지: " : "Cõi: "}<strong className="text-amber-300 font-extrabold">{currentZone.nameVi}</strong> ({currentZone.level})
                     </span>
                   </div>
 
                   {/* NHÓM 1: TỪ VỰNG & BẢNG CHỮ CÁI KANA */}
                   <div className="space-y-1">
                     <div className="flex items-center justify-between text-[10px] uppercase font-bold text-slate-400 tracking-wider">
-                      <span>🈳 Từ vựng & Ký tự {selectedZone.level === "KANA" ? "(Khuyên dùng cho cõi này)" : ""}</span>
-                      <span className="text-[9px] text-amber-400/80 font-normal">4 thể thức cơ bản</span>
+                      <span>{nativeLanguage === "zh-TW" ? `🈳 詞彙與假名 ${selectedZone.level === "KANA" ? "(此界推薦)" : ""}` : nativeLanguage === "zh-CN" ? `🈳 词汇与假名 ${selectedZone.level === "KANA" ? "(此界推荐)" : ""}` : nativeLanguage === "en" ? `🈳 Vocab & Kana ${selectedZone.level === "KANA" ? "(Recommended)" : ""}` : nativeLanguage === "ko" ? `🈳 어휘 및 가나 문자 ${selectedZone.level === "KANA" ? "(추천)" : ""}` : `🈳 Từ vựng & Ký tự ${selectedZone.level === "KANA" ? "(Khuyên dùng cho cõi này)" : ""}`}</span>
+                      <span className="text-[9px] text-amber-400/80 font-normal">{nativeLanguage === "zh-TW" ? "4 種基礎形式" : nativeLanguage === "zh-CN" ? "4 种基础形式" : nativeLanguage === "en" ? "4 Basic Modes" : nativeLanguage === "ko" ? "4가지 기본 형식" : "4 thể thức cơ bản"}</span>
                     </div>
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5" role="radiogroup" aria-label="Chọn thể thức từ vựng và ký tự">
-                      {VOCAB_QUESTION_MODES.map((mode) => {
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5" role="radiogroup" aria-label={tr({ vi: "Chọn thể thức từ vựng và ký tự", en: "Vocabulary and kana modes", tw: "詞彙與假名模式", cn: "词汇与假名模式", ko: "어휘 및 가나 모드" })}>
+                      {vocabQuestionModes.map((mode) => {
                         const active = questionMode === mode.id;
                         return (
                           <button
@@ -697,11 +739,11 @@ export function YokaiHub({
                   {/* NHÓM 2: MẪU CÂU & NGỮ PHÁP */}
                   <div className="space-y-1">
                     <div className="flex items-center justify-between text-[10px] uppercase font-bold text-slate-400 tracking-wider">
-                      <span>⛩️ Mẫu câu & Ngữ pháp {selectedZone.level === "KANA" ? "(Ứng dụng nâng cao)" : "(JLPT N5-N3)"}</span>
-                      <span className="text-[9px] text-teal-400/80 font-normal">4 thể thức câu</span>
+                      <span>{nativeLanguage === "zh-TW" ? `⛩️ 例句與文法 ${selectedZone.level === "KANA" ? "(進階應用)" : "(JLPT N5-N3)"}` : nativeLanguage === "zh-CN" ? `⛩️ 例句与文法 ${selectedZone.level === "KANA" ? "(进阶应用)" : "(JLPT N5-N3)"}` : nativeLanguage === "en" ? `⛩️ Sentences & Grammar ${selectedZone.level === "KANA" ? "(Advanced)" : "(JLPT N5-N3)"}` : nativeLanguage === "ko" ? `⛩️ 문장 및 문법 ${selectedZone.level === "KANA" ? "(고급 응용)" : "(JLPT N5-N3)"}` : `⛩️ Mẫu câu & Ngữ pháp ${selectedZone.level === "KANA" ? "(Ứng dụng nâng cao)" : "(JLPT N5-N3)"}`}</span>
+                      <span className="text-[9px] text-teal-400/80 font-normal">{nativeLanguage === "zh-TW" ? "4 種句型形式" : nativeLanguage === "zh-CN" ? "4 种句型形式" : nativeLanguage === "en" ? "4 Sentence Modes" : nativeLanguage === "ko" ? "4가지 문장 형식" : "4 thể thức câu"}</span>
                     </div>
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5" role="radiogroup" aria-label="Chọn thể thức mẫu câu và ngữ pháp">
-                      {SENTENCE_QUESTION_MODES.map((mode) => {
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5" role="radiogroup" aria-label={tr({ vi: "Chọn thể thức mẫu câu và ngữ pháp", en: "Sentence and grammar modes", tw: "例句與文法模式", cn: "例句与文法模式", ko: "문장 및 문법 모드" })}>
+                      {sentenceQuestionModes.map((mode) => {
                         const active = questionMode === mode.id;
                         return (
                           <button
@@ -731,14 +773,14 @@ export function YokaiHub({
 
                   {/* LIVE PREVIEW: MINH HỌA VÍ DỤ TRỰC QUAN CÂU HỎI VÀ 3 CỔNG TORII */}
                   {(() => {
-                    const preview = getModePreviewInfo(questionMode, selectedZone.level);
+                    const preview = getModePreviewInfoLocalized(questionMode, selectedZone.level, nativeLanguage);
                     return (
                       <div className="p-2.5 sm:p-3 rounded-xl bg-black/45 border border-amber-400/35 backdrop-blur-md space-y-2">
                         <div className="flex items-center justify-between gap-1 text-[11px]">
                           <div className="flex items-center gap-1.5 min-w-0">
                             <span className="text-xs shrink-0">💡</span>
                             <span className="font-extrabold text-amber-300 shrink-0">
-                              Ví dụ cách chơi:
+                              {tr({ vi: "Ví dụ cách chơi:", en: "How it plays:", tw: "玩法範例：", cn: "玩法示例：", ko: "플레이 예시:" })}
                             </span>
                             <span className="text-[10px] text-slate-300 truncate">
                               {preview.desc}
@@ -749,7 +791,7 @@ export function YokaiHub({
                             onClick={() => setShowLiveExample((v) => !v)}
                             className="sm:hidden shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-lg bg-amber-400/20 text-amber-300 border border-amber-300/30"
                           >
-                            {showLiveExample ? "Thu gọn ▲" : "Xem mẫu cổng ▼"}
+                            {showLiveExample ? (nativeLanguage === "zh-TW" ? "收起 ▲" : nativeLanguage === "zh-CN" ? "收起 ▲" : nativeLanguage === "en" ? "Collapse ▲" : nativeLanguage === "ko" ? "접기 ▲" : "Thu gọn ▲") : (nativeLanguage === "zh-TW" ? "查看鳥居範例 ▼" : nativeLanguage === "zh-CN" ? "查看鸟居范例 ▼" : nativeLanguage === "en" ? "View Sample Gates ▼" : nativeLanguage === "ko" ? "관문 예시 보기 ▼" : "Xem mẫu cổng ▼")}
                           </button>
                         </div>
 
@@ -758,7 +800,7 @@ export function YokaiHub({
                           {/* Bảng câu hỏi mô phỏng */}
                           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 bg-slate-900/90 border border-amber-500/30 rounded-lg px-2.5 py-1.5">
                             <div className="flex items-center gap-2 min-w-0">
-                              <span className="text-xs shrink-0">📜 Đề bài:</span>
+                              <span className="text-xs shrink-0">{nativeLanguage === "zh-TW" ? "📜 題目:" : nativeLanguage === "zh-CN" ? "📜 题目:" : nativeLanguage === "en" ? "📜 Question:" : nativeLanguage === "ko" ? "📜 문제:" : "📜 Đề bài:"}</span>
                               <span className="text-xs font-extrabold text-white truncate">
                                 {preview.sampleQuestion}
                               </span>
@@ -782,10 +824,10 @@ export function YokaiHub({
                                   }`}
                                 >
                                   <div className="text-[9px] font-bold text-slate-400 flex items-center gap-1 mb-0.5">
-                                    <span>⛩️ Cổng {idx + 1}</span>
+                                    <span>⛩️ {nativeLanguage === "zh-TW" || nativeLanguage === "zh-CN" ? "鳥居" : nativeLanguage === "en" ? "Gate" : nativeLanguage === "ko" ? "관문" : "Cổng"} {idx + 1}</span>
                                     {isCorrect && (
                                       <span className="text-[9px] px-1 rounded bg-amber-400 text-slate-950 font-black">
-                                        ĐÚNG
+                                        {tr({ vi: "ĐÚNG", en: "CORRECT", tw: "正確", cn: "正确", ko: "정답" })}
                                       </span>
                                     )}
                                   </div>
@@ -794,7 +836,7 @@ export function YokaiHub({
                                   </span>
                                   {isCorrect && (
                                     <span className="text-[9px] text-amber-300/90 font-semibold mt-0.5 animate-pulse">
-                                      ⚡ Lướt vào đây!
+                                      {nativeLanguage === "zh-TW" ? "⚡ 衝入此門！" : nativeLanguage === "zh-CN" ? "⚡ 冲入此门！" : nativeLanguage === "en" ? "⚡ Dash in here!" : nativeLanguage === "ko" ? "⚡ 여기로 돌진!" : "⚡ Lướt vào đây!"}
                                     </span>
                                   )}
                                 </div>
@@ -811,18 +853,18 @@ export function YokaiHub({
                 <div className="relative z-10 mt-3 pt-2.5 border-t border-white/10 space-y-2">
                   <div className="flex items-center justify-between text-[11px] font-bold">
                     <span className="text-teal-300 flex items-center gap-1">
-                      <span>⚡ Tốc độ di chuyển:</span>
+                      <span>{tr({ vi: "⚡ Tốc độ di chuyển:", en: "⚡ Running Speed:", tw: "⚡ 移動速度：", cn: "⚡ 奔跑速度：", ko: "⚡ 이동 속도:" })}</span>
                       <span className="text-slate-300 font-normal">
-                        {speedDifficulty === "EASY" && "10.5 m/s (Tăng dần êm ái)"}
-                        {speedDifficulty === "MEDIUM" && "14.0 m/s (Bứt tốc kích thích)"}
-                        {speedDifficulty === "CUSTOM" && `${customSpeed.toFixed(1)} m/s (Người chơi tự chỉnh)`}
+                        {speedDifficulty === "EASY" && `10.5 m/s (${tr({ vi: "Tăng dần êm ái", en: "Gentle pace", tw: "平緩漸進", cn: "平缓渐进", ko: "부드러운 가속" })})`}
+                        {speedDifficulty === "MEDIUM" && `14.0 m/s (${tr({ vi: "Bứt tốc kích thích", en: "Dynamic pace", tw: "標準刺激", cn: "标准刺激", ko: "역동적인 속도" })})`}
+                        {speedDifficulty === "CUSTOM" && `${customSpeed.toFixed(1)} m/s (${tr({ vi: "Người chơi tự chỉnh", en: "Custom speed", tw: "自訂速度", cn: "自定义速度", ko: "사용자 지정" })})`}
                       </span>
                     </span>
-                    <span className="text-[10px] text-amber-200/80 font-normal">🍃 Tự tăng tốc theo chuỗi né</span>
+                    <span className="text-[10px] text-amber-200/80 font-normal">{tr({ vi: "🍃 Tự tăng tốc theo chuỗi né", en: "🍃 Speeds up with dodge streak", tw: "🍃 隨閃避連擊自動加速", cn: "🍃 随闪避连击自动加速", ko: "🍃 회피 연속 시 자동 가속" })}</span>
                   </div>
 
-                  <div className="grid grid-cols-3 gap-2" role="radiogroup" aria-label="Chọn tốc độ chạy">
-                    {SPEED_MODES.map((sm) => {
+                  <div className="grid grid-cols-3 gap-2" role="radiogroup" aria-label={tr({ vi: "Chọn tốc độ chạy", en: "Choose running speed", tw: "選擇奔跑速度", cn: "选择奔跑速度", ko: "달리기 속도 선택" })}>
+                    {speedModesList.map((sm) => {
                       const active = speedDifficulty === sm.id;
                       return (
                         <button
@@ -863,17 +905,17 @@ export function YokaiHub({
                     <div className="mt-2.5 p-3 rounded-xl bg-black/40 border border-teal-400/30 backdrop-blur-md">
                       <div className="flex items-center justify-between text-xs mb-2">
                         <div className="flex items-center gap-1.5">
-                          <span className="text-teal-300 font-extrabold">⚙️ Tốc độ mong muốn:</span>
+                          <span className="text-teal-300 font-extrabold">{tr({ vi: "⚙️ Tốc độ mong muốn:", en: "⚙️ Desired speed:", tw: "⚙️ 期望速度：", cn: "⚙️ 期望速度：", ko: "⚙️ 원하는 속도:" })}</span>
                           <span className="yk-display text-sm font-black text-amber-300 tabular-nums">
                             {customSpeed.toFixed(1)} m/s
                           </span>
                         </div>
                         <span className="text-[10px] text-slate-300">
                           {customSpeed < 11.5
-                            ? "🍃 Nhẹ nhàng, thư thả đọc chữ"
+                            ? tr({ vi: "🍃 Nhẹ nhàng, thư thả đọc chữ", en: "🍃 Relaxed, time to read", tw: "🍃 輕鬆，從容閱讀", cn: "🍃 轻松，从容阅读", ko: "🍃 여유롭게 읽기" })
                             : customSpeed <= 16.5
-                            ? "⚔️ Nhịp chuẩn, phản xạ tốt"
-                            : "🌪️ Thần tốc, đòi hỏi tay lái lụa"}
+                            ? tr({ vi: "⚔️ Nhịp chuẩn, phản xạ tốt", en: "⚔️ Standard pace, good reflexes", tw: "⚔️ 標準節奏，反應良好", cn: "⚔️ 标准节奏，反应良好", ko: "⚔️ 표준 속도, 좋은 반응" })
+                            : tr({ vi: "🌪️ Thần tốc, đòi hỏi tay lái lụa", en: "🌪️ Lightning fast, expert control", tw: "🌪️ 神速，需要高超操控", cn: "🌪️ 神速，需要高超操控", ko: "🌪️ 초고속, 숙련된 조작 필요" })}
                         </span>
                       </div>
 
@@ -886,7 +928,7 @@ export function YokaiHub({
                           step="0.5"
                           value={customSpeed}
                           onChange={(e) => onChangeCustomSpeed(parseFloat(e.target.value))}
-                          aria-label="Điều chỉnh tốc độ chạy tự chọn"
+                          aria-label={tr({ vi: "Điều chỉnh tốc độ chạy tự chọn", en: "Adjust custom running speed", tw: "調整自訂奔跑速度", cn: "调整自定义奔跑速度", ko: "사용자 지정 속도 조절" })}
                           className="w-full accent-teal-400 cursor-pointer h-2 bg-slate-700/80 rounded-lg"
                         />
                         <span className="text-[11px] text-slate-400 font-bold shrink-0">24.0 m/s</span>
@@ -894,7 +936,7 @@ export function YokaiHub({
 
                       {/* Phím bấm chọn nhanh tốc độ */}
                       <div className="mt-2.5 flex items-center justify-end gap-1.5">
-                        <span className="text-[10px] text-slate-400 mr-1">Chọn nhanh:</span>
+                        <span className="text-[10px] text-slate-400 mr-1">{tr({ vi: "Chọn nhanh:", en: "Quick pick:", tw: "快速選擇：", cn: "快速选择：", ko: "빠른 선택:" })}</span>
                         {[
                           { label: "10 m/s", val: 10 },
                           { label: "14 m/s", val: 14 },
@@ -925,17 +967,17 @@ export function YokaiHub({
                   <div className="relative z-10 mt-3 pt-2.5 border-t border-white/10 space-y-2">
                     <div className="flex items-center justify-between text-[11px] font-bold">
                       <span className="text-amber-300 flex items-center gap-1">
-                        <span>🔮 Gợi ý Cổng đáp án đúng:</span>
+                        <span>{tr({ vi: "🔮 Gợi ý Cổng đáp án đúng:", en: "🔮 Answer Gate Hint:", tw: "🔮 正確答案鳥居提示：", cn: "🔮 正确答案鸟居提示：", ko: "🔮 정답 토리이 힌트:" })}</span>
                         <span className="text-slate-300 font-normal">
-                          {showGateHint ? "Vòng phát sáng vàng dẫn đường" : "Cả 3 cổng giống hệt nhau"}
+                          {showGateHint ? tr({ vi: "Vòng phát sáng vàng dẫn đường", en: "Golden ring guides the way", tw: "金色光環引路", cn: "金色光环引路", ko: "황금 고리가 길 안내" }) : tr({ vi: "Cả 3 cổng giống hệt nhau", en: "All 3 gates look identical", tw: "3 座鳥居外觀相同", cn: "3 座鸟居外观相同", ko: "3개 토리이가 모두 동일" })}
                         </span>
                       </span>
                       <span className="text-[10px] text-amber-200/80 font-normal">
-                        {showGateHint ? "🌟 Dễ làm quen" : "🎯 Thử thách JLPT"}
+                        {showGateHint ? tr({ vi: "🌟 Dễ làm quen", en: "🌟 Beginner friendly", tw: "🌟 輕鬆上手", cn: "🌟 轻松上手", ko: "🌟 쉬운 적응" }) : tr({ vi: "🎯 Thử thách JLPT", en: "🎯 JLPT Challenge", tw: "🎯 JLPT 挑戰", cn: "🎯 JLPT 挑战", ko: "🎯 JLPT 도전" })}
                       </span>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label="Gợi ý vòng vàng đáp án đúng">
+                    <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label={tr({ vi: "Gợi ý vòng vàng đáp án đúng", en: "Golden ring answer hint", tw: "金環正確答案提示", cn: "金环正确答案提示", ko: "황금 고리 정답 힌트" })}>
                       <button
                         type="button"
                         role="radio"
@@ -952,7 +994,7 @@ export function YokaiHub({
                       >
                         <div className="flex items-center gap-1.5">
                           <span>🌟</span>
-                          <span className="font-extrabold">BẬT (Có vòng vàng)</span>
+                          <span className="font-extrabold">{tr({ vi: "BẬT (Có vòng vàng)", en: "ON (Golden ring)", tw: "開啟（有金環）", cn: "开启（有金环）", ko: "켜기 (황금 고리)" })}</span>
                         </div>
                         <span
                           className={`text-[10px] px-1.5 py-0.5 rounded-full border ${
@@ -961,7 +1003,7 @@ export function YokaiHub({
                               : "bg-black/20 text-slate-400 border-white/10"
                           }`}
                         >
-                          Mặc định
+                          {tr({ vi: "Mặc định", en: "Default", tw: "預設", cn: "默认", ko: "기본" })}
                         </span>
                       </button>
 
@@ -981,7 +1023,7 @@ export function YokaiHub({
                       >
                         <div className="flex items-center gap-1.5">
                           <span>🎯</span>
-                          <span className="font-extrabold">TẮT (Tự suy luận)</span>
+                          <span className="font-extrabold">{tr({ vi: "TẮT (Tự suy luận)", en: "OFF (Figure it out)", tw: "關閉（自主推理）", cn: "关闭（自主推理）", ko: "끄기 (스스로 추론)" })}</span>
                         </div>
                         <span
                           className={`text-[10px] px-1.5 py-0.5 rounded-full border ${
@@ -990,7 +1032,7 @@ export function YokaiHub({
                               : "bg-black/20 text-slate-400 border-white/10"
                           }`}
                         >
-                          Thử thách
+                          {tr({ vi: "Thử thách", en: "Challenge", tw: "挑戰", cn: "挑战", ko: "도전" })}
                         </span>
                       </button>
                     </div>
@@ -1009,10 +1051,10 @@ export function YokaiHub({
                   </span>
                   <div className="min-w-0">
                     <div className="text-[11px] font-bold text-amber-300 uppercase tracking-wide">
-                      Cõi đang chọn • {isPractice ? "Chế độ Luyện tập (Miễn phí)" : "Chế độ Tính Điểm & XP"}
+                      {nativeLanguage === "zh-TW" ? `當前領域 • ${isPractice ? "自由練習（免費）" : "排位計分與 XP"}` : nativeLanguage === "zh-CN" ? `当前领域 • ${isPractice ? "自由练习（免费）" : "计分与 XP 挑战"}` : nativeLanguage === "en" ? `Selected Realm • ${isPractice ? "Practice Mode (Free)" : "Ranked Score & XP"}` : nativeLanguage === "ko" ? `선택된 영지 • ${isPractice ? "연습 모드 (무료)" : "점수 & XP 획득"}` : `Cõi đang chọn • ${isPractice ? "Chế độ Luyện tập (Miễn phí)" : "Chế độ Tính Điểm & XP"}`}
                     </div>
                     <div className="text-sm sm:text-base font-extrabold text-white truncate">
-                      {selectedZone.nameVi}{" "}
+                      {currentZone.nameVi}{" "}
                       <span className="text-xs font-normal text-slate-300">({selectedZone.nameJa})</span>
                     </div>
                   </div>
@@ -1029,10 +1071,10 @@ export function YokaiHub({
                   }`}
                 >
                   {isLoadingQuestions
-                    ? "Đang chuẩn bị…"
+                    ? isEn ? "Preparing…" : isZh ? "准备中…" : isKo ? "준비 중…" : "Đang chuẩn bị…"
                     : canPlay
-                    ? "⛩️ XUẤT TRẬN NGAY"
-                    : "⚡ HẾT THỂ LỰC (BẬT LUYỆN TẬP)"}
+                    ? (isEn ? "⛩️ START RUN" : isZh ? "⛩️ 立即出阵" : isKo ? "⛩️ 바로 출진" : "⛩️ XUẤT TRẬN NGAY")
+                    : (isEn ? "⚡ OUT OF STAMINA (USE PRACTICE)" : isZh ? "⚡ 体力耗尽 (切换练习模式)" : isKo ? "⚡ 스태미나 부족 (연습 모드 사용)" : "⚡ HẾT THỂ LỰC (BẬT LUYỆN TẬP)")}
                 </button>
               </div>
             </div>
@@ -1043,7 +1085,7 @@ export function YokaiHub({
       {/* ================= TABS ================= */}
       <div
         role="tablist"
-        aria-label="Danh mục Yōkai Dash"
+        aria-label="Yōkai Dash"
         className="yk-scroll-none flex gap-2 overflow-x-auto border-b border-slate-300/60 dark:border-white/10 pb-2.5"
       >
         {tabs.map((t) => {
@@ -1078,7 +1120,7 @@ export function YokaiHub({
       {/* ================= TAB 1: THẾ GIỚI LINH GIỚI ================= */}
       {activeTab === "zones" && (
         <div role="tabpanel" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {GAME_ZONES.map((z) => {
+          {allZones.map((z) => {
             const isSelected = selectedZone.id === z.id;
             const isCleared = clearedZones.includes(z.id);
             return (
@@ -1109,17 +1151,17 @@ export function YokaiHub({
                   <div className="absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-black/65 to-transparent" aria-hidden />
                   <div className="absolute top-2.5 left-3 flex items-center gap-1.5">
                     <span className="text-[11px] font-extrabold px-2.5 py-0.5 rounded-full bg-black/65 text-amber-200 border border-amber-300/40 backdrop-blur">
-                      Cấp {z.level}
+                      {isEn ? `Level ${z.level}` : isZh ? `等级 ${z.level}` : isKo ? `${z.level} 급` : `Cấp ${z.level}`}
                     </span>
                     {isCleared && (
                       <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-teal-950/80 text-teal-200 border border-teal-400/40">
-                        ✓ Đã chinh phục
+                        {isEn ? "✓ Cleared" : isZh ? "✓ 已通关" : isKo ? "✓ 정복 완료" : "✓ Đã chinh phục"}
                       </span>
                     )}
                   </div>
                   {isSelected && (
                     <span className="absolute bottom-2 right-3 text-[11px] font-extrabold px-2.5 py-0.5 rounded-full bg-rose-600 text-white border border-amber-200/60 shadow">
-                      ✓ Đang chọn
+                      {isEn ? "✓ Selected" : isZh ? "✓ 当前选中" : isKo ? "✓ 선택됨" : "✓ Đang chọn"}
                     </span>
                   )}
                 </div>
@@ -1135,7 +1177,7 @@ export function YokaiHub({
                     </p>
                   </div>
                   <div className="mt-3 pt-2.5 border-t border-slate-100 dark:border-white/10 flex items-center justify-between text-xs">
-                    <span className="text-slate-500 dark:text-slate-400">🎵 Âm hưởng: {z.bgmTone}</span>
+                    <span className="text-slate-500 dark:text-slate-400">🎵 {tr({ vi: "Âm hưởng", en: "Music", tw: "音樂", cn: "音乐", ko: "음악" })}: {z.bgmTone}</span>
                     <button
                       type="button"
                       onClick={(e) => {
@@ -1147,7 +1189,7 @@ export function YokaiHub({
                       }}
                       className="font-extrabold text-rose-600 dark:text-amber-300 hover:underline"
                     >
-                      {isSelected ? "Chạy ngay →" : "Chọn cõi →"}
+                      {isSelected ? (isEn ? "Run Now →" : isZh ? "立即出发 →" : isKo ? "달리기 →" : "Chạy ngay →") : (isEn ? "Select Realm →" : isZh ? "选择此界 →" : isKo ? "영지 선택 →" : "Chọn cõi →")}
                     </button>
                   </div>
                 </div>
@@ -1160,11 +1202,11 @@ export function YokaiHub({
       {/* ================= TAB 2: BỘ SƯU TẬP LINH THÚ (CHUẨN HÓA THẺ) ================= */}
       {activeTab === "beasts" && (
         <div role="tabpanel" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {SPIRIT_BEASTS.map((beast) => {
+          {allBeasts.map((beast) => {
             const isUnlocked = unlockedBeastIds.includes(beast.id);
             const isSelected = selectedBeast.id === beast.id;
             const thumb = thumbs[beast.id];
-            const elMeta = ELEMENT_META[beast.element] || ELEMENT_META.FIRE;
+            const elMeta = getLocalizedElementMeta(beast.element, nativeLanguage);
 
             return (
               <div
@@ -1221,11 +1263,11 @@ export function YokaiHub({
                             : "bg-teal-950/85 text-teal-200 border-teal-400/40"
                         }`}
                       >
-                        {isSelected ? "✓ Đang đồng hành" : "Đã mở khóa"}
+                        {isSelected ? (isEn ? "✓ Accompanying" : isZh ? "✓ 当前同伴" : isKo ? "✓ 동행 중" : "✓ Đang đồng hành") : (isEn ? "Unlocked" : isZh ? "已解锁" : isKo ? "해금됨" : "Đã mở khóa")}
                       </span>
                     ) : (
                       <span className="absolute top-3 right-3 text-[10px] font-extrabold px-2.5 py-0.5 rounded-full bg-rose-950/90 text-rose-200 border border-rose-400/40">
-                        🔒 Chưa mở khóa
+                        {isEn ? "🔒 Locked" : isZh ? "🔒 未解锁" : isKo ? "🔒 미해금" : "🔒 Chưa mở khóa"}
                       </span>
                     )}
 
@@ -1252,7 +1294,7 @@ export function YokaiHub({
                       }`}
                     >
                       <div className="flex items-center justify-between gap-2 mb-1">
-                        <span className="font-extrabold text-amber-600 dark:text-amber-300">⚡ Kỹ năng hộ mệnh</span>
+                        <span className="font-extrabold text-amber-600 dark:text-amber-300">{isEn ? "⚡ Guardian Perk" : isZh ? "⚡ 护身天赋" : isKo ? "⚡ 수호 특성" : "⚡ Kỹ năng hộ mệnh"}</span>
                         <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-teal-500/15 text-teal-600 dark:text-teal-300">
                           {elMeta.rewardTag}
                         </span>
@@ -1266,13 +1308,13 @@ export function YokaiHub({
                 <div className="px-4 py-3 mt-1 border-t border-slate-100 dark:border-white/10 flex items-center justify-between text-xs">
                   {isUnlocked ? (
                     <>
-                      <span className="text-slate-400 text-[11px]">Sẵn sàng xuất trận</span>
+                      <span className="text-slate-400 text-[11px]">{isEn ? "Ready for Battle" : isZh ? "蓄势待发" : isKo ? "출진 준비 완료" : "Sẵn sàng xuất trận"}</span>
                       <span
                         className={`font-extrabold ${
                           isSelected ? "text-teal-400" : "text-rose-500 dark:text-amber-300"
                         }`}
                       >
-                        {isSelected ? "✓ Đang chọn" : "Chọn linh thú →"}
+                        {isSelected ? (isEn ? "✓ Selected" : isZh ? "✓ 已选中" : isKo ? "✓ 선택됨" : "✓ Đang chọn") : (isEn ? "Select Beast →" : isZh ? "选为同伴 →" : isKo ? "영수 선택 →" : "Chọn linh thú →")}
                       </span>
                     </>
                   ) : (
@@ -1299,11 +1341,11 @@ export function YokaiHub({
         <div role="tabpanel" className="space-y-3">
           {dailyQuests.length > 0 && (
             <div className="flex items-center justify-between text-xs font-bold text-slate-600 dark:text-slate-300 px-1">
-              <span>Đã hoàn thành {doneQuests}/{dailyQuests.length} nhiệm vụ hôm nay</span>
-              <span className="text-amber-500 dark:text-amber-300">Tự động cộng thưởng XP khi hoàn thành màn</span>
+              <span>{tr({ vi: `Đã hoàn thành ${doneQuests}/${dailyQuests.length} nhiệm vụ hôm nay`, en: `Completed ${doneQuests}/${dailyQuests.length} quests today`, tw: `今日已完成 ${doneQuests}/${dailyQuests.length} 項任務`, cn: `今日已完成 ${doneQuests}/${dailyQuests.length} 项任务`, ko: `오늘 ${doneQuests}/${dailyQuests.length}개 퀘스트 완료` })}</span>
+              <span className="text-amber-500 dark:text-amber-300">{tr({ vi: "Tự động cộng thưởng XP khi hoàn thành màn", en: "XP rewards are added automatically after each run", tw: "完成關卡後自動發放 XP 獎勵", cn: "完成关卡后自动发放 XP 奖励", ko: "런 완료 시 XP 자동 지급" })}</span>
             </div>
           )}
-          {dailyQuests.map((q) => {
+          {localizedQuests.map((q) => {
             const pct = Math.min(100, Math.round((q.current / Math.max(1, q.target)) * 100));
             return (
               <div
@@ -1322,7 +1364,7 @@ export function YokaiHub({
                     {q.title}
                     {q.completed && (
                       <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-teal-500 text-white">
-                        ✓ Đã nhận thưởng
+                        {isEn ? "✓ Claimed" : isZh ? "✓ 已领取" : isKo ? "✓ 보상 획득" : "✓ Đã nhận thưởng"}
                       </span>
                     )}
                   </div>
@@ -1368,10 +1410,10 @@ export function YokaiHub({
           </span>
           <div className="min-w-0">
             <div className="text-[11px] text-amber-300 font-extrabold truncate">
-              {selectedZone.nameVi}
+              {currentZone.nameVi}
             </div>
             <div className="text-[10px] text-slate-300 truncate">
-              {selectedBeast.avatarIcon} {selectedBeast.name} • {isPractice ? "Tập luyện" : `${stamina}/${maxStamina} Thể lực`}
+              {currentBeast.avatarIcon} {currentBeast.name} • {isPractice ? (nativeLanguage === "zh-TW" ? "自由練習" : nativeLanguage === "zh-CN" ? "自由练习" : nativeLanguage === "en" ? "Practice" : nativeLanguage === "ko" ? "연습" : "Tập luyện") : `${stamina}/${maxStamina} ${nativeLanguage === "zh-TW" ? "體力" : nativeLanguage === "zh-CN" ? "体力" : nativeLanguage === "en" ? "Stamina" : nativeLanguage === "ko" ? "스태미나" : "Thể lực"}`}
             </div>
           </div>
         </div>
@@ -1381,7 +1423,7 @@ export function YokaiHub({
           disabled={!canPlay || isLoadingQuestions}
           className="yk-launch yk-display shrink-0 px-4 py-2 rounded-xl text-xs font-black text-white border border-amber-300/80 bg-[linear-gradient(180deg,#fb4a6b,#e11d48_45%,#9f1239)] shadow-md active:scale-95 transition disabled:opacity-50"
         >
-          {isLoadingQuestions ? "Đang chuẩn bị…" : canPlay ? "⛩️ XUẤT TRẬN" : "HẾT THỂ LỰC"}
+          {isLoadingQuestions ? tr({ vi: "Đang chuẩn bị…", en: "Preparing…", tw: "準備中…", cn: "准备中…", ko: "준비 중…" }) : canPlay ? tr({ vi: "⛩️ XUẤT TRẬN", en: "⛩️ START", tw: "⛩️ 出陣", cn: "⛩️ 出阵", ko: "⛩️ 출진" }) : tr({ vi: "HẾT THỂ LỰC", en: "NO STAMINA", tw: "體力耗盡", cn: "体力耗尽", ko: "스태미나 없음" })}
         </button>
       </div>
     </div>

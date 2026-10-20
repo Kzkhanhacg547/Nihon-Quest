@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { RubyWord } from "@/components/JapaneseTerm";
 import { useSoundAndTheme } from "@/components/SoundAndThemeContext";
 import { useNativeLanguage } from "@/components/LanguageContext";
+import { LocalizedVocabMeaning } from "@/lib/vocabLocalization";
 import {
   toCanonicalVocabularyItem,
   type ContentProvenanceType,
@@ -95,8 +96,8 @@ export function SectionShell({
 }: {
   id?: string;
   icon: ReactNode;
-  title: string;
-  subtitle?: string;
+  title: ReactNode;
+  subtitle?: ReactNode;
   action?: ReactNode;
   children: ReactNode;
   className?: string;
@@ -124,19 +125,21 @@ export function SectionShell({
 
 export function SpeakButton({
   onClick,
-  label = "Nghe phát âm",
+  label,
   size = "md",
 }: {
   onClick: () => void;
   label?: string;
   size?: "sm" | "md";
 }) {
+  const { t } = useNativeLanguage();
+  const displayLabel = label || t("listenPronunciation");
   return (
     <button
       type="button"
       onClick={onClick}
-      aria-label={label}
-      title={label}
+      aria-label={displayLabel}
+      title={displayLabel}
       className={`grid shrink-0 place-items-center rounded-full bg-rose-50 text-red-600 transition-colors hover:bg-rose-100 active:scale-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-red-500 dark:bg-red-950/40 dark:text-red-400 dark:hover:bg-red-950/70 ${
         size === "sm" ? "h-11 w-11" : "h-12 w-12"
       }`}
@@ -377,7 +380,7 @@ export function VocabSection({ words }: { words: VocabView[] }) {
                     {/* Cột 3: Nghĩa tiếng Việt & Hán Việt tách biệt */}
                     <div className="min-w-0">
                       <span className="block break-words text-sm font-bold text-slate-800 dark:text-slate-100">
-                        {canon.meaningVi}
+                        <LocalizedVocabMeaning japanese={canon.japanese} kana={canon.kana} fallback={canon.meaningVi} />
                       </span>
                       {canon.hanVietNote && (
                         <span className="mt-0.5 block text-[11px] font-semibold text-slate-500 dark:text-slate-400">
@@ -395,7 +398,7 @@ export function VocabSection({ words }: { words: VocabView[] }) {
                   <div className="flex justify-end sm:justify-center">
                     <SpeakButton
                       onClick={() => speak(canon.kanaReading || canon.writtenForm)}
-                      label={`Nghe từ ${canon.writtenForm}`}
+                      label={`${t("listenWord")} ${canon.writtenForm}`}
                       size="sm"
                     />
                   </div>
@@ -412,11 +415,11 @@ export function VocabSection({ words }: { words: VocabView[] }) {
               className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl border border-rose-200 bg-rose-50/70 py-3 text-sm font-bold text-red-600 transition-colors hover:bg-rose-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-red-500 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-300 dark:hover:bg-red-950/50"
             >
               {expanded ? (
-                <>Thu gọn</>
+                <>{t("collapse")}</>
               ) : (
                 <>
                   <IconPlus width={16} height={16} />
-                  Xem thêm từ vựng ({remaining} từ)
+                  {t("viewMoreVocab", { count: remaining })}
                 </>
               )}
               <IconChevronDown width={16} height={16} className={`transition-transform ${expanded ? "rotate-180" : ""}`} />
@@ -430,6 +433,7 @@ export function VocabSection({ words }: { words: VocabView[] }) {
 
 // ─────────────────────────── 0. Mục tiêu bài học & Lưu ý sử dụng ───────────────────────────
 export function LessonObjectivesSection({ info }: { info: LessonObjectiveNoteView }) {
+  const { t } = useNativeLanguage();
   const prereqMissing = info.prerequisiteLesson && !info.prerequisiteLesson.completed;
 
   return (
@@ -442,10 +446,10 @@ export function LessonObjectivesSection({ info }: { info: LessonObjectiveNoteVie
         >
           <div className="min-w-0">
             <p className="text-xs font-extrabold uppercase tracking-wider text-amber-800 dark:text-amber-300">
-              ⚠️ Khuyến nghị học theo thứ tự tiên quyết
+              {t("prereqRecommendationTitle")}
             </p>
             <p className="mt-1 text-sm font-medium text-amber-900 dark:text-amber-100">
-              Bạn chưa hoàn thành bài trước đó:{" "}
+              {t("prereqNotFinished")}{" "}
               <b className="font-bold">「{info.prerequisiteLesson.title}」</b>. Hãy học theo trình tự để tránh hổng kiến thức, hoặc làm bài kiểm tra miễn học phần nếu bạn đã nắm vững.
             </p>
           </div>
@@ -454,13 +458,13 @@ export function LessonObjectivesSection({ info }: { info: LessonObjectiveNoteVie
               href={`/app/practice/${info.prerequisiteLesson.slug}`}
               className="inline-flex min-h-10 items-center rounded-xl bg-amber-600 px-3.5 py-2 text-xs font-bold text-white shadow-sm transition hover:bg-amber-700"
             >
-              ← Học bài tiên quyết
+              {t("learnPrereqLesson")}
             </a>
             <a
               href="/app/test"
               className="inline-flex min-h-10 items-center rounded-xl border border-amber-300 bg-white px-3.5 py-2 text-xs font-bold text-amber-800 transition hover:bg-amber-100 dark:border-amber-700 dark:bg-sumi-900 dark:text-amber-200"
             >
-              Kiểm tra miễn học phần
+              {t("testExemptionTitle")}
             </a>
           </div>
         </div>
@@ -477,7 +481,7 @@ export function LessonObjectivesSection({ info }: { info: LessonObjectiveNoteVie
                 🎯
               </span>
               <h2 className="text-sm font-extrabold uppercase tracking-wider text-slate-800 dark:text-slate-100">
-                Mục tiêu & Nguồn giáo trình ({info.chapterLabel || `Unit ${info.unitLabel}`})
+                {t("objectivesAndSource")} ({info.chapterLabel || `Unit ${info.unitLabel}`})
               </h2>
             </div>
             {info.provenanceLabelVi && (
@@ -488,12 +492,12 @@ export function LessonObjectivesSection({ info }: { info: LessonObjectiveNoteVie
           </div>
           {info.sourceReference && (
             <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">
-              📚 Nguồn tham chiếu: <span className="text-slate-700 dark:text-slate-200">{info.sourceReference}</span>
+              📚 {t("referenceSource")} <span className="text-slate-700 dark:text-slate-200">{info.sourceReference}</span>
             </p>
           )}
           {info.whyItMatters && (
             <p className="rounded-xl bg-rose-50/70 px-3 py-2 text-xs font-medium text-slate-700 dark:bg-sumi-800/70 dark:text-slate-200">
-              <b>Tại sao bài này quan trọng:</b> {info.whyItMatters}
+              <b>{t("whyItMattersLabel")}</b> {info.whyItMatters}
             </p>
           )}
           <ul className="space-y-1.5 text-xs leading-relaxed text-slate-600 dark:text-slate-300 sm:text-sm">
@@ -509,23 +513,23 @@ export function LessonObjectivesSection({ info }: { info: LessonObjectiveNoteVie
         <div className="rounded-2xl border border-indigo-100 bg-indigo-50/60 p-4 dark:border-indigo-900/40 dark:bg-indigo-950/25">
           <div className="flex items-center justify-between gap-2">
             <span className="text-xs font-extrabold uppercase tracking-wider text-indigo-700 dark:text-indigo-300">
-              💡 Lưu ý Ngữ vực: Chuẩn (標準語) vs. Thực tế
+              {t("registerNotesTitle")}
             </span>
             <span className="rounded-full bg-white px-2.5 py-0.5 text-[11px] font-bold text-indigo-700 shadow-sm dark:bg-sumi-900 dark:text-indigo-300">
-              Định hướng JLPT {info.level}
+              {t("jlptOrientation")} JLPT {info.level}
             </span>
           </div>
           <div className="mt-2.5 space-y-1.5 text-xs leading-relaxed text-slate-700 dark:text-slate-200">
             <p>
-              <b>Lịch sự / Chuẩn (丁寧語・標準語):</b>{" "}
+              <b>{t("politeStandard")}</b>{" "}
               <span className="jp-text font-semibold text-slate-900 dark:text-white">{info.registerComparison.standard}</span>
             </p>
             <p>
-              <b>Thân mật / Kính ngữ / Vùng miền:</b>{" "}
+              <b>{t("casualOrHonorific")}</b>{" "}
               <span className="jp-text font-semibold text-indigo-700 dark:text-indigo-300">{info.registerComparison.casualOrKeigo}</span>
             </p>
             <p className="text-[11px] text-slate-500 dark:text-slate-400">
-              <b>Hoàn cảnh sử dụng:</b> {info.registerComparison.contextNote}
+              <b>{t("usageContext")}</b> {info.registerComparison.contextNote}
             </p>
           </div>
         </div>
@@ -558,33 +562,33 @@ export function GrammarSection({ items }: { items: GrammarView[] }) {
               className="grid gap-4 rounded-2xl bg-rose-50/60 p-4 dark:bg-sumi-800/50 sm:p-5 md:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)]"
             >
               <div className="min-w-0">
-                <Chip>Mẫu câu & Giải thích</Chip>
+                <Chip>{t("patternAndExplanation")}</Chip>
                 <div className="mt-2 flex items-start gap-3">
                   <h3 className="jp-text text-2xl font-black leading-tight text-red-700 dark:text-red-400">{g.title}</h3>
-                  <SpeakButton onClick={() => speak(g.title)} label="Nghe mẫu câu" size="sm" />
+                  <SpeakButton onClick={() => speak(g.title)} label={t("listenGrammarPattern")} size="sm" />
                 </div>
                 {g.romaji && <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{g.romaji}</p>}
                 <p className="mt-3 text-sm text-slate-700 dark:text-slate-200">
-                  <b>Ý nghĩa:</b> {g.meaning}
+                  <b>{t("lessonMeaning") || "Ý nghĩa"}:</b> <LocalizedVocabMeaning japanese={g.title} fallback={g.meaning} />
                 </p>
                 {g.usage && (
                   <p className="mt-1 text-sm text-slate-700 dark:text-slate-200">
-                    <b>Cách dùng:</b> {g.usage}
+                    <b>{t("usageTitle")}</b> {g.usage}
                   </p>
                 )}
                 {g.commonMistakes && (
                   <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50/80 p-3 text-xs text-amber-900 dark:border-amber-800/60 dark:bg-amber-950/40 dark:text-amber-200">
-                    <b>⚠️ Lưu ý sử dụng & Phân biệt:</b> {g.commonMistakes}
+                    <b>{t("grammarUsageCaution")}</b> {g.commonMistakes}
                   </div>
                 )}
               </div>
 
               <div className="min-w-0 rounded-xl bg-white/80 p-4 dark:bg-sumi-900/60">
-                <Chip>Công thức</Chip>
+                <Chip>{t("formulaChip")}</Chip>
                 <p className="jp-text mt-2 text-sm font-bold text-slate-800 dark:text-slate-100">{g.structure}</p>
                 {g.examples.length > 0 && (
                   <div className="mt-3 text-xs">
-                    <p className="font-semibold text-slate-500 dark:text-slate-400">Ví dụ đúng ngữ cảnh:</p>
+                    <p className="font-semibold text-slate-500 dark:text-slate-400">{t("contextExample")}</p>
                     <ul className="mt-1.5 space-y-2">
                       {g.examples.map((ex, i) => (
                         <li key={i} className="flex gap-2 text-slate-700 dark:text-slate-200">
@@ -595,7 +599,7 @@ export function GrammarSection({ items }: { items: GrammarView[] }) {
                               <span className="block text-[11px] italic text-slate-400 dark:text-slate-500">{ex.romaji}</span>
                             )}
                             {ex.translation && (
-                              <span className="block text-slate-600 dark:text-slate-300">→ {ex.translation}</span>
+                              <span className="block text-slate-600 dark:text-slate-300">→ <LocalizedVocabMeaning japanese={ex.japanese} fallback={ex.translation} /></span>
                             )}
                           </span>
                         </li>
@@ -644,13 +648,13 @@ export function DialogueSection({ lines }: { lines: DialogueLineView[] }) {
                 {line.side === "a" ? "🙋‍♂️" : "🙋‍♀️"}
               </span>
               {HAS_JAPANESE.test(line.japanese) && (
-                <SpeakButton onClick={() => speak(line.japanese)} label="Nghe câu hội thoại" size="sm" />
+                <SpeakButton onClick={() => speak(line.japanese)} label={t("listenDialogueLine")} size="sm" />
               )}
               <div className="min-w-0 flex-1">
                 <b className="jp-text block text-[15px] font-black leading-snug text-slate-900 dark:text-white">{line.japanese}</b>
                 {line.romaji && <small className="mt-0.5 block text-xs text-slate-500 dark:text-slate-400">{line.romaji}</small>}
                 {line.translation && (
-                  <p className="mt-1 text-xs text-slate-600 dark:text-slate-300">{line.translation}</p>
+                  <p className="mt-1 text-xs text-slate-600 dark:text-slate-300"><LocalizedVocabMeaning japanese={line.japanese} fallback={line.translation} /></p>
                 )}
               </div>
             </article>

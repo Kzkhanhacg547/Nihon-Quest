@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth-options";
 import { prisma } from "@/lib/prisma";
 import { AppNav } from "@/components/AppNav";
 import { PageTitle } from "@/components/ui";
+import { LocalizedText } from "@/components/LocalizedText";
 import { LeaderboardClient } from "./LeaderboardClient";
 import { buildEnrichedLeaderboard } from "@/lib/rivalBots";
 import { JapanBackdrop } from "@/components/JapanIllustration";
@@ -70,12 +71,18 @@ export default async function LeaderboardPage() {
       <AppNav />
       <div className="mx-auto max-w-2xl px-4 sm:px-6 py-8 space-y-6">
         <PageTitle
-          title="Bảng Xếp Hạng & Giải Đấu 🏆"
-          subtitle="Thi đua học tập công bằng mỗi tuần. Càng kiên trì rèn luyện, thứ hạng càng thăng tiến！"
+          title={<LocalizedText k="lbPageTitle" fallback="Bảng Xếp Hạng & Giải Đấu 🏆" />}
+          subtitle={<LocalizedText k="lbPageSub" fallback="Thi đua học tập công bằng mỗi tuần. Càng kiên trì rèn luyện, thứ hạng càng thăng tiến！" />}
           badge={
-            botCount > 0
-              ? `${realCount} học viên · +${botCount} đối thủ BOT`
-              : `${realCount} học viên tham gia`
+            botCount > 0 ? (
+              <span>
+                {realCount} <LocalizedText k="lbRealLearners" fallback="học viên" /> · +{botCount} <LocalizedText k="lbRivalBots" fallback="đối thủ BOT" />
+              </span>
+            ) : (
+              <span>
+                {realCount} <LocalizedText k="lbRealLearners" fallback="học viên tham gia" />
+              </span>
+            )
           }
         />
         <LeaderboardClient

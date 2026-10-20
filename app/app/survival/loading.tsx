@@ -3,15 +3,17 @@
 import { useEffect, useState } from "react";
 import { SafeImg } from "./SafeImg";
 import { BASE64_IMAGES } from "@/lib/assets/base64Images";
+import { useNativeLanguage } from "@/components/LanguageContext";
 
 const FEATURES = [
-  { icon: "💬", label: "Hội thoại\ntương tác", cls: "bg-rose-100 text-rose-500" },
-  { icon: "♪", label: "Phát âm\ntiếng Nhật", cls: "bg-indigo-100 text-indigo-500" },
-  { icon: "🎙", label: "Luyện phản xạ\nnói", cls: "bg-sky-100 text-sky-600" },
+  { icon: "💬", key: "survivalFeatureConversation", cls: "bg-rose-100 text-rose-500" },
+  { icon: "♪", key: "survivalFeaturePronounce", cls: "bg-indigo-100 text-indigo-500" },
+  { icon: "🎙", key: "survivalFeatureSpeaking", cls: "bg-sky-100 text-sky-600" },
 ];
 
 export default function Loading() {
   const [pct, setPct] = useState(6);
+  const { t } = useNativeLanguage();
 
   // Không biết chính xác thời gian tải -> chạy tiệm cận 94%, trang thật hiện ra sẽ thay thế màn này.
   useEffect(() => {
@@ -25,7 +27,7 @@ export default function Loading() {
     <div
       role="status"
       aria-live="polite"
-      aria-label="Đang tải thử thách sinh tồn"
+      aria-label={t("survivalLoadingAria")}
       className="fixed inset-0 z-[100] overflow-hidden bg-gradient-to-br from-sky-300 via-indigo-300 to-pink-200"
     >
       <SafeImg
@@ -50,7 +52,7 @@ export default function Loading() {
         </span>
       </div>
       <div className="absolute right-5 top-5 inline-flex items-center gap-2 rounded-full bg-white/90 px-5 py-2.5 text-sm font-bold text-rose-600 shadow-lg backdrop-blur sm:right-8 sm:top-7">
-        <span aria-hidden>⛩</span> Survival Mode
+        <span aria-hidden>⛩</span> {t("survivalMode")}
       </div>
 
       {/* Thẻ loading */}
@@ -73,13 +75,16 @@ export default function Loading() {
             />
           </div>
 
-          <p className="text-xs font-bold uppercase tracking-[0.3em] text-indigo-950 dark:text-indigo-300">Đang tải module</p>
+          <p className="text-xs font-bold uppercase tracking-[0.3em] text-indigo-950 dark:text-indigo-300">
+            {t("survivalLoadingModule")}
+          </p>
           <h1 className="mt-3 text-3xl font-black leading-tight tracking-tight text-indigo-950 dark:text-white sm:text-5xl">
-            Thử thách <span className="text-pink-500">sinh tồn</span>{" "}
+            {t("survivalChallengeTitlePart1")}{" "}
+            <span className="text-pink-500">{t("survivalChallengeTitlePart2")}</span>{" "}
             <span className="text-2xl text-pink-400 sm:text-3xl" aria-hidden>🌸</span>
           </h1>
           <p className="mx-auto mt-4 max-w-md text-sm leading-relaxed text-slate-600 dark:text-slate-200 sm:text-base">
-            Chuẩn bị tinh thần, chúng ta sắp bước vào những tình huống giao tiếp thực tế tại Nhật Bản!
+            {t("survivalChallengeSub")}
           </p>
 
           {/* Thanh tiến trình */}
@@ -113,7 +118,9 @@ export default function Loading() {
                 <span className={`flex h-12 w-12 items-center justify-center rounded-full text-xl ${f.cls}`} aria-hidden>
                   {f.icon}
                 </span>
-                <span className="whitespace-pre-line text-xs font-bold leading-snug text-indigo-950 sm:text-sm">{f.label}</span>
+                <span className="whitespace-pre-line text-xs font-bold leading-snug text-indigo-950 dark:text-slate-200 sm:text-sm">
+                  {t(f.key)}
+                </span>
               </div>
             ))}
           </div>

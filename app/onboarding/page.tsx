@@ -2,9 +2,11 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { NihonQuestLogo } from "@/components/NihonQuestLogo";
 import { JapanBackdrop, JapanScenicPanel, ChoiceArt, NQIcon, type ChoiceArtKind } from "@/components/JapanIllustration";
+import { useNativeLanguage, SUPPORTED_LANGUAGES } from "@/components/LanguageContext";
+import { getOnboardingI18n } from "@/lib/onboardingLocalization";
 import {
   ONBOARDING_QUESTIONS,
   FOCUS_SKILL_OPTIONS,
@@ -12,7 +14,14 @@ import {
 } from "@/lib/personalization";
 import "./onboarding.css";
 
-const STEPS = [...ONBOARDING_QUESTIONS];
+const LANGUAGE_STEP = {
+  id: "language",
+  label: "Ngôn ngữ mẹ đẻ",
+  title: "Ngôn ngữ mẹ đẻ của bạn là gì?",
+  subtitle: "Nihon Quest sẽ giải thích từ vựng, ngữ pháp và đàm thoại AI bằng ngôn ngữ này.",
+};
+
+const STEPS = [LANGUAGE_STEP, ...ONBOARDING_QUESTIONS];
 
 const LEVEL_OPTIONS = [
   { key: "BEGINNER", value: "N5", label: "Người mới bắt đầu", desc: "Chưa từng học hoặc mới làm quen với tiếng Nhật.", art: "torii" },
@@ -41,9 +50,15 @@ type StepId = (typeof STEPS)[number]["id"];
 
 export default function OnboardingPage() {
   const router = useRouter();
+  const { nativeLanguage, setNativeLanguage } = useNativeLanguage();
+  const t = getOnboardingI18n(nativeLanguage);
+
   const [step, setStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [levelChoice, setLevelChoice] = useState("BEGINNER");
+  const [langOpen, setLangOpen] = useState(false);
+  const langRef = useRef<HTMLDivElement>(null);
+
   const [selections, setSelections] = useState({
     learningLevel: "N5",
     levelChoice: "BEGINNER",
@@ -52,6 +67,16 @@ export default function OnboardingPage() {
     focusSkill: "BALANCED",
     learningStyle: "STRUCTURED",
   });
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (langRef.current && !langRef.current.contains(e.target as Node)) {
+        setLangOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const currentStep = STEPS[step];
   const isLast = step === STEPS.length - 1;
@@ -68,7 +93,8 @@ export default function OnboardingPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...selections,
-          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "Asia/Ho_Chi_Minh",
+          nativeLanguage,
+          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "Asia/Tokyo",
           onboardingCompleted: true,
         }),
       });
@@ -85,17 +111,20 @@ export default function OnboardingPage() {
 
   const optionsFor = (index: number): readonly any[] =>
     index === 0
-      ? LEVEL_OPTIONS
+      ? SUPPORTED_LANGUAGES
       : index === 1
-        ? GOAL_OPTIONS
+        ? LEVEL_OPTIONS
         : index === 2
-          ? TIME_OPTIONS
+          ? GOAL_OPTIONS
           : index === 3
-            ? FOCUS_SKILL_OPTIONS
-            : LEARNING_STYLE_OPTIONS;
+            ? TIME_OPTIONS
+            : index === 4
+              ? FOCUS_SKILL_OPTIONS
+              : LEARNING_STYLE_OPTIONS;
 
   const isSelectedFor = (index: number, option: any): boolean => {
     const stepId = STEPS[index].id as StepId;
+    if (stepId === "language") return nativeLanguage === option.code;
     if (stepId === "level") return levelChoice === option.key;
     if (stepId === "goal") return selections.learningGoal === option.value;
     if (stepId === "time") return selections.dailyGoalMinutes === option.value;
@@ -103,12 +132,11 @@ export default function OnboardingPage() {
     return selections.learningStyle === option.value;
   };
 
-  const selectedLabel = (index: number): string =>
-    optionsFor(index).find((o: any) => isSelectedFor(index, o))?.label ?? "";
-
   const select = (option: any) => {
     const stepId = currentStep.id as StepId;
-    if (stepId === "level") {
+    if (stepId === "language") {
+      setNativeLanguage(option.code);
+    } else if (stepId === "level") {
       setLevelChoice(option.key);
       setSelections((s) => ({ ...s, levelChoice: option.key, learningLevel: option.value }));
     } else if (stepId === "goal") {
@@ -124,6 +152,31 @@ export default function OnboardingPage() {
 
   const choices = optionsFor(step);
 
+  const currentStepTitle = t.questions[currentStep.id]?.title || currentStep.title;
+  const currentStepSubtitle = t.questions[currentStep.id]?.subtitle || currentStep.subtitle;
+
+  const getOptionLabel = (option: any) => {
+    const stepId = currentStep.id as StepId;
+    if (stepId === "language") return option.nativeName;
+    if (stepId === "level") return t.options.level[option.key]?.label || option.label;
+    if (stepId === "goal") return t.options.goal[option.value]?.label || option.label;
+    if (stepId === "time") return t.options.time[option.value]?.label || option.label;
+    if (stepId === "focusSkill") return t.options.focusSkill[option.value]?.label || option.label;
+    return t.options.learningStyle[option.value]?.label || option.label;
+  };
+
+  const getOptionDesc = (option: any) => {
+    const stepId = currentStep.id as StepId;
+    if (stepId === "language") return option.name;
+    if (stepId === "level") return t.options.level[option.key]?.desc || option.desc;
+    if (stepId === "goal") return t.options.goal[option.value]?.desc || option.desc;
+    if (stepId === "time") return t.options.time[option.value]?.desc || option.desc;
+    if (stepId === "focusSkill") return t.options.focusSkill[option.value]?.desc || option.desc;
+    return t.options.learningStyle[option.value]?.desc || option.desc;
+  };
+
+  const currentLangInfo = SUPPORTED_LANGUAGES.find((l) => l.code === nativeLanguage) || SUPPORTED_LANGUAGES[0];
+
   return (
     <div className="ob-page">
       <JapanBackdrop />
@@ -135,35 +188,78 @@ export default function OnboardingPage() {
       <div className="ob-shell">
         {/* ───────── Thanh đầu trang ───────── */}
         <header className="ob-top">
-          <Link href="/" className="ob-top-logo" aria-label="Nihon Quest - Trang chủ">
+          <Link href="/" className="ob-top-logo" aria-label="Nihon Quest">
             <NihonQuestLogo size="sm" />
           </Link>
-          <nav className="ob-top-nav" aria-label="Giới thiệu">
-            <span>Trải nghiệm</span>
-            <span>Hành trình</span>
-            <span>Không gian học</span>
+          <nav className="ob-top-nav" aria-label="Navigation" suppressHydrationWarning>
+            <span suppressHydrationWarning>{t.navExperience}</span>
+            <span suppressHydrationWarning>{t.navJourney}</span>
+            <span suppressHydrationWarning>{t.navStudySpace}</span>
           </nav>
           <div className="ob-top-actions">
-            <Link href="/login" className="ob-top-login">Đăng nhập</Link>
+            {/* Native Language Selector */}
+            <div className="relative" ref={langRef}>
+              <button
+                type="button"
+                onClick={() => setLangOpen(!langOpen)}
+                className="inline-flex items-center gap-1.5 rounded-full border border-rose-200/80 bg-white/90 px-3 py-1.5 text-xs font-black text-rose-700 shadow-sm backdrop-blur transition hover:border-rose-300 dark:border-slate-700 dark:bg-sumi-900/90 dark:text-rose-300"
+                aria-label="Change native language"
+              >
+                <span>{currentLangInfo.flag}</span>
+                <span className="hidden sm:inline">{currentLangInfo.nativeName}</span>
+                <span className="text-[10px] opacity-60">▾</span>
+              </button>
+
+              {langOpen && (
+                <div className="absolute right-0 top-10 z-50 w-48 max-h-72 overflow-y-auto rounded-2xl border border-rose-100 bg-white/95 p-1.5 shadow-xl backdrop-blur dark:border-slate-800 dark:bg-sumi-950">
+                  {SUPPORTED_LANGUAGES.map((lang) => (
+                    <button
+                      key={lang.code}
+                      type="button"
+                      onClick={() => {
+                        setNativeLanguage(lang.code);
+                        setLangOpen(false);
+                      }}
+                      className={`flex w-full items-center justify-between rounded-xl px-2.5 py-2 text-xs font-bold transition text-left ${
+                        nativeLanguage === lang.code
+                          ? "bg-rose-50 text-rose-600 dark:bg-rose-950/40 dark:text-rose-300"
+                          : "text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-sumi-900"
+                      }`}
+                    >
+                      <span className="flex items-center gap-2">
+                        <span>{lang.flag}</span>
+                        <span>{lang.nativeName}</span>
+                      </span>
+                      {nativeLanguage === lang.code && <span>✓</span>}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <Link href="/login" className="ob-top-login">{t.navLogin}</Link>
             <Link href="/register" className="ob-top-cta">
-              <span>Bắt đầu</span>
+              <span>{t.navStart}</span>
               <i><NQIcon name="arrowUR" /></i>
             </Link>
           </div>
         </header>
 
         {/* ───────── Tiến trình ───────── */}
-        <ol className="ob-stepper" aria-label="Tiến trình cá nhân hóa">
-          {STEPS.map((item, index) => (
-            <li
-              key={item.id}
-              className={`ob-step ${step === index ? "is-active" : ""} ${index < step ? "is-done" : ""}`}
-              aria-current={step === index ? "step" : undefined}
-            >
-              <span className="ob-step-dot">{index < step ? "✓" : index + 1}</span>
-              <b>{item.label}</b>
-            </li>
-          ))}
+        <ol className="ob-stepper" aria-label="Progress">
+          {STEPS.map((item, index) => {
+            const stepLabel = t.stepLabels[item.id as keyof typeof t.stepLabels] || item.label;
+            return (
+              <li
+                key={item.id}
+                className={`ob-step ${step === index ? "is-active" : ""} ${index < step ? "is-done" : ""}`}
+                aria-current={step === index ? "step" : undefined}
+              >
+                <span className="ob-step-dot">{index < step ? "✓" : index + 1}</span>
+                <b>{stepLabel}</b>
+              </li>
+            );
+          })}
         </ol>
 
         {/* ───────── Giới thiệu ───────── */}
@@ -171,18 +267,15 @@ export default function OnboardingPage() {
           <div className="ob-hero-copy">
             <span className="ob-eyebrow">NIHON QUEST</span>
             <h1>
-              Cá nhân hóa
-              <em>hành trình học của bạn.</em>
+              {t.heroTitle}
+              <em> {t.heroTitleSub}</em>
             </h1>
-            <p>
-              Chỉ với {STEPS.length} bước đơn giản, chúng tôi sẽ thiết kế lộ trình học tiếng Nhật phù hợp nhất với trình
-              độ, mục tiêu, thời gian và phong cách học của bạn.
-            </p>
+            <p>{t.heroDesc}</p>
           </div>
 
           <aside className="ob-callout" aria-hidden="true">
             <span className="jp-text">旅</span>
-            <p>Mỗi hành trình vĩ đại đều bắt đầu bằng một lựa chọn phù hợp.</p>
+            <p>{t.calloutText}</p>
             <i />
           </aside>
         </section>
@@ -193,40 +286,77 @@ export default function OnboardingPage() {
             <small>
               <b>0{step + 1}</b> / 0{STEPS.length}
             </small>
-            <h2 id="ob-question">{currentStep.title}</h2>
-            <p>{currentStep.subtitle}</p>
+            <h2 id="ob-question">{currentStepTitle}</h2>
+            <p>{currentStepSubtitle}</p>
           </div>
 
-          <div key={step} className="ob-choices" role="radiogroup" aria-label={currentStep.title}>
-            {choices.map((option: any) => {
-              const selected = isSelectedFor(step, option);
-              return (
-                <button
-                  key={currentStep.id === "level" ? option.key : option.value}
-                  type="button"
-                  role="radio"
-                  aria-checked={selected}
-                  className={`ob-choice ${selected ? "is-selected" : ""}`}
-                  onClick={() => select(option)}
-                >
-                  <span className="ob-choice-check" aria-hidden="true">{selected ? "✓" : ""}</span>
-                  <span className="ob-choice-art">
-                    {SVG_ART.includes(option.art) ? (
-                      <ChoiceArt kind={option.art as ChoiceArtKind} />
-                    ) : (
-                      <span className="jp-text">{option.art}</span>
-                    )}
-                  </span>
-                  <b>{option.label}</b>
-                  <small>{option.desc}</small>
-                </button>
-              );
-            })}
-          </div>
+          {currentStep.id === "language" ? (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5 sm:gap-3 w-full py-2" role="radiogroup" aria-label={currentStepTitle}>
+              {SUPPORTED_LANGUAGES.map((lang) => {
+                const selected = nativeLanguage === lang.code;
+                return (
+                  <button
+                    key={lang.code}
+                    type="button"
+                    role="radio"
+                    aria-checked={selected}
+                    className={`flex items-center gap-2.5 p-3 rounded-2xl border-2 text-left transition-all ${
+                      selected
+                        ? "border-rose-500 bg-rose-50/90 dark:bg-rose-950/40 shadow-md shadow-rose-500/20 scale-[1.02]"
+                        : "border-slate-200/80 dark:border-slate-800 bg-white/80 dark:bg-sumi-900/80 hover:border-rose-300 dark:hover:border-rose-800"
+                    }`}
+                    onClick={() => select(lang)}
+                  >
+                    <span className="text-2xl leading-none shrink-0">{lang.flag}</span>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs sm:text-sm font-extrabold text-slate-900 dark:text-slate-100 truncate">
+                        {lang.nativeName}
+                      </p>
+                      <p className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 truncate">
+                        {lang.name}
+                      </p>
+                    </div>
+                    <span className={`h-4 w-4 rounded-full flex items-center justify-center text-[10px] font-black shrink-0 ${selected ? "bg-rose-500 text-white" : "border border-slate-300 dark:border-slate-700"}`}>
+                      {selected ? "✓" : ""}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          ) : (
+            <div key={step} className="ob-choices" role="radiogroup" aria-label={currentStepTitle}>
+              {choices.map((option: any) => {
+                const selected = isSelectedFor(step, option);
+                const label = getOptionLabel(option);
+                const desc = getOptionDesc(option);
+                return (
+                  <button
+                    key={currentStep.id === "level" ? option.key : option.value}
+                    type="button"
+                    role="radio"
+                    aria-checked={selected}
+                    className={`ob-choice ${selected ? "is-selected" : ""}`}
+                    onClick={() => select(option)}
+                  >
+                    <span className="ob-choice-check" aria-hidden="true">{selected ? "✓" : ""}</span>
+                    <span className="ob-choice-art">
+                      {SVG_ART.includes(option.art) ? (
+                        <ChoiceArt kind={option.art as ChoiceArtKind} />
+                      ) : (
+                        <span className="jp-text">{option.art}</span>
+                      )}
+                    </span>
+                    <b>{label}</b>
+                    <small>{desc}</small>
+                  </button>
+                );
+              })}
+            </div>
+          )}
 
           <div className="ob-actions">
             <button className="ob-back" type="button" disabled={step === 0} onClick={() => setStep((s) => Math.max(0, s - 1))}>
-              <NQIcon name="back" /> Quay lại
+              <NQIcon name="back" /> {t.btnBack}
             </button>
             <div className="ob-dots" aria-hidden="true">
               {STEPS.map((_, i) => (
@@ -234,27 +364,10 @@ export default function OnboardingPage() {
               ))}
             </div>
             <button className="ob-next" type="button" onClick={handleNext} disabled={loading}>
-              {loading ? "Đang thiết lập..." : isLast ? "Xem lộ trình của bạn" : "Tiếp theo"} <NQIcon name="arrow" />
+              {loading ? t.btnLoading : isLast ? t.btnFinish : t.btnNext} <NQIcon name="arrow" />
             </button>
           </div>
         </section>
-      </div>
-
-      {/* Chữ dọc bên phải (chỉ hiện trên màn hình rộng) */}
-      <div className="ob-side" aria-hidden="true">
-        <span className="jp-text">日本への旅</span>
-        <i />
-        <small>
-          HÀNH TRÌNH
-          <br />
-          MỚI.
-          <br />
-          MỘT
-          <br />
-          PHIÊN BẢN
-          <br />
-          MỚI.
-        </small>
       </div>
     </div>
   );

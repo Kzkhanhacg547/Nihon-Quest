@@ -6,6 +6,7 @@ import { authOptions } from "@/lib/auth-options";
 import { prisma } from "@/lib/prisma";
 import { resolveCanonicalUserLevel } from "@/lib/learning-level";
 import { AppNav } from "@/components/AppNav";
+import { LocalizedText } from "@/components/LocalizedText";
 import { TestClient } from "./TestClient";
 import {
   TEST_MODES,
@@ -150,14 +151,14 @@ export default async function TestPage() {
 
           <div className="relative px-6 py-8 sm:px-10 sm:py-12 lg:py-14">
             <div className="inline-flex items-center gap-2 rounded-full bg-amber-500/20 px-3.5 py-1 text-xs font-bold text-amber-300 ring-1 ring-amber-400/40 backdrop-blur-md">
-              <span className="text-amber-400">★</span> HỆ THỐNG ĐỀ THI ĐỘNG & ĐÁNH GIÁ NĂNG LỰC NIHON QUEST
+              <span className="text-amber-400">★</span> <LocalizedText k="testHeroBadge" fallback="HỆ THỐNG ĐỀ THI ĐỘNG & ĐÁNH GIÁ NĂNG LỰC NIHON QUEST" />
             </div>
             <h1 className="mt-3 max-w-2xl text-[clamp(1.875rem,5vw,3.25rem)] font-black leading-tight tracking-tight text-white">
-              Kiểm Tra Năng Lực, Đề Thi JLPT &{" "}
-              <span className="text-amber-400">Giáo Trình FPT</span>
+              <LocalizedText k="testHeroTitle1" fallback="Kiểm Tra Năng Lực, Đề Thi JLPT &" />{" "}
+              <span className="text-amber-400"><LocalizedText k="testHeroTitle2" fallback="Giáo Trình FPT" /></span>
             </h1>
             <p className="mt-3 max-w-xl text-sm leading-relaxed text-slate-200 sm:text-base">
-              Hệ thống <b>{initialExams.length} bộ đề thi động</b> từ cơ sở dữ liệu: Đánh giá đầu vào 4 kỹ năng, Chặng N5–N3, Học phần <b>FPT JPD113–126</b>, Chuyên đề Từ vựng・Ngữ pháp・Kanji・Nghe・Đọc và Đề thi chính thức JLPT có Audio gốc.
+              <LocalizedText k="testHeroSub" fallback="Hệ thống bộ đề thi động từ cơ sở dữ liệu: Đánh giá đầu vào 4 kỹ năng, Chặng N5–N3, Học phần FPT JPD113–126, Chuyên đề Từ vựng・Ngữ pháp・Kanji・Nghe・Đọc và Đề thi chính thức JLPT có Audio gốc." />
             </p>
           </div>
 

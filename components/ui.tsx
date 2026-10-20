@@ -1,4 +1,5 @@
 import React, { type ReactNode, forwardRef } from "react";
+import { createPortal } from "react-dom";
 
 // ======================== BUTTON ========================
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
@@ -193,9 +194,9 @@ export function PageTitle({
   badge,
   action,
 }: {
-  title: string;
-  subtitle?: string;
-  badge?: string;
+  title: ReactNode;
+  subtitle?: ReactNode;
+  badge?: ReactNode;
   action?: ReactNode;
 }) {
   return (
@@ -391,6 +392,11 @@ export function Modal({
   const panelRef = React.useRef<HTMLDivElement>(null);
   const previouslyFocused = React.useRef<HTMLElement | null>(null);
   const titleId = React.useId();
+  const [mounted, setMounted] = React.useState(false);
+
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
 
   React.useEffect(() => {
     if (!isOpen) return;
@@ -454,7 +460,7 @@ export function Modal({
     };
   }, [isOpen, onClose]);
 
-  if (!isOpen) return null;
+  if (!isOpen || !mounted) return null;
 
   const maxWidthClass = {
     sm: "max-w-sm",
@@ -466,9 +472,9 @@ export function Modal({
     "4xl": "max-w-4xl",
   }[maxWidth];
 
-  return (
+  const modalContent = (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-md motion-safe:animate-in motion-safe:fade-in motion-safe:duration-200 sm:p-6"
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/75 p-3 sm:p-6 backdrop-blur-md motion-safe:animate-in motion-safe:fade-in motion-safe:duration-200"
       onClick={(e) => {
         if (closeOnBackdrop && e.target === e.currentTarget) onClose();
       }}
@@ -479,12 +485,12 @@ export function Modal({
         aria-modal="true"
         aria-labelledby={titleId}
         tabIndex={-1}
-        className={`relative max-h-[90dvh] w-full ${maxWidthClass} overflow-y-auto rounded-2xl sm:rounded-3xl border border-slate-200/90 bg-white p-4 sm:p-8 shadow-2xl motion-safe:animate-in motion-safe:zoom-in-95 motion-safe:duration-150 dark:border-slate-800 dark:bg-sumi-900`}
+        className={`relative max-h-[92dvh] w-full ${maxWidthClass} overflow-y-auto rounded-2xl sm:rounded-3xl border border-slate-200/90 bg-white p-4 sm:p-7 shadow-2xl motion-safe:animate-in motion-safe:zoom-in-95 motion-safe:duration-150 dark:border-slate-800 dark:bg-sumi-900`}
       >
         <div className="mb-4 sm:mb-5 flex items-center justify-between border-b border-slate-100 pb-3 sm:pb-4 dark:border-slate-800/80">
           <h3
             id={titleId}
-            className="flex items-center gap-2 text-base font-black text-slate-900 dark:text-white sm:text-xl"
+            className="flex items-center gap-2 text-base font-black text-slate-900 dark:text-white sm:text-xl pr-2"
           >
             {title}
           </h3>
@@ -492,7 +498,7 @@ export function Modal({
             type="button"
             onClick={onClose}
             aria-label="Đóng"
-            className="flex h-10 w-10 min-h-[40px] min-w-[40px] items-center justify-center rounded-xl text-slate-400 transition hover:bg-slate-100 hover:text-slate-800 active:scale-90 dark:hover:bg-sumi-800 dark:hover:text-white"
+            className="flex h-10 w-10 min-h-[40px] min-w-[40px] shrink-0 items-center justify-center rounded-xl text-slate-400 transition hover:bg-slate-100 hover:text-slate-800 active:scale-90 dark:hover:bg-sumi-800 dark:hover:text-white"
           >
             ✕
           </button>
@@ -501,6 +507,8 @@ export function Modal({
       </div>
     </div>
   );
+
+  return createPortal(modalContent, document.body);
 }
 
 

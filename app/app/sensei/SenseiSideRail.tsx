@@ -12,6 +12,7 @@ import {
   PlayIcon,
 } from "./SenseiDecor";
 import { Icon } from "@/components/ui";
+import { useNativeLanguage } from "@/components/LanguageContext";
 
 
 export const SENSEI_ROUTES = {
@@ -81,9 +82,10 @@ function TodayRow({
 }
 
 export function SenseiSideRail({ grammarPatterns, onOpenGrammar, recentLessons = [] }: Props) {
+  const { t } = useNativeLanguage();
   return (
     <div className="grid gap-4 md:grid-cols-3 xl:grid-cols-1">
-      {/* Hôm nay học gì? */}
+      {/* {t("senseiTodayLearn")} */}
       <section aria-labelledby="today-heading" className={card}>
         <div className="mb-3 flex items-center justify-between">
           <h2 id="today-heading" className="flex items-center gap-2 text-[15px] font-extrabold text-slate-900 dark:text-white">
@@ -91,29 +93,29 @@ export function SenseiSideRail({ grammarPatterns, onOpenGrammar, recentLessons =
             Hôm nay học gì?
           </h2>
           <Link href={SENSEI_ROUTES.lessons} className="inline-flex items-center gap-1 text-[11px] font-bold text-rose-600 hover:underline dark:text-rose-400">
-            Xem tất cả <ChevronRight className="h-3 w-3" />
+            {t("senseiViewAll")} <ChevronRight className="h-3 w-3" />
           </Link>
         </div>
         <div className="space-y-2">
           <TodayRow
             tone="bg-rose-300"
             icon={<BookIcon className="h-5 w-5" />}
-            title="Từ vựng hôm nay"
-            sub="Ôn từ mới theo chủ đề"
+            title={t("senseiTodayVocab")}
+            sub={t("senseiTodayVocabSub")}
             href={SENSEI_ROUTES.vocabulary}
           />
           <TodayRow
             tone="bg-violet-400"
             icon={<DocIcon className="h-5 w-5" />}
-            title="Ngữ pháp hôm nay"
-            sub={grammarPatterns.slice(0, 2).join("・") || "Mẫu câu N3 trọng tâm"}
+            title={t("senseiTodayGrammar")}
+            sub={grammarPatterns.slice(0, 2).join("・") || t("senseiTodayGrammarSub")}
             onClick={onOpenGrammar}
           />
           <TodayRow
             tone="bg-emerald-500"
             icon={<Icon name="speaker" className="h-5 w-5" />}
-            title="Luyện nghe"
-            sub="Hội thoại thực tế"
+            title={t("senseiTodayListening")}
+            sub={t("senseiTodayListeningSub")}
             href={SENSEI_ROUTES.listening}
           />
         </div>
@@ -132,15 +134,15 @@ export function SenseiSideRail({ grammarPatterns, onOpenGrammar, recentLessons =
             夢をつくる。
           </p>
           <p className="mt-2 text-xs leading-relaxed text-slate-200">
-            Từng bước nhỏ,
+            {t("senseiMottoLine1")}
             <br />
-            tạo nên ước mơ lớn.
+            {t("senseiMottoLine2")}
           </p>
           <span aria-hidden="true" className="mt-3 h-0.5 w-12 rounded-full bg-rose-400" />
         </div>
       </section>
 
-      {/* Bài học gần đây */}
+      {/* {t("senseiRecentLessons")} */}
       <section aria-labelledby="recent-heading" className={card}>
         <div className="mb-3 flex items-center justify-between">
           <h2 id="recent-heading" className="flex items-center gap-2 text-[15px] font-extrabold text-slate-900 dark:text-white">
@@ -148,13 +150,13 @@ export function SenseiSideRail({ grammarPatterns, onOpenGrammar, recentLessons =
             Bài học gần đây
           </h2>
           <Link href={SENSEI_ROUTES.lessons} className="inline-flex items-center gap-1 text-[11px] font-bold text-rose-600 hover:underline dark:text-rose-400">
-            Xem tất cả <ChevronRight className="h-3 w-3" />
+            {t("senseiViewAll")} <ChevronRight className="h-3 w-3" />
           </Link>
         </div>
 
         {recentLessons.length === 0 ? (
           <p className="rounded-2xl bg-slate-50 px-3 py-4 text-center text-xs leading-relaxed text-slate-500 dark:bg-sumi-800 dark:text-slate-400">
-            Chưa có bài học nào gần đây. Hoàn thành một bài để thấy nó ở đây.
+            {t("senseiNoRecentLessons")}
           </p>
         ) : (
           <ul className="divide-y divide-slate-100 dark:divide-slate-800">

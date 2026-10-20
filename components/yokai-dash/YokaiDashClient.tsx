@@ -18,9 +18,15 @@ import {
 import { GAME_ZONES, SPIRIT_BEASTS } from "@/lib/yokai-dash/constants";
 import { useSoundAndTheme } from "@/components/SoundAndThemeContext";
 import { notifyProgressUpdated } from "@/components/UserProgressContext";
+import { useNativeLanguage } from "@/components/LanguageContext";
+import { localizeYokaiQuestion } from "@/lib/yokai-dash/yokaiLocalization";
 
 export function YokaiDashClient() {
   const { showToast } = useSoundAndTheme();
+  const { nativeLanguage } = useNativeLanguage();
+  const isEn = nativeLanguage === "en";
+  const isZh = nativeLanguage === "zh-CN" || nativeLanguage === "zh-TW";
+  const isKo = nativeLanguage === "ko";
 
   // Mode: "HUB" | "PLAYING" | "LOADING"
   const [gameState, setGameState] = useState<"HUB" | "PLAYING" | "LOADING">("HUB");
@@ -251,7 +257,7 @@ export function YokaiDashClient() {
             // Giữ màn loading tối thiểu ~2s để thanh tiến trình và ảnh nền kịp hiển thị
             const MIN_LOADING_MS = 2000;
             await new Promise((r) => setTimeout(r, Math.max(300, MIN_LOADING_MS - (Date.now() - loadStartedAt))));
-            setQuestions(data.questions);
+            setQuestions(data.questions.map((q: YokaiQuestion) => localizeYokaiQuestion(q, nativeLanguage)));
             setGameSessionId((prev) => prev + 1);
             setIsPausedExternal(initialPause);
 
@@ -520,7 +526,7 @@ export function YokaiDashClient() {
         <YokaiLoadingScreen
           beast={selectedBeast}
           title="Yōkai Dash • 妖怪ダッシュ"
-          subtitle="Đang mở cổng Linh Giới Nihon Quest..."
+          subtitle={isEn ? "Opening the Nihon Quest Spirit Realm..." : isZh ? "正在开启 Nihon Quest 灵界之门..." : isKo ? "Nihon Quest 영계의 문을 여는 중..." : "Đang mở cổng Linh Giới Nihon Quest..."}
           ready={false}
         />
       )}

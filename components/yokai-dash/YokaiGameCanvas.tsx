@@ -27,6 +27,8 @@ import {
 import { disposeThreeHierarchy, disposeSingleMaterial } from "@/lib/yokai-dash/three-utils";
 import { buildZoneScenery, createObstacleSkin, getZoneTheme } from "@/lib/yokai-dash/zone-scenery";
 import { HeartIcon, HudChip, HudIconButton } from "./YokaiGameUI";
+import { useNativeLanguage } from "@/components/LanguageContext";
+import { getObstacleMetaLocalized, localizeYokaiQuestion } from "@/lib/yokai-dash/yokaiLocalization";
 
 interface YokaiGameCanvasProps {
   zone: GameZone;
@@ -104,6 +106,11 @@ export function YokaiGameCanvas({
   const isFlyingBeast = beast.id === "yatagarasu";
 
   // Gợi ý vòng vàng (đáp án đúng): Có thể bật / tắt realtime
+  const { nativeLanguage } = useNativeLanguage();
+  const isEn = nativeLanguage === "en";
+  const isZh = nativeLanguage === "zh-CN" || nativeLanguage === "zh-TW";
+  const isKo = nativeLanguage === "ko";
+
   const [showGateHint, setShowGateHint] = useState<boolean>(showGateHintProp);
   const showGateHintRef = useRef<boolean>(showGateHintProp);
   showGateHintRef.current = showGateHint;
@@ -1270,7 +1277,8 @@ export function YokaiGameCanvas({
           ctx.font = "bold 26px 'Be Vietnam Pro', sans-serif";
           ctx.textAlign = "center";
           ctx.textBaseline = "middle";
-          ctx.fillText(`⛩️ CỔNG ${laneLetter} [${kanjiPos}]`, 256, 50);
+          const gateWord = isEn ? "GATE" : isZh ? "鸟居" : isKo ? "관문" : "CỔNG";
+          ctx.fillText(`⛩️ ${gateWord} ${laneLetter} [${kanjiPos}]`, 256, 50);
 
           ctx.strokeStyle = "rgba(255, 215, 0, 0.35)";
           ctx.lineWidth = 2;
@@ -1306,7 +1314,8 @@ export function YokaiGameCanvas({
           ctx.shadowBlur = 0;
           ctx.fillStyle = "#ffb74d";
           ctx.font = "bold 18px sans-serif";
-          ctx.fillText("LỰA CHỌN TRI THỨC", 256, 215);
+          const choiceSub = isEn ? "KNOWLEDGE GATE" : isZh ? "智慧之门" : isKo ? "지혜의 문" : "LỰA CHỌN TRI THỨC";
+          ctx.fillText(choiceSub, 256, 215);
         }
 
         const texture = new THREE.CanvasTexture(canvas);
@@ -1367,19 +1376,31 @@ export function YokaiGameCanvas({
       }
 
       // Smooth speed scaling based on difficulty mode
+      let targetSpeed = 14.0;
       if (speedDifficulty === "EASY") {
-        state.currentSpeed = Math.min(
+        targetSpeed = Math.min(
           15.5,
           10.5 + state.currentQuestionIndex * 0.65 + Math.min(state.combo * 0.18, 1.8)
         );
       } else if (speedDifficulty === "CUSTOM") {
-        state.currentSpeed = Math.max(8.0, Math.min(25.0, customSpeed || 14.0));
+        targetSpeed = Math.max(8.0, Math.min(25.0, customSpeed || 14.0));
       } else {
         // MEDIUM (default): Tốc độ ngày càng nhanh
-        state.currentSpeed = Math.min(
+        targetSpeed = Math.min(
           21.0,
           14.0 + state.currentQuestionIndex * 0.9 + Math.min(state.combo * 0.25, 2.4)
         );
+      }
+
+      // Smooth deceleration when approaching the 3 question rings
+      const isApproachingGate = Boolean(activeGate && !activeGate.cleared && activeGate.z >= -42 && activeGate.z <= 0.5);
+      if (isApproachingGate) {
+        // Slow down to ~45% of running speed (min 5.5 m/s, max 7.5 m/s) to let player read & select lane comfortably
+        const readingSpeed = Math.max(5.5, Math.min(7.5, targetSpeed * 0.45));
+        state.currentSpeed += (readingSpeed - state.currentSpeed) * Math.min(dt * 5.0, 1.0);
+      } else {
+        // Normal running & dodging speed: smoothly return to normal speed
+        state.currentSpeed += (targetSpeed - state.currentSpeed) * Math.min(dt * 6.0, 1.0);
       }
 
       // Distance kept in ref without triggering React re-renders!
@@ -1591,7 +1612,7 @@ export function YokaiGameCanvas({
             obs.cleared = true;
             state.invulnerableTimer = INVULNERABLE_TIME;
 
-            const meta = getObstacleMeta(obs.type);
+            const meta = getObstacleMetaLocalized(obs.type, nativeLanguage);
 
             if (state.hasShield) {
               state.hasShield = false;
@@ -1600,7 +1621,13 @@ export function YokaiGameCanvas({
               triggerFlash("gold");
               setFeedbackBanner({
                 type: "shield",
-                title: `🛡️ Khiên Thần chặn ${meta.name}!`,
+                title: isEn
+                  ? `🛡️ Shield blocked ${meta.name}!`
+                  : isZh
+                  ? `🛡️ 神盾挡下 ${meta.name}！`
+                  : isKo
+                  ? `🛡️ 방패가 ${meta.name}을(를) 방어!`
+                  : `🛡️ Khiên Thần chặn ${meta.name}!`,
               });
               safeSetTimeout(() => setFeedbackBanner(null), 1300);
             } else {
@@ -1616,7 +1643,13 @@ export function YokaiGameCanvas({
 
               setFeedbackBanner({
                 type: "obstacle",
-                title: `⚠️ Va ${meta.name} (-1 Tim) • Hãy ${meta.dodgeTip}`,
+                title: isEn
+                  ? `⚠️ Hit ${meta.name} (-1 Heart) • Tip: ${meta.dodgeTip}`
+                  : isZh
+                  ? `⚠️ 撞上 ${meta.name} (-1 心) • 提示: ${meta.dodgeTip}`
+                  : isKo
+                  ? `⚠️ ${meta.name} 충돌 (-1 하트) • 팁: ${meta.dodgeTip}`
+                  : `⚠️ Va ${meta.name} (-1 Tim) • Hãy ${meta.dodgeTip}`,
               });
               safeSetTimeout(() => setFeedbackBanner(null), 1400);
 
@@ -1656,7 +1689,7 @@ export function YokaiGameCanvas({
               setCombo(state.combo);
               setMaxCombo(state.maxCombo);
               yokaiSound.playPerfectDodge();
-              showQuickActionPopup(`⚡ NÉ CHUẨN! +${dodgePoints}`, "perfect");
+              const dodgeMsg = isEn ? `⚡ PERFECT DODGE! +${dodgePoints}` : isZh ? `⚡ 极限闪避! +${dodgePoints}` : isKo ? `⚡ 완벽 회피! +${dodgePoints}` : `⚡ NÉ CHUẨN! +${dodgePoints}`; showQuickActionPopup(dodgeMsg, "perfect");
             }
           }
         }
@@ -1711,7 +1744,13 @@ export function YokaiGameCanvas({
 
             setFeedbackBanner({
               type: "correct_gate",
-              title: `✨ Đúng Cổng ${chosenGateLetter} (+${points} PTS) • ${currentQ.options[currentQ.correctLane]}`,
+              title: isEn
+                ? `✨ Correct Gate ${chosenGateLetter} (+${points} PTS) • ${currentQ.options[currentQ.correctLane]}`
+                : isZh
+                ? `✨ 答对鸟居 ${chosenGateLetter} (+${points} PTS) • ${currentQ.options[currentQ.correctLane]}`
+                : isKo
+                ? `✨ 정답 관문 ${chosenGateLetter} (+${points} PTS) • ${currentQ.options[currentQ.correctLane]}`
+                : `✨ Đúng Cổng ${chosenGateLetter} (+${points} PTS) • ${currentQ.options[currentQ.correctLane]}`,
             });
             safeSetTimeout(() => setFeedbackBanner(null), 1350);
           } else {
@@ -1727,7 +1766,13 @@ export function YokaiGameCanvas({
 
             setFeedbackBanner({
               type: "wrong_gate",
-              title: `❌ Sai Cổng ${chosenGateLetter} (-1 Tim) • Đúng: ${correctGateLetter} (${currentQ.options[currentQ.correctLane]})`,
+              title: isEn
+                ? `❌ Wrong Gate ${chosenGateLetter} (-1 Heart) • Correct: ${correctGateLetter} (${currentQ.options[currentQ.correctLane]})`
+                : isZh
+                ? `❌ 选错鸟居 ${chosenGateLetter} (-1 心) • 正确: ${correctGateLetter} (${currentQ.options[currentQ.correctLane]})`
+                : isKo
+                ? `❌ 오답 관문 ${chosenGateLetter} (-1 하트) • 정답: ${correctGateLetter} (${currentQ.options[currentQ.correctLane]})`
+                : `❌ Sai Cổng ${chosenGateLetter} (-1 Tim) • Đúng: ${correctGateLetter} (${currentQ.options[currentQ.correctLane]})`,
             });
             safeSetTimeout(() => setFeedbackBanner(null), 1550);
 
@@ -2000,7 +2045,7 @@ export function YokaiGameCanvas({
             )}
             <HudChip className="px-2 py-1 sm:px-3 sm:py-1.5">
               <span className="yk-display text-sm sm:text-lg font-extrabold text-white tabular-nums leading-none">
-                {score.toLocaleString()}
+                {score.toLocaleString("en-US")}
               </span>
               <span className="text-[9px] sm:text-[10px] font-bold text-amber-300">PTS</span>
             </HudChip>
@@ -2164,9 +2209,9 @@ export function YokaiGameCanvas({
           <div className="yk-frame w-full max-w-sm rounded-[1.75rem] border border-amber-300/40 bg-[linear-gradient(150deg,#12102a,#0a0818_58%,#2a0f24)] p-6 text-white text-center shadow-[0_30px_100px_-25px_rgba(0,0,0,.95)] space-y-4">
             <span className="yk-corner-bl" />
             <span className="yk-corner-br" />
-            <div className="yk-display text-3xl font-extrabold">Tạm dừng</div>
+            <div className="yk-display text-3xl font-extrabold">{isEn ? "Paused" : isZh ? "游戏暂停" : isKo ? "일시 정지" : "Tạm dừng"}</div>
             <p className="text-xs text-slate-300">
-              Trò chơi tự động tạm dừng khi rời tab. Kiểm tra lại câu hỏi rồi tiếp tục khi bạn sẵn sàng!
+              {isEn ? "The game automatically paused. Review question and resume when ready!" : isZh ? "游戏已自动暂停。稍作休息，准备就绪后即可继续奔跑！" : isKo ? "게임이 일시 정지되었습니다. 문제를 확인하고 준비되면 계속하세요!" : "Trò chơi tự động tạm dừng khi rời tab. Kiểm tra lại câu hỏi rồi tiếp tục khi bạn sẵn sàng!"}
             </p>
 
             {activePrompt && (
@@ -2197,7 +2242,7 @@ export function YokaiGameCanvas({
                 className="py-2 px-3 rounded-xl bg-white/10 hover:bg-white/15 border border-white/15 font-bold text-slate-200 flex items-center justify-center gap-1.5"
               >
                 <span>{isMuted ? "🔇" : "🔊"}</span>
-                <span>{isMuted ? "Đã tắt tiếng" : "Âm thanh: Bật"}</span>
+                <span>{isMuted ? (isEn ? "Muted" : isZh ? "已静音" : isKo ? "음소거" : "Đã tắt tiếng") : (isEn ? "Sound: ON" : isZh ? "声音: 开启" : isKo ? "소리: 켜짐" : "Âm thanh: Bật")}</span>
               </button>
               <button
                 type="button"
@@ -2209,7 +2254,7 @@ export function YokaiGameCanvas({
                 }`}
               >
                 <span>{reducedMotion ? "🌙" : "✨"}</span>
-                <span>{reducedMotion ? "Giảm FX: Bật" : "Hiệu ứng: Đầy đủ"}</span>
+                <span>{reducedMotion ? (isEn ? "Reduced FX: ON" : isZh ? "降效: 开启" : isKo ? "효과 감소: 켜짐" : "Giảm FX: Bật") : (isEn ? "FX: Full" : isZh ? "特效: 完整" : isKo ? "효과: 전체" : "Hiệu ứng: Đầy đủ")}</span>
               </button>
             </div>
 
@@ -2225,14 +2270,14 @@ export function YokaiGameCanvas({
             >
               <div className="flex items-center gap-2">
                 <span>{showGateHint ? "🌟" : "🎯"}</span>
-                <span>Vòng vàng gợi ý đáp án:</span>
+                <span>{isEn ? "Answer Hint Rings:" : isZh ? "答案提示环:" : isKo ? "정답 힌트 링:" : "Vòng vàng gợi ý đáp án:"}</span>
               </div>
               <span
                 className={`px-2 py-0.5 rounded-md text-[11px] font-black ${
                   showGateHint ? "bg-amber-400 text-slate-950" : "bg-white/15 text-slate-200"
                 }`}
               >
-                {showGateHint ? "BẬT" : "TẮT"}
+                {showGateHint ? (isEn ? "ON" : isZh ? "开启" : isKo ? "켜짐" : "BẬT") : (isEn ? "OFF" : isZh ? "关闭" : isKo ? "꺼짐" : "TẮT")}
               </span>
             </button>
 
@@ -2242,14 +2287,14 @@ export function YokaiGameCanvas({
                 onClick={togglePause}
                 className="yk-launch yk-display w-full py-3.5 rounded-2xl text-base font-extrabold text-white border-2 border-amber-300/80 bg-[linear-gradient(180deg,#fb4a6b,#e11d48_45%,#9f1239)] shadow-[0_14px_36px_-10px_rgba(225,29,72,.85)] active:scale-95 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300"
               >
-                ▶ Tiếp tục chạy
+                {isEn ? "▶ Resume Run" : isZh ? "▶ 继续奔跑" : isKo ? "▶ 계속 달리기" : "▶ Tiếp tục chạy"}
               </button>
               <button
                 type="button"
                 onClick={onExitGame}
                 className="w-full py-2.5 rounded-2xl bg-white/10 hover:bg-white/20 text-slate-200 font-bold text-xs border border-white/15 active:scale-95 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300"
               >
-                Thoát về Sảnh
+                {isEn ? "Exit to Hub" : isZh ? "返回大厅" : isKo ? "로비로 나가기" : "Thoát về Sảnh"}
               </button>
             </div>
           </div>
@@ -2264,8 +2309,8 @@ export function YokaiGameCanvas({
         {/* Cụm trái: Sang Làn Trái / Phải */}
         <div className="flex items-center gap-2.5 sm:gap-3 pointer-events-auto">
           {[
-            { label: "Di chuyển sang trái", icon: "◀", text: "Trái", fn: moveLeft },
-            { label: "Di chuyển sang phải", icon: "▶", text: "Phải", fn: moveRight },
+            { label: isEn ? "Move Left" : "Di chuyển sang trái", icon: "◀", text: isEn ? "Left" : isZh ? "左移" : isKo ? "좌" : "Trái", fn: moveLeft },
+            { label: isEn ? "Move Right" : "Di chuyển sang phải", icon: "▶", text: isEn ? "Right" : isZh ? "右移" : isKo ? "우" : "Phải", fn: moveRight },
           ].map((b) => (
             <button
               key={b.text}
@@ -2292,7 +2337,7 @@ export function YokaiGameCanvas({
           >
             <span className="text-xl sm:text-2xl leading-none text-teal-200">▼</span>
             <span className="text-[10px] sm:text-xs mt-0.5 text-teal-100 font-black">
-              {isFlyingBeast ? "Bổ nhào" : "Trượt"}
+              {isFlyingBeast ? (isEn ? "Dive" : isZh ? "俯冲" : isKo ? "급강하" : "Bổ nhào") : (isEn ? "Slide" : isZh ? "铲滑" : isKo ? "슬라이딩" : "Trượt")}
             </span>
           </button>
           <button
@@ -2304,7 +2349,7 @@ export function YokaiGameCanvas({
           >
             <span className="text-2xl sm:text-3xl leading-none text-white font-black">▲</span>
             <span className="text-[11px] sm:text-sm mt-0.5 font-black text-rose-100 uppercase tracking-wide">
-              {isFlyingBeast ? "Bay cao" : "Nhảy"}
+              {isFlyingBeast ? (isEn ? "Soar" : isZh ? "升腾" : isKo ? "상승" : "Bay cao") : (isEn ? "Jump" : isZh ? "跳跃" : isKo ? "점프" : "Nhảy")}
             </span>
           </button>
         </div>
@@ -2313,10 +2358,10 @@ export function YokaiGameCanvas({
       {/* PHÍM TẮT (máy tính) */}
       <div className="yk-ui absolute bottom-2.5 left-1/2 -translate-x-1/2 z-10 pointer-events-none hidden md:flex items-center gap-3.5 rounded-full border border-amber-200/20 bg-[#0d0722]/75 backdrop-blur-xl px-4 py-1.5 text-[11px] text-slate-200 shadow-[0_10px_35px_-15px_rgba(0,0,0,.9)]">
         {[
-          ["A D / ◀ ▶ / 1-3", "Chọn làn"],
+          ["A D / ◀ ▶ / 1-3", isEn ? "Lane Switch" : isZh ? "切换赛道" : isKo ? "차선 선택" : "Chọn làn"],
           ["W / Space", isFlyingBeast ? "Bay cao" : "Nhảy"],
           ["S / ▼", isFlyingBeast ? "Bổ nhào" : "Trượt"],
-          ["P / Esc", "Tạm dừng"],
+          ["P / Esc", isEn ? "Pause" : isZh ? "暂停" : isKo ? "일시정지" : "Tạm dừng"],
         ].map(([k, label]) => (
           <span key={k} className="flex items-center gap-1.5">
             <kbd className="px-1.5 py-0.5 rounded bg-white/10 border border-white/20 font-bold text-amber-200">{k}</kbd>

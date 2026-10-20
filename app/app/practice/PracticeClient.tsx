@@ -16,6 +16,10 @@ import {
   LocalizedLessonDesc,
   LocalizedUnitTitle,
   LocalizedUnitDesc,
+  LocalizedTrackTitle,
+  LocalizedShortTrackLabel,
+  LocalizedGenkiRef,
+  getLocalizedTrackTitle,
 } from "@/components/LocalizedLesson";
 
 export function cleanLessonTitle(title: string): string {
@@ -70,7 +74,7 @@ export function PracticeClient({
   userLevel: string;
   currentLevelCompletionRatio?: number;
 }) {
-  const { t } = useNativeLanguage();
+  const { t, nativeLanguage } = useNativeLanguage();
   const [mainTab, setMainTab] = useState<MainTab>("LESSONS");
   const [activeLevel, setActiveLevel] = useState<string>(userLevel || "N5");
   const [selectedUnit, setSelectedUnit] = useState<number | "ALL">("ALL");
@@ -165,7 +169,7 @@ export function PracticeClient({
               mainTab === "LESSONS" ? "bg-red-600 text-white shadow-md shadow-red-600/25" : "text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-sumi-800"
             }`}
           >
-            📚 Bài Học
+            📚 {t("navLessons")}
           </button>
           <button
             type="button"
@@ -184,9 +188,9 @@ export function PracticeClient({
         {mainTab === "LESSONS" && allLessons && allLessons.length > 0 && (
           <div className="flex flex-wrap items-center gap-1.5 rounded-2xl border border-slate-200 bg-white p-1.5 shadow-sm dark:border-slate-800 dark:bg-sumi-900">
             {([
-              { id: "N5", label: "JLPT N5 (59 bài)" },
-              { id: "N4", label: "JLPT N4 (25 bài)" },
-              { id: "N3", label: "JLPT N3 (25 bài)" },
+              { id: "N5", label: `JLPT N5 (59 ${t("lessonsUnit")})` },
+              { id: "N4", label: `JLPT N4 (25 ${t("lessonsUnit")})` },
+              { id: "N3", label: `JLPT N3 (25 ${t("lessonsUnit")})` },
             ] as const).map((lvl) => {
               const isAct = activeLevel === lvl.id;
               const evalItem = evaluateLevelAccess({
@@ -213,17 +217,17 @@ export function PracticeClient({
                   <span>{lvl.label}</span>
                   {evalItem.tier === "CURRENT" && (
                     <span className="rounded-full bg-red-600 px-1.5 py-0.5 text-[10px] font-black text-white">
-                      Cấp chính
+                      {t("badgeMainLevel")}
                     </span>
                   )}
                   {evalItem.tier === "LOWER" && (
                     <span className="rounded-full bg-emerald-100 px-1.5 py-0.5 text-[10px] font-bold text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300">
-                      Ôn tập
+                      {t("badgeReviewLevel")}
                     </span>
                   )}
                   {evalItem.tier === "HIGHER" && !evalItem.fullAccess && (
                     <span className="rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-800 dark:bg-amber-950/60 dark:text-amber-300">
-                      🔒 Xem trước
+                      🔒 {t("badgePreviewLevel")}
                     </span>
                   )}
                 </button>
@@ -246,10 +250,10 @@ export function PracticeClient({
             <div className="flex flex-col justify-between gap-3 rounded-2xl border border-emerald-200 bg-emerald-50/90 p-4 shadow-sm dark:border-emerald-900/60 dark:bg-emerald-950/30 sm:flex-row sm:items-center">
               <div className="space-y-0.5">
                 <p className="text-xs font-black uppercase tracking-wider text-emerald-800 dark:text-emerald-300">
-                  📖 Chế độ Ôn tập cấp dưới ({activeLevel})
+                  📖 {t("lowerLevelReviewMode")} ({activeLevel})
                 </p>
                 <p className="text-xs text-emerald-900 dark:text-emerald-100">
-                  {levelAccess.explanation}
+                  {t("lowerLevelReviewExplanation", { userLevel, activeLevel })}
                 </p>
               </div>
               <button
@@ -257,7 +261,7 @@ export function PracticeClient({
                 onClick={() => setActiveLevel(userLevel)}
                 className="inline-flex min-h-9 shrink-0 items-center justify-center rounded-xl border border-emerald-300 bg-white px-3.5 py-1.5 text-xs font-bold text-emerald-800 transition hover:bg-emerald-100 dark:border-emerald-800 dark:bg-sumi-900 dark:text-emerald-200"
               >
-                Về cấp độ hiện tại ({userLevel})
+                {t("backToCurrentLevel")} ({userLevel})
               </button>
             </div>
           )}
@@ -267,14 +271,14 @@ export function PracticeClient({
               <div className="space-y-1">
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="rounded-full bg-amber-500 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-white">
-                    🔒 Nội dung vượt cấp ({activeLevel})
+                    🔒 {t("higherLevelContent")} ({activeLevel})
                   </span>
                   <span className="text-xs font-bold text-amber-900 dark:text-amber-200">
-                    Cấp hiện tại của bạn: JLPT {userLevel}
+                    {t("yourCurrentLevel")}: JLPT {userLevel}
                   </span>
                 </div>
                 <p className="text-xs leading-relaxed text-amber-900 dark:text-amber-100">
-                  {levelAccess.explanation}
+                  {t("higherLevelPreviewExplanation", { userLevel, activeLevel })}
                 </p>
               </div>
               <div className="flex shrink-0 flex-wrap items-center gap-2">
@@ -282,14 +286,14 @@ export function PracticeClient({
                   href="/app/test"
                   className="inline-flex min-h-10 items-center justify-center rounded-xl bg-amber-600 px-4 py-2 text-xs font-black text-white shadow-sm transition hover:bg-amber-700"
                 >
-                  Thi xếp lớp mở khóa {activeLevel} →
+                  {t("testToUnlock")} {activeLevel} →
                 </Link>
                 <button
                   type="button"
                   onClick={() => setActiveLevel(userLevel)}
                   className="inline-flex min-h-10 items-center justify-center rounded-xl border border-amber-300 bg-white px-3.5 py-2 text-xs font-bold text-amber-800 transition hover:bg-amber-100 dark:border-amber-700 dark:bg-sumi-900 dark:text-amber-200"
                 >
-                  Về lộ trình {userLevel}
+                  {t("backToPath")} {userLevel}
                 </button>
               </div>
             </div>
@@ -301,14 +305,14 @@ export function PracticeClient({
             <div className="min-w-0 flex-1 space-y-1">
               <div className="flex flex-wrap items-center gap-2">
                 <span className="rounded-full bg-sky-600 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-white">
-                  Quy chuẩn sư phạm & Định hướng JLPT
+                  {t("pedagogyStandardTitle")}
                 </span>
                 <span className="text-xs font-bold text-sky-950 dark:text-sky-200">
-                  Nguồn giáo trình đã thẩm định
+                  {t("verifiedCurriculumSource")}
                 </span>
               </div>
               <p className="text-xs leading-relaxed text-sky-900 dark:text-sky-200">
-                Toàn bộ nội dung bám sát khung đào tạo thực tế từ <b>Minna no Nihongo Shokyū I & II</b>, <b>Dekiru Nihongo (ĐH FPT JPD)</b> và <b>Shinkanzen Masuta N3</b>. Phân loại JLPT N5, N4, N3 đóng vai trò định hướng sư phạm theo độ khó của ngữ pháp và từ vựng, không bảo chứng kết quả khảo thí chính thức.
+                {t("pedagogyStandardDesc")}
               </p>
             </div>
           </div>
@@ -317,7 +321,7 @@ export function PracticeClient({
           {availableTracks.length > 1 && (
             <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-slate-200/80 bg-white/90 p-2 shadow-sm dark:border-slate-800 dark:bg-sumi-900/80">
               <span className="px-2 text-xs font-black uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                Giáo trình:
+                {t("curriculumLabel")}:
               </span>
               <button
                 type="button"
@@ -331,7 +335,7 @@ export function PracticeClient({
                     : "bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-sumi-800 dark:text-slate-300"
                 }`}
               >
-                Tất cả ({levelLessons.length})
+                {t("filterAll")} ({levelLessons.length})
               </button>
               {availableTracks.map((trk) => {
                 const isAct = selectedTrack === trk.trackId;
@@ -351,7 +355,7 @@ export function PracticeClient({
                         : "bg-slate-100 text-slate-700 hover:bg-rose-50 hover:text-red-600 dark:bg-sumi-800 dark:text-slate-300"
                     }`}
                   >
-                    <span>{trk.shortTitle}</span>
+                    <span>{getLocalizedTrackTitle(trk.trackId, nativeLanguage, trk.shortTitle)}</span>
                     <span className={`text-[10px] ${isAct ? "text-rose-100" : "text-slate-400"}`}>({count})</span>
                   </button>
                 );
@@ -533,14 +537,18 @@ export function PracticeClient({
                     <div className="relative flex flex-wrap items-center justify-between gap-2">
                       <div className="flex flex-wrap items-center gap-1.5">
                         <span className={`w-fit rounded-lg border px-2.5 py-1 text-xs font-black ${LEVEL_TONE[l.level] ?? LEVEL_TONE.N5}`}>
-                          {l.curriculum?.shortTrackLabel || `${l.level} · #${String(l.order + 1).padStart(2, "0")}`}
+                          {l.curriculum?.shortTrackLabel ? (
+                            <LocalizedShortTrackLabel label={l.curriculum.shortTrackLabel} />
+                          ) : (
+                            `${l.level} · #${String(l.order + 1).padStart(2, "0")}`
+                          )}
                         </span>
                         {l.curriculum?.provenance === "TEXTBOOK_VERIFIED" ? (
-                          <span className="rounded-md border border-emerald-300 bg-emerald-50 px-2 py-0.5 text-[10.5px] font-bold text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300" title="Đã đối soát giáo trình chuẩn">
+                          <span className="rounded-md border border-emerald-300 bg-emerald-50 px-2 py-0.5 text-[10.5px] font-bold text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300" title={t("badgeTextbookVerifiedTitle")}>
                             {t("badgeTextbookVerified")}
                           </span>
                         ) : l.curriculum?.provenance === "SUPPLEMENTARY_VERIFIED" ? (
-                          <span className="rounded-md border border-sky-300 bg-sky-50 px-2 py-0.5 text-[10.5px] font-bold text-sky-700 dark:border-sky-800 dark:bg-sky-950/40 dark:text-sky-300" title="Chuyên đề kỹ năng bổ trợ">
+                          <span className="rounded-md border border-sky-300 bg-sky-50 px-2 py-0.5 text-[10.5px] font-bold text-sky-700 dark:border-sky-800 dark:bg-sky-950/40 dark:text-sky-300" title={t("badgeSupplementaryVerifiedTitle")}>
                             {t("badgeSupplementaryVerified")}
                           </span>
                         ) : null}
@@ -559,7 +567,11 @@ export function PracticeClient({
                         </span>
                       ) : !isUnlocked ? (
                         <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-[11px] font-bold text-slate-600 dark:bg-slate-800 dark:text-slate-300">
-                          {access.badgeText || t("statusLocked")}
+                          {access.lockReason === "PREREQUISITE"
+                            ? `🔒 ${t("badgePrerequisite")}`
+                            : access.lockReason === "HIGHER_LEVEL"
+                            ? `🔒 ${t("badgeLockedLevel")} ${l.level}`
+                            : t("statusLocked")}
                         </span>
                       ) : null}
                     </div>
@@ -574,7 +586,7 @@ export function PracticeClient({
                     {l.curriculum?.relatedGenkiLesson && (
                       <div className="relative mt-1.5 inline-flex items-center gap-1.5 rounded-lg border border-slate-200/80 bg-slate-50 px-2 py-0.5 text-[10.5px] font-semibold text-slate-600 dark:border-slate-800 dark:bg-sumi-800/80 dark:text-slate-300">
                         <span className="opacity-70">📖</span>
-                        <span>{l.curriculum.relatedGenkiLesson}</span>
+                        <span><LocalizedGenkiRef refString={l.curriculum.relatedGenkiLesson} /></span>
                       </div>
                     )}
 
@@ -618,14 +630,14 @@ export function PracticeClient({
                       <div className="relative mt-4 flex items-center gap-2">
                         <Link
                           href={prevLesson ? `/app/practice/${prevLesson.slug}` : `/app/practice/${l.slug}`}
-                          title={prevLesson ? `Cần hoàn thành: ${cleanLessonTitle(prevLesson.title)}` : ""}
+                          title={prevLesson ? `${t("needCompletePrereq")}: ${cleanLessonTitle(prevLesson.title)}` : ""}
                           className="inline-flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-xl border border-slate-300 bg-slate-100 px-3 text-xs font-bold text-slate-700 transition hover:bg-slate-200 dark:border-slate-700 dark:bg-sumi-800 dark:text-slate-200"
                         >
                           {t("lockedPrerequisiteNote")}
                         </Link>
                         <Link
                           href="/app/test"
-                          title="Kiểm tra miễn học phần"
+                          title={t("testExemptionTitle")}
                           className="inline-flex min-h-11 items-center justify-center rounded-xl border border-amber-300 bg-amber-50 px-3 text-xs font-bold text-amber-800 transition hover:bg-amber-100 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-300"
                         >
                           ⚡

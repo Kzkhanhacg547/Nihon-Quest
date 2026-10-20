@@ -6,9 +6,12 @@ import { Card, Badge } from "@/components/ui";
 import { useSoundAndTheme } from "@/components/SoundAndThemeContext";
 import { BASE64_IMAGES, getJourneyImage } from "@/lib/assets/base64Images";
 import { notifyProgressUpdated } from "@/components/UserProgressContext";
+import { useNativeLanguage } from "@/components/LanguageContext";
 import { Japanese3DRoom, CityRoomData } from "@/components/Japanese3DRoom";
 import { CITY_DETAILS, CityGourmet } from "./cityData";
 import { JapanMap3D, type MapPin, type MapTone } from "@/components/JapanMap3D";
+import { getLocalizedJourneyDescription, getLocalizedJourneyName } from "@/lib/metaLocalization";
+import { getLocalizedBadgeDesc } from "@/lib/badgeData";
 
 interface LocationData {
   id: string;
@@ -188,6 +191,7 @@ export function JourneyClient({
   achievements: AchievementItem[];
 }) {
   const router = useRouter();
+  const { t, nativeLanguage } = useNativeLanguage();
   const { playClick, playCorrect, playFanfare, showToast } = useSoundAndTheme();
 
   const [atmosphere, setAtmosphere] = useState<"DAY" | "NIGHT">("DAY");
@@ -224,7 +228,7 @@ export function JourneyClient({
       const data = await res.json().catch(() => ({}));
 
       if (!res.ok) {
-        showToast({ title: data.error ?? "Không thể thực hiện hành động.", type: "error" });
+        showToast({ title: data.error ?? (t("serverConnectionError") || "Không thể thực hiện hành động."), type: "error" });
         setLoadingId(null);
         return;
       }
@@ -233,15 +237,15 @@ export function JourneyClient({
         playFanfare();
         setCityProgressMap((prev) => ({ ...prev, [locationId]: 100 }));
         showToast({
-          title: `Chinh phục thành công: ${locName}!`,
-          description: "Chúc mừng bạn đã mở khóa địa danh và nhận thưởng XP!",
+          title: (t("journeyCompletedToast") || "Chinh phục thành công: {city}!").replace("{city}", locName),
+          description: t("journeyCompletedDesc") || "Chúc mừng bạn đã mở khóa địa danh và nhận thưởng XP!",
           type: "achievement",
         });
       } else {
         playCorrect();
         showToast({
-          title: `Bắt đầu khám phá: ${locName}!`,
-          description: "Hãy hoàn tất các bài học để đóng dấu con dấu du lịch nhà ga.",
+          title: `${t("journeyExploreCity") || "Khám phá"}: ${locName}!`,
+          description: t("journeyExploreDesc") || "Hãy hoàn tất các bài học để đóng dấu con dấu du lịch nhà ga.",
           type: "info",
         });
       }
@@ -250,7 +254,7 @@ export function JourneyClient({
       notifyProgressUpdated();
       router.refresh();
     } catch {
-      showToast({ title: "Lỗi kết nối máy chủ.", type: "error" });
+      showToast({ title: t("serverConnectionError") || "Lỗi kết nối máy chủ.", type: "error" });
     }
     setLoadingId(null);
   };
@@ -259,8 +263,8 @@ export function JourneyClient({
     playFanfare();
     setStampedCities((prev) => new Set(prev).add(slug));
     showToast({
-      title: `Đã đóng dấu du lịch: ${cityName}! ⛩️`,
-      description: "Con dấu lưu niệm Eki-Stamp đỏ son đã được lưu vào sổ tay hành trình!",
+      title: (t("journeyStampSuccessTitle") || "Đã đóng dấu du lịch: {city}! ⛩️").replace("{city}", cityName),
+      description: t("journeyStampSuccessDesc") || "Con dấu lưu niệm Eki-Stamp đỏ son đã được lưu vào sổ tay hành trình!",
       type: "xp",
     });
 
@@ -303,8 +307,8 @@ export function JourneyClient({
     const st = row.progress?.status ?? "LOCKED";
     if (!row.unlockable && st !== "COMPLETED" && st !== "IN_PROGRESS") {
       showToast({
-        title: `🔒 Cần ${loc.requirementXp} XP để mở khoá ${loc.name}`,
-        description: "Tiếp tục học bài và ôn tập để tích lũy đủ điểm kinh nghiệm!",
+        title: `🔒 ${(t("journeyRequireXpNotice") || "Cần {xp} XP để mở khoá {city}").replace("{xp}", String(loc.requirementXp)).replace("{city}", loc.name)}`,
+        description: t("journeyAccumulateXpTip") || "Tiếp tục học bài và ôn tập để tích lũy đủ điểm kinh nghiệm!",
         type: "error",
       });
       return;
@@ -329,7 +333,7 @@ export function JourneyClient({
 
         <div className="jy-hero-copy">
           <div className="jy-hero-top">
-            <Badge variant="sakura" className="jy-hero-badge">HÀNH TRÌNH KHÁM PHÁ NHẬT BẢN ✦</Badge>
+            <Badge variant="sakura" className="jy-hero-badge">{t("journeyHeroBadge") || "HÀNH TRÌNH KHÁM PHÁ NHẬT BẢN ✦"}</Badge>
             <button
               type="button"
               className="jy-mode-btn"
@@ -338,22 +342,22 @@ export function JourneyClient({
                 setAtmosphere(atmosphere === "DAY" ? "NIGHT" : "DAY");
               }}
             >
-              {atmosphere === "DAY" ? "🌙 Cảnh đêm" : "☀️ Cảnh ngày"}
+              {atmosphere === "DAY" ? (t("journeyNightMode") || "🌙 Cảnh đêm") : (t("journeyDayMode") || "☀️ Cảnh ngày")}
             </button>
           </div>
           <h2 className="jy-hero-title">
-            Du Ngoạn<br />Xuyên <em>Nhật Bản</em>
+            {t("journeyHeroTitle1") || "Du Ngoạn"}<br />{t("journeyHeroTitle2") || "Xuyên"} <em>Nhật Bản</em>
           </h2>
-          <p className="jy-hero-sub">Bước vào bản đồ 3D để khám phá những nét văn hóa đặc sắc của từng thành phố.</p>
+          <p className="jy-hero-sub">{t("journeyHeroSub") || "Bước vào bản đồ 3D để khám phá những nét văn hóa đặc sắc của từng thành phố."}</p>
 
           <div className="jy-hero-stats">
-            <div><span className="jy-st-ico">🧭</span><b>{completedCount} / {rows.length}</b><small>Thành phố đã khám phá</small></div>
-            <div><span className="jy-st-ico">⭐</span><b>{cultureCount}</b><small>Văn hóa đặc sắc</small></div>
-            <div><span className="jy-st-ico">🗺️</span><b>∞</b><small>Kiến thức cho bạn</small></div>
+            <div><span className="jy-st-ico">🧭</span><b>{completedCount} / {rows.length}</b><small>{t("journeyCitiesExplored") || "Thành phố đã khám phá"}</small></div>
+            <div><span className="jy-st-ico">⭐</span><b>{cultureCount}</b><small>{t("journeyCulturalArtifacts") || "Văn hóa đặc sắc"}</small></div>
+            <div><span className="jy-st-ico">🗺️</span><b>∞</b><small>{t("journeyInfiniteKnowledge") || "Kiến thức cho bạn"}</small></div>
           </div>
 
           <button type="button" className="jy-hero-cta" onClick={() => activeRow && openCity(activeRow)}>
-            Tiếp tục hành trình <span aria-hidden>→</span>
+            {t("journeyContinueBtn") || "Tiếp tục hành trình"} <span aria-hidden>→</span>
           </button>
         </div>
 
@@ -379,8 +383,8 @@ export function JourneyClient({
         <aside className="jy-hero-tip">
           <span className="jy-tip-ico">🏯</span>
           <div>
-            <strong>Khám phá văn hoá Nhật Bản</strong>
-            <p>Mỗi thành phố là một câu chuyện, một nền văn hoá và những bài học tiếng Nhật thú vị.</p>
+            <strong>{t("journeyCultureTipTitle") || "Khám phá văn hoá Nhật Bản"}</strong>
+            <p>{t("journeyCultureTipDesc") || "Mỗi thành phố là một câu chuyện, một nền văn hoá và những bài học tiếng Nhật thú vị."}</p>
           </div>
           <span aria-hidden className="jy-tip-arrow">›</span>
         </aside>
@@ -392,8 +396,8 @@ export function JourneyClient({
           <div className="jy-section-title">
             <span className="jy-section-ico">🚅</span>
             <div>
-              <h3>Lộ Trình Tuyến Shinkansen Du Lịch</h3>
-              <p>Bấm vào bất kỳ thành phố nào để khám phá không gian văn hóa, món ăn đặc sản và đóng dấu lưu niệm Eki-stamp!</p>
+              <h3>{t("journeyShinkansenTitle") || "Lộ Trình Tuyến Shinkansen Du Lịch"}</h3>
+              <p>{t("journeyShinkansenDesc") || "Bấm vào bất kỳ thành phố nào để khám phá không gian văn hóa, món ăn đặc sản và đóng dấu lưu niệm Eki-stamp!"}</p>
             </div>
           </div>
           <ShinkansenArt />
@@ -414,12 +418,12 @@ export function JourneyClient({
               return (
                 <button type="button" key={loc.id} onClick={() => openCity(row)} className="jy-card jy-city is-locked">
                   <CityImage slug={loc.slug} fallback={details.landmarkImage} className="jy-city-bg" />
-                  <span className="jy-chip jy-chip-step">Chặng #{idx + 1}</span>
+                  <span className="jy-chip jy-chip-step">{t("journeyStage") || "Chặng"} #{idx + 1}</span>
                   <div className="jy-lock">
                     <span className="jy-lock-ico">🔒</span>
                     <h4>{loc.name} <span className="jp-text">{loc.nameJa}</span></h4>
-                    <strong>Chưa mở khóa</strong>
-                    <p>Hoàn thành các thành phố trước để tiếp tục hành trình. Cần {loc.requirementXp} XP.</p>
+                    <strong>{t("journeyLockedStatus") || "Chưa mở khóa"}</strong>
+                    <p>{(t("journeyLockDesc") || "Hoàn thành các thành phố trước để tiếp tục hành trình. Cần {xp} XP.").replace("{xp}", String(loc.requirementXp))}</p>
                   </div>
                 </button>
               );
@@ -433,11 +437,11 @@ export function JourneyClient({
               >
                 <div className="jy-city-media">
                   <CityImage slug={loc.slug} fallback={details.landmarkImage} />
-                  <span className="jy-chip jy-chip-step">Chặng #{idx + 1}</span>
+                  <span className="jy-chip jy-chip-step">{t("journeyStage") || "Chặng"} #{idx + 1}</span>
                   {isCompleted ? (
-                    <span className="jy-chip jy-chip-done">✓ Đã khám phá</span>
+                    <span className="jy-chip jy-chip-done">{t("journeyUnlockedStatus") || "✓ Đã khám phá"}</span>
                   ) : isInProgress ? (
-                    <span className="jy-chip jy-chip-live">Đang đi ngay!</span>
+                    <span className="jy-chip jy-chip-live">{t("journeyInProgressStatus") || "Đang đi ngay!"}</span>
                   ) : null}
                 </div>
 
@@ -449,11 +453,11 @@ export function JourneyClient({
                       <small>{details.highlights[0]}</small>
                     </div>
                   </div>
-                  <p className="jy-city-desc">{loc.description}</p>
+                  <p className="jy-city-desc">{getLocalizedJourneyDescription(loc.slug, nativeLanguage, loc.description)}</p>
 
                   <div className="jy-prog">
                     <div className="jy-prog-row">
-                      <span>Tiến độ khám phá</span>
+                      <span>{t("journeyProgressLabel") || "Tiến độ khám phá"}</span>
                       <b className={progressPct >= 100 ? "is-full" : ""}>{progressPct}%</b>
                     </div>
                     <div className="jy-prog-bar"><i style={{ width: `${progressPct}%` }} /></div>
@@ -461,7 +465,7 @@ export function JourneyClient({
 
                   <div className="jy-city-foot">
                     <span className="jy-xp">⭐ +{loc.xpReward} XP</span>
-                    <span className="jy-go">Khám phá {loc.name} →</span>
+                    <span className="jy-go">{t("journeyExploreCity") || "Khám phá"} {loc.name} →</span>
                   </div>
                 </div>
 
@@ -481,7 +485,7 @@ export function JourneyClient({
             slug: selectedCity.row.location.slug,
             name: selectedCity.row.location.name,
             nameJa: selectedCity.row.location.nameJa,
-            description: selectedCity.row.location.description,
+            description: getLocalizedJourneyDescription(selectedCity.row.location.slug, nativeLanguage, selectedCity.row.location.description),
             landmark3D: selectedCity.details.landmark3D,
             landmarkImage: selectedCity.details.landmarkImage,
             highlights: selectedCity.details.highlights,
@@ -548,10 +552,10 @@ export function JourneyClient({
         <header className="jy-section-head">
           <div className="jy-section-title">
             <span className="jy-section-ico">🏆</span>
-            <h3>Huy Hiệu Thành Tựu Khám Phá ({achievements.length})</h3>
+            <h3>{t("journeyAchievementsTitle") || "Huy Hiệu Thành Tựu Khám Phá"} ({achievements.length})</h3>
           </div>
           <button type="button" className="jy-ach-all" onClick={() => router.push(ACHIEVEMENTS_HREF)}>
-            Xem tất cả huy hiệu →
+            {t("journeyViewAllBadges") || "Xem tất cả huy hiệu →"}
           </button>
         </header>
 
@@ -563,7 +567,7 @@ export function JourneyClient({
                   <span className="jy-ach-ico">{achIcon(ach.achievement.icon)}</span>
                   <div>
                     <h4>{ach.achievement.title}</h4>
-                    <p>{ach.achievement.description}</p>
+                    <p>{getLocalizedBadgeDesc(ach.achievement.key, nativeLanguage, ach.achievement.description)}</p>
                     <b>★ +{ach.achievement.xpReward} XP</b>
                   </div>
                 </Card>
@@ -571,12 +575,12 @@ export function JourneyClient({
             </div>
           ) : (
             <div className="jy-ach-empty">
-              Chưa mở khóa thành tựu nào. Hãy hoàn thành các chặng Shinkansen để sưu tầm huy hiệu!
+              {t("journeyNoBadges") || "Chưa mở khóa thành tựu nào. Hãy hoàn thành các chặng Shinkansen để sưu tầm huy hiệu!"}
             </div>
           )}
 
           <div className="jy-mascot">
-            <p className="jy-bubble">Khám phá thêm nhiều thành phố để nhận huy hiệu đặc biệt nhé!</p>
+            <p className="jy-bubble">{t("journeyMascotTip") || "Khám phá thêm nhiều thành phố để nhận huy hiệu đặc biệt nhé!"}</p>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={BASE64_IMAGES.journeyMascot} alt="" onError={(e) => (e.currentTarget.style.display = "none")} />
           </div>

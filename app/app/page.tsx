@@ -20,7 +20,7 @@ import { buildLearningPath, sanitizeAnswers } from "@/lib/personalization";
 import { getLessonCurriculumMetadata } from "@/lib/curriculum-tracks";
 import { DashboardHero } from "./DashboardHero";
 import { LocalizedText } from "@/components/LocalizedText";
-import { LocalizedLessonTitle, LocalizedLessonDesc, LocalizedRoadmapTag } from "@/components/LocalizedLesson";
+import { LocalizedLessonTitle, LocalizedLessonDesc, LocalizedRoadmapTag, LocalizedPathName, LocalizedPathTagline, LocalizedMissionTitle, LocalizedShortTrackLabel } from "@/components/LocalizedLesson";
 
 export const metadata = { title: "Dashboard — Nihon Quest" };
 
@@ -312,8 +312,22 @@ export default async function AppHome() {
                       <div className="nqd-bar"><span style={{ width: `${pathPercent}%` }} /></div>
                     </div>
                   </div>
-                  <h2>{myPath.name}</h2>
-                  <p>{myPath.tagline}</p>
+                  <h2>
+                    <LocalizedPathName
+                      goal={pathAnswers.goal}
+                      style={pathAnswers.learningStyle}
+                      fallback={myPath.name}
+                    />
+                  </h2>
+                  <p>
+                    <LocalizedPathTagline
+                      goal={pathAnswers.goal}
+                      style={pathAnswers.learningStyle}
+                      level={pathAnswers.level}
+                      skill={pathAnswers.focusSkill}
+                      fallback={myPath.tagline}
+                    />
+                  </p>
                   <div className="nqd-path-meta">
                     <span>{myPath.modules.length} <LocalizedText k="topics" fallback="chủ đề" /></span>
                     <span>{myPath.estWeeks} <LocalizedText k="weeks" fallback="tuần" /></span>
@@ -346,7 +360,7 @@ export default async function AppHome() {
                     <span className="nqd-pill"><LocalizedText k="todaysLesson" fallback="BÀI HỌC HÔM NAY" /></span>
                     {currentCurriculum && (
                       <span className="rounded-lg bg-red-100 px-2 py-0.5 text-xs font-black text-red-700 dark:bg-red-950/60 dark:text-red-300">
-                        {currentCurriculum.shortTrackLabel}
+                        <LocalizedShortTrackLabel label={currentCurriculum.shortTrackLabel} />
                       </span>
                     )}
                     <span>
@@ -439,7 +453,7 @@ export default async function AppHome() {
                           {i === 0 ? "あ" : <Icon name={i === 1 ? "book" : "headphones"} size={20} />}
                         </span>
                         <div>
-                          <b>{m.mission.title}</b>
+                          <b><LocalizedMissionTitle missionKey={m.mission.key} fallback={m.mission.title} /></b>
                           <div className="nqd-bar"><span style={{ width: `${pct}%` }} /></div>
                           <small>{done} / {target}</small>
                         </div>
@@ -455,7 +469,7 @@ export default async function AppHome() {
                     <Link href="/app/leaderboard"><LocalizedText k="viewAll" fallback="Xem tất cả →" /></Link>
                   </div>
                   {weeklyList.slice(0, 4).map((row, i) => {
-                    const label = row.displayName || row.name || "Học viên";
+                    const label = row.displayName || row.name;
                     const isImg =
                       typeof row.avatar === "string" &&
                       (row.avatar.startsWith("data:image/") ||
@@ -468,13 +482,13 @@ export default async function AppHome() {
                         <span className="av overflow-hidden">
                           {isImg ? (
                             // eslint-disable-next-line @next/next/no-img-element
-                            <img src={row.avatar!} alt={label} width={36} height={36} className="h-9 w-9 rounded-full object-cover" />
+                            <img src={row.avatar!} alt={label || "Learner"} width={36} height={36} className="h-9 w-9 rounded-full object-cover" />
                           ) : (
-                            row.avatar && row.avatar.length <= 4 ? row.avatar : label.slice(0, 1).toUpperCase()
+                            row.avatar && row.avatar.length <= 4 ? row.avatar : (label ? label.slice(0, 1).toUpperCase() : "学")
                           )}
                         </span>
                         <b>
-                          <span className="nqd-rank-name">{label}</span>
+                          <span className="nqd-rank-name">{label || <LocalizedText k="learner" fallback="Học viên" />}</span>
                           {row.isBot && (
                             <span className="ml-1.5 inline-flex items-center rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-bold text-slate-500 dark:bg-sumi-800 dark:text-slate-400">
                               🤖 AI
