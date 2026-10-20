@@ -36,3 +36,5 @@ extracted_*.txt
 !/README.md
 !vendor/**/README.md
 !vendor/**/SECURITY.md
+
+.open-next
