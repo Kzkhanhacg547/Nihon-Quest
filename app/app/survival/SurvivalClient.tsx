@@ -1,11 +1,14 @@
 "use client";
 
-import { useState, useEffect, useRef, type ReactNode } from "react";
+import { useState, useEffect, useRef, useMemo, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { Card, Button, Badge } from "@/components/ui";
 import { useSoundAndTheme } from "@/components/SoundAndThemeContext";
 import { getSurvivalLessonImage, getSurvivalCharacterImage } from "@/lib/assets/base64Images";
 import { notifyProgressUpdated } from "@/components/UserProgressContext";
+import { useNativeLanguage } from "@/components/LanguageContext";
+import { getLocalizedScenarioMeta } from "@/lib/survivalLocalization";
+import { BASE64_IMAGES } from "@/lib/assets/base64Images";
 import { SafeImg } from "./SafeImg";
 
 type CategoryKey = "restaurant" | "station" | "konbini" | "other";
@@ -1271,6 +1274,55 @@ const POLITENESS_TAG: Record<DialogueStep["choices"][0]["politeness"], { label: 
   },
 };
 
+function getPolitenessTag(politeness: DialogueStep["choices"][0]["politeness"], lang: string) {
+  if (politeness === "POLITE") {
+    const label =
+      lang === "fr"
+        ? "Poli & Naturel"
+        : lang === "zh-CN"
+        ? "礼貌且自然"
+        : lang === "zh-TW"
+        ? "禮貌且自然"
+        : lang === "en"
+        ? "Polite & Natural"
+        : "Lịch sự & Tự nhiên";
+    return {
+      label,
+      cls: "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/50 dark:text-emerald-300 dark:border-emerald-800",
+    };
+  }
+  if (politeness === "CASUAL") {
+    const label =
+      lang === "fr"
+        ? "Familier (Entre amis)"
+        : lang === "zh-CN"
+        ? "日常口语（随和）"
+        : lang === "zh-TW"
+        ? "日常口語（隨和）"
+        : lang === "en"
+        ? "Casual / Informal"
+        : "Thông dụng (Thân mật)";
+    return {
+      label,
+      cls: "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/50 dark:text-amber-300 dark:border-amber-800",
+    };
+  }
+  const label =
+    lang === "fr"
+      ? "Inapproprié (-1 ❤️)"
+      : lang === "zh-CN"
+      ? "不合适 (-1 ❤️)"
+      : lang === "zh-TW"
+      ? "不合適 (-1 ❤️)"
+      : lang === "en"
+      ? "Inappropriate (-1 ❤️)"
+      : "Không phù hợp (-1 ❤️)";
+  return {
+    label,
+    cls: "bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/50 dark:text-rose-300 dark:border-rose-800",
+  };
+}
+
 
 
 // ======================== ẢNH (public/images/survival) ========================
@@ -1349,14 +1401,21 @@ function SideTitle({ icon, children, right }: { icon: string; children: ReactNod
 
 export function SurvivalClient({
   scenarios,
+  initialEarnedXp = 0,
+  initialTotalXp = 0,
+  doneCount = 0,
   hero,
 }: {
   scenarios: Array<{ id: string; slug: string; title: string; isCompleted: boolean }>;
   /** Hero (server-rendered) chỉ hiện ở màn danh sách, ẩn khi đang chơi. */
+  initialEarnedXp?: number;
+  initialTotalXp?: number;
+  doneCount?: number;
   hero?: ReactNode;
 }) {
   const router = useRouter();
   const { playClick, playCorrect, playIncorrect, playFanfare, showToast, speak } = useSoundAndTheme();
+  const { t, nativeLanguage } = useNativeLanguage();
 
   const [activeScenario, setActiveScenario] = useState<ScenarioDef | null>(null);
   const [showHints, setShowHints] = useState(true);
@@ -1372,6 +1431,14 @@ export function SurvivalClient({
   const [hearts, setHearts] = useState(3);
   const [submitting, setSubmitting] = useState(false);
   const [filter, setFilter] = useState<CategoryKey | "all">("all");
+
+  const categoryTabs = useMemo(() => [
+    { key: "all" as const, label: t("survivalTabAll") || "Tất cả", icon: "🔥" },
+    { key: "restaurant" as const, label: t("survivalTabRestaurant") || "Nhà hàng", icon: "🍜" },
+    { key: "station" as const, label: t("survivalTabStation") || "Nhà ga", icon: "🚇" },
+    { key: "konbini" as const, label: t("survivalTabKonbini") || "Konbini", icon: "🍱" },
+    { key: "other" as const, label: t("survivalTabOther") || "Khác", icon: "✨" },
+  ], [t]);
 
   // Speech Recognition (Microphone Voice Input)
   const [isListening, setIsListening] = useState(false);
@@ -1618,11 +1685,141 @@ export function SurvivalClient({
   const showGuide = () => {
     playClick();
     showToast({
-      title: "Cách chơi",
-      description: "Nghe nhân vật, chọn câu đáp (bấm chuột hoặc phím 1–4) hoặc bấm 🎙 để nói. Bấm 🔊 để nghe lại.",
+      title: t("survivalGuideBtn") || "Cách chơi",
+      description:
+        nativeLanguage === "fr"
+          ? "Écoutez le personnage, choisissez votre réponse (clic ou touches 1–4) ou cliquez sur 🎙 pour parler. Cliquez sur 🔊 pour réécouter."
+          : nativeLanguage === "zh-CN"
+          ? "听角色说话，选择回答（点击或按数字键1-4）或点击🎙说话。点击🔊重听。"
+          : nativeLanguage === "zh-TW"
+          ? "聽角色說話，選擇回答（點擊或按數字鍵1-4）或點擊🎙說話。點擊🔊重聽。"
+          : nativeLanguage === "en"
+          ? "Listen to the character, select your reply (click or keys 1–4) or click 🎙 to speak. Click 🔊 to listen again."
+          : "Nghe nhân vật, chọn câu đáp (bấm chuột hoặc phím 1–4) hoặc bấm 🎙 để nói. Bấm 🔊 để nghe lại.",
       type: "info",
     });
   };
+
+  const xpPct = initialTotalXp > 0 ? Math.round((initialEarnedXp / initialTotalXp) * 100) : 0;
+  const remainingXp = Math.max(initialTotalXp - initialEarnedXp, 0);
+
+  const heroFeatures = useMemo(
+    () => [
+      {
+        icon: "💬",
+        title: t("survivalHeroFeat1") || "Hội thoại tương tác",
+        sub: nativeLanguage === "fr" ? "Pratique immersive" : nativeLanguage === "en" ? "Real-life practice" : "Thực hành như thật",
+        cls: "bg-rose-100 text-rose-500",
+      },
+      {
+        icon: "♪",
+        title: t("survivalHeroFeat2") || "Phát âm tiếng Nhật",
+        sub: nativeLanguage === "fr" ? "Écouter & répéter" : nativeLanguage === "en" ? "Listen & Repeat" : "Nghe - Nhắc lại - Chuẩn hơn",
+        cls: "bg-indigo-100 text-indigo-500",
+      },
+      {
+        icon: "🎙",
+        title: t("survivalHeroFeat3") || "Luyện phản xạ nói",
+        sub: nativeLanguage === "fr" ? "Parler avec confiance" : nativeLanguage === "en" ? "Speak with confidence" : "Tự tin giao tiếp mỗi ngày",
+        cls: "bg-sky-100 text-sky-600",
+      },
+    ],
+    [t, nativeLanguage]
+  );
+
+  const dynamicHero = hero ?? (
+    <section className="relative mx-auto mb-10 mt-2 max-w-[1320px] px-4 sm:px-6">
+      <div className="relative isolate overflow-hidden rounded-[28px] bg-gradient-to-br from-sky-400 via-indigo-400 to-pink-300 shadow-2xl shadow-indigo-900/20 ring-1 ring-white/40">
+        <SafeImg
+          src={BASE64_IMAGES.survivalHero}
+          alt="Survival Hero"
+          priority
+          className="absolute inset-0 -z-20 h-full w-full object-cover object-[68%_center]"
+        />
+        <div className="absolute inset-0 -z-10 bg-gradient-to-b from-indigo-950/75 via-indigo-950/40 to-indigo-950/10 lg:bg-gradient-to-r lg:from-indigo-950/80 lg:via-indigo-900/30 lg:to-transparent" />
+
+        <div className="relative z-10 flex min-h-[400px] flex-col justify-center gap-5 px-6 py-10 sm:px-10 lg:min-h-[440px] lg:max-w-[64%]">
+          <div className="inline-flex w-fit items-center gap-2 rounded-full border border-white/40 bg-white/15 px-4 py-2 text-xs font-bold tracking-wide text-white backdrop-blur-md">
+            <span className="text-rose-300" aria-hidden>⛩</span>
+            {t("survivalHeroBadge") || "KHÁM PHÁ & SURVIVAL MODE"}
+          </div>
+
+          <h1 className="text-[clamp(2.4rem,7vw,4rem)] font-black leading-[1.05] tracking-tight text-white drop-shadow-[0_4px_12px_rgba(15,23,42,0.35)]">
+            {t("survivalHeroTitle") || "Giao tiếp"}{" "}
+            <span className="bg-gradient-to-r from-pink-300 to-pink-500 bg-clip-text text-transparent">
+              {t("survivalHeroTitleHighlight") || "sinh tồn."}
+            </span>
+          </h1>
+
+          <p className="max-w-lg text-[15px] leading-relaxed text-white/90 drop-shadow">
+            {t("survivalHeroDesc") ||
+              "Rèn luyện phản xạ tiếng Nhật trong nhà hàng, nhà ga, konbini và những tình huống bạn thực sự gặp khi tới Nhật."}
+          </p>
+
+          <div className="flex flex-wrap gap-3">
+            {heroFeatures.map((f) => (
+              <div
+                key={f.title}
+                className="flex items-center gap-3 rounded-full border border-white/40 bg-white/15 py-2 pl-2 pr-5 backdrop-blur-md"
+              >
+                <span
+                  className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-lg ${f.cls}`}
+                  aria-hidden
+                >
+                  {f.icon}
+                </span>
+                <span>
+                  <span className="block text-sm font-bold text-white">{f.title}</span>
+                  <span className="block text-[11px] text-white/75">{f.sub}</span>
+                </span>
+              </div>
+            ))}
+          </div>
+
+          <a
+            href="#thu-thach"
+            className="mt-1 inline-flex min-h-12 w-fit items-center gap-3 rounded-full bg-gradient-to-r from-rose-500 to-pink-500 px-8 py-3.5 text-lg font-black text-white shadow-lg shadow-rose-500/40 transition hover:scale-[1.03] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+          >
+            <span aria-hidden>🎮</span> {t("survivalHeroStartBtn") || "Bắt đầu thử thách"} <span aria-hidden>›</span>
+          </a>
+        </div>
+
+        {/* Thẻ XP */}
+        <div className="relative z-10 mx-6 mb-6 rounded-3xl border border-white/30 bg-indigo-950/55 p-5 text-white shadow-xl backdrop-blur-md sm:mx-10 md:absolute md:bottom-6 md:right-6 md:m-0 md:w-[340px]">
+          <div className="flex items-center gap-4">
+            <span className="text-5xl drop-shadow-lg" aria-hidden>⭐</span>
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-semibold text-white/80">{t("survivalHeroXpLabel") || "XP Survival"}</p>
+              <p className="text-3xl font-black leading-none tabular-nums">{initialEarnedXp.toLocaleString()}</p>
+            </div>
+            <span className="rounded-full bg-white/20 px-3 py-1 text-xs font-black">
+              {doneCount}/{scenarios.length}
+            </span>
+          </div>
+          <div
+            className="mt-4 h-2.5 overflow-hidden rounded-full bg-white/25"
+            role="progressbar"
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={xpPct}
+          >
+            <div
+              className="h-full rounded-full bg-gradient-to-r from-pink-400 to-rose-500"
+              style={{ width: `${xpPct}%` }}
+            />
+          </div>
+          <p className="mt-2 text-xs text-white/80">
+            {initialTotalXp === 0
+              ? t("survivalHeroNoChallenges") || "Chưa có thử thách nào được mở."
+              : remainingXp === 0
+              ? t("survivalHeroAllDone") || "Bạn đã chinh phục toàn bộ thử thách!"
+              : t("survivalHeroRemainingXp", { xp: remainingXp.toLocaleString() }) ||
+                `Còn ${remainingXp.toLocaleString()} XP để chinh phục tất cả`}
+          </p>
+        </div>
+      </div>
+    </section>
+  );
 
   // ======================== MÀN DANH SÁCH ========================
   if (!activeScenario) {
@@ -1630,7 +1827,7 @@ export function SurvivalClient({
 
     return (
       <>
-        {hero}
+        {dynamicHero}
         <section id="thu-thach" className="mx-auto max-w-[1320px] scroll-mt-24 px-4 pb-24 sm:px-6">
           {/* Tiêu đề + bộ lọc */}
           <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
@@ -1642,19 +1839,21 @@ export function SurvivalClient({
                 ◎
               </span>
               <div>
-                <h2 className="text-2xl font-black text-slate-900 dark:text-white">Chọn thử thách</h2>
+                <h2 className="text-2xl font-black text-slate-900 dark:text-white">
+                  {t("survivalChooseTitle") || "Chọn thử thách"}
+                </h2>
                 <p className="text-sm text-slate-500 dark:text-slate-400">
-                  Khám phá các tình huống thực tế và chinh phục từng cấp độ!
+                  {t("survivalChooseSubtitle") || "Khám phá các tình huống thực tế và chinh phục từng cấp độ!"}
                 </p>
               </div>
             </div>
 
             <div
               role="tablist"
-              aria-label="Lọc thử thách"
+              aria-label={t("survivalChooseTitle") || "Lọc thử thách"}
               className="flex flex-wrap gap-1.5 rounded-full border border-white/70 bg-white/80 p-1.5 shadow-sm backdrop-blur dark:border-slate-700 dark:bg-sumi-900/80"
             >
-              {CATEGORY_TABS.map((tab) => {
+              {categoryTabs.map((tab) => {
                 const active = filter === tab.key;
                 return (
                   <button
@@ -1682,7 +1881,7 @@ export function SurvivalClient({
 
           {visible.length === 0 ? (
             <p className="rounded-3xl border border-dashed border-slate-300 bg-white/70 py-14 text-center text-sm text-slate-500 dark:border-slate-700 dark:bg-sumi-900/60">
-              Chưa có thử thách nào trong mục này.
+              {t("survivalEmptyCategory") || "Chưa có thử thách nào trong mục này."}
             </p>
           ) : (
             <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -1690,6 +1889,10 @@ export function SurvivalClient({
                 const dbMatch = scenarios.find((s) => s.slug === scDef.slug);
                 const isDone = dbMatch?.isCompleted ?? false;
                 const icon = SCENARIO_ICON[scDef.slug] ?? "🎌";
+                const scMeta = getLocalizedScenarioMeta(scDef.slug, nativeLanguage, scDef);
+                const localizedLevel = scDef.level.includes("Thực Chiến")
+                  ? scDef.level.replace("Thực Chiến", (t("survivalLevelPractical", { level: "" }) || "Thực chiến")).trim()
+                  : scDef.level;
 
                 return (
                   <article
@@ -1702,7 +1905,7 @@ export function SurvivalClient({
                     <div className={`relative h-44 overflow-hidden bg-gradient-to-br sm:h-48 ${scDef.bgGradient}`}>
                       <SafeImg
                         src={lessonImg(scDef.slug)}
-                        alt={scDef.title}
+                        alt={scMeta.title}
                         className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
                         fallback={
                           <div className="flex h-full w-full items-center justify-center text-6xl opacity-80" aria-hidden>
@@ -1714,7 +1917,7 @@ export function SurvivalClient({
                       <span
                         className={`absolute left-3 top-3 rounded-full px-3 py-1 text-[11px] font-black shadow ${levelBadgeCls(scDef.level)}`}
                       >
-                        {scDef.level}
+                        {localizedLevel}
                       </span>
                       <span
                         className={`absolute right-3 top-3 inline-flex items-center gap-1 rounded-full px-3 py-1 text-[11px] font-bold shadow ${
@@ -1722,7 +1925,7 @@ export function SurvivalClient({
                         }`}
                       >
                         <span aria-hidden>{isDone ? "✓" : "○"}</span>
-                        {isDone ? "Đã hoàn thành" : "Chưa hoàn thành"}
+                        {isDone ? t("survivalCompletedStatus") || "Đã hoàn thành" : t("survivalNotCompletedStatus") || "Chưa hoàn thành"}
                       </span>
                     </div>
 
@@ -1734,13 +1937,13 @@ export function SurvivalClient({
                       >
                         {icon}
                       </span>
-                      <h3 className="text-lg font-black leading-snug text-slate-900 dark:text-white">{scDef.title}</h3>
+                      <h3 className="text-lg font-black leading-snug text-slate-900 dark:text-white">{scMeta.title}</h3>
                       <p className="mt-1.5 flex items-start gap-1.5 text-xs font-medium text-slate-500 dark:text-slate-400">
                         <span aria-hidden>📍</span>
-                        <span>{scDef.locationName}</span>
+                        <span>{scMeta.locationName}</span>
                       </p>
                       <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-slate-600 dark:text-slate-400">
-                        {scDef.description}
+                        {scMeta.description}
                       </p>
 
                       <div className="mt-auto flex items-center justify-between gap-3 pt-5">
@@ -1756,7 +1959,7 @@ export function SurvivalClient({
                               : "border border-rose-300 text-rose-600 hover:bg-rose-50 dark:border-rose-800 dark:text-rose-300 dark:hover:bg-rose-950/40"
                           }`}
                         >
-                          {isDone ? "Chơi lại" : "Bắt đầu"} <span aria-hidden>›</span>
+                          {isDone ? t("survivalReplayBtn") || "Chơi lại" : t("survivalStartCardBtn") || "Bắt đầu"} <span aria-hidden>›</span>
                         </button>
                       </div>
                     </div>
@@ -1782,16 +1985,61 @@ export function SurvivalClient({
   // ======================== MÀN CHƠI (giống ảnh thiết kế) ========================
   const steps = activeScenario.steps;
   const currentStep = steps[Math.min(currentStepIndex, steps.length - 1)];
-  const meta: ScenarioMeta = SCENARIO_META[activeScenario.slug] ?? {
+  const localizedActiveMeta = getLocalizedScenarioMeta(activeScenario.slug, nativeLanguage, activeScenario);
+  const localizedStepData = localizedActiveMeta.steps?.[Math.min(currentStepIndex, steps.length - 1)];
+  const pickedChoiceIndex = picked ? currentStep.choices.indexOf(picked) : -1;
+  const pickedChoiceLocalized = pickedChoiceIndex >= 0 ? localizedStepData?.choices?.[pickedChoiceIndex] : undefined;
+
+  const metaFallback: ScenarioMeta = SCENARIO_META[activeScenario.slug] ?? {
     objective: activeScenario.description,
-    stepLabels: steps.map((_, i) => `Bước ${i + 1}`),
+    stepLabels: steps.map((_, i) => `${t("survivalStepLabel") || "Bước"} ${i + 1}`),
     vocab: [],
+  };
+  const meta: ScenarioMeta = {
+    objective: localizedActiveMeta.description || metaFallback.objective,
+    stepLabels: localizedActiveMeta.stepLabels ?? metaFallback.stepLabels,
+    tip: metaFallback.tip,
+    vocab: metaFallback.vocab,
   };
   const scenarioNo = String(REAL_SCENARIOS.findIndex((s) => s.id === activeScenario.id) + 1).padStart(2, "0");
   const finalPercentage = maxScore > 0 ? Math.round((totalScore / maxScore) * 100) : 100;
   const idealScore = Math.max(...currentStep.choices.map((c) => c.score));
-  const stepLabel = (i: number) => meta.stepLabels[i] ?? `Bước ${i + 1}`;
+  const stepLabel = (i: number) => localizedActiveMeta.stepLabels?.[i] ?? meta.stepLabels[i] ?? `${t("survivalStepLabel") || "Bước"} ${i + 1}`;
   const progressPct = isCompleted ? 100 : Math.round((currentStepIndex / steps.length) * 100 + (phase === "feedback" ? 100 / steps.length : 0));
+
+  const defaultKnowledgeNote = (politeness: "POLITE" | "CASUAL" | "RUDE") => {
+    if (politeness === "POLITE") {
+      return nativeLanguage === "fr"
+        ? "Vous employez la forme polie standard (丁寧語 — です/ます) ou de respect (敬語), sûre et appropriée au quotidien au Japon."
+        : nativeLanguage === "zh-CN"
+        ? "您使用了标准礼貌语（丁寧語 — です/ます）或敬语（敬語），在日本日常交流中标准且得体。"
+        : nativeLanguage === "zh-TW"
+        ? "您使用了標準禮貌語（丁寧語 — です/ます）或敬語（敬語），在日本日常交流中標準且得體。"
+        : nativeLanguage === "en"
+        ? "You used standard polite form (丁寧語 — です/ます) or Keigo, safe and appropriate for everyday communication in Japan."
+        : "Bạn dùng Thể lịch sự (丁寧語 — です/ます) hoặc Kính ngữ (敬語), chuẩn mực và an toàn trong giao tiếp đời sống tại Nhật.";
+    }
+    if (politeness === "CASUAL") {
+      return nativeLanguage === "fr"
+        ? "Vous employez la forme familière (タメ口), un peu trop directe với un inconnu ou employé, mais le message passe."
+        : nativeLanguage === "zh-CN"
+        ? "您使用了普通口语（タメ口），对陌生人或店员稍显随便，但仍能表达意思。"
+        : nativeLanguage === "zh-TW"
+        ? "您使用了普通口語（タメ口），對陌生人或店員稍顯隨便，但仍能表達意思。"
+        : nativeLanguage === "en"
+        ? "You used casual speech (タメ口), slightly too informal for staff or strangers, though your point gets across."
+        : "Bạn dùng Thể thông thường (タメ口), hơi suồng sã khi nói với nhân viên hoặc người lạ nhưng vẫn truyền đạt được ý.";
+    }
+    return nativeLanguage === "fr"
+      ? "Un ton direct ou impératif (RUDE) risque de choquer dans la culture japonaise (-1 ❤️)."
+      : nativeLanguage === "zh-CN"
+      ? "生硬或命令式的语气（RUDE）在日本交往文化中极易引起反感 (-1 ❤️)。"
+      : nativeLanguage === "zh-TW"
+      ? "生硬或命令式的語氣（RUDE）在日本交往文化中極易引起反感 (-1 ❤️)。"
+      : nativeLanguage === "en"
+      ? "A blunt or command tone (RUDE) easily causes offence in Japanese culture (-1 ❤️)."
+      : "Cách nói trống không hoặc mệnh lệnh (RUDE) dễ gây mất thiện cảm nghiêm trọng trong văn hóa giao tiếp Nhật Bản (-1 ❤️).";
+  };
 
   return (
     <div className="mx-auto w-full max-w-[1280px] space-y-5 px-3 pb-10 pt-4 sm:px-6 animate-in fade-in duration-200">
@@ -1803,7 +2051,7 @@ export function SurvivalClient({
             onClick={exitScenario}
             className="inline-flex items-center gap-1.5 font-semibold text-slate-600 transition hover:text-slate-900 dark:text-slate-300 dark:hover:text-white"
           >
-            <span aria-hidden>←</span> Quay lại
+            <span aria-hidden>←</span> {t("survivalBackBtn") || "Quay lại"}
           </button>
           <span className="hidden h-5 w-px bg-slate-200 dark:bg-slate-700 sm:block" />
           <div className="flex items-center gap-2">
@@ -1813,7 +2061,7 @@ export function SurvivalClient({
             <span className="font-bold text-torii-600">Survival Mode</span>
             <span className="text-slate-400">/</span>
             <span className="font-medium text-slate-600 dark:text-slate-300">
-              {scenarioNo}. {activeScenario.locationName}
+              {scenarioNo}. {localizedActiveMeta.locationName}
             </span>
           </div>
         </div>
@@ -1826,28 +2074,28 @@ export function SurvivalClient({
               setShowHints((v) => !v);
             }}
             aria-pressed={showHints}
-            title="Bật/tắt Romaji và dịch nghĩa tiếng Việt"
+            title={t("survivalRomajiHintsOn") || "Bật/tắt Romaji và dịch"}
             className={`rounded-xl border px-3 py-2.5 min-h-11 text-xs font-bold transition ${
               showHints
                 ? "border-rose-200 bg-rose-50 text-torii-600 dark:border-rose-900 dark:bg-rose-950/40 dark:text-rose-300"
                 : "border-slate-200 bg-white/80 text-slate-500 hover:text-slate-800 dark:border-slate-700 dark:bg-sumi-900 dark:hover:text-white"
             }`}
           >
-            {showHints ? "👁 Romaji & Dịch" : "🔒 Chế độ thực chiến"}
+            {showHints ? t("survivalRomajiHintsOn") || "👁 Romaji & Dịch" : t("survivalRomajiHintsOff") || "🔒 Chế độ thực chiến"}
           </button>
           <button
             type="button"
             onClick={showGuide}
             className="rounded-xl border border-slate-200 bg-white/80 px-3 py-2.5 min-h-11 text-xs font-bold text-slate-700 transition hover:bg-slate-100 dark:border-slate-700 dark:bg-sumi-900 dark:text-slate-200 dark:hover:bg-sumi-800"
           >
-            ? Hướng dẫn
+            ? {t("survivalGuideBtn") || "Hướng dẫn"}
           </button>
           <button
             type="button"
             onClick={exitScenario}
             className="rounded-xl border border-slate-200 bg-white/80 px-3 py-2.5 min-h-11 text-xs font-bold text-slate-700 transition hover:bg-slate-100 dark:border-slate-700 dark:bg-sumi-900 dark:text-slate-200 dark:hover:bg-sumi-800"
           >
-            ✕ Thoát
+            ✕ {t("survivalExitBtn") || "Thoát"}
           </button>
         </div>
       </div>
@@ -1857,12 +2105,14 @@ export function SurvivalClient({
         <div className="min-w-0">
           <span className="inline-flex items-center gap-1.5 rounded-full bg-rose-50 px-3 py-1 text-[11px] font-black tracking-wide text-torii-600 dark:bg-rose-950/50 dark:text-rose-300">
             <span className="h-1.5 w-1.5 rounded-full bg-rose-500" />
-            SURVIVAL MODE · TÌNH HUỐNG THỰC TẾ
+            {t("survivalModeBadge") || "SURVIVAL MODE · TÌNH HUỐNG THỰC TẾ"}
           </span>
           <h1 className="mt-3 text-3xl font-black tracking-tight text-slate-900 dark:text-white sm:text-4xl leading-tight">
-            {scenarioNo}. {activeScenario.title}
+            {scenarioNo}. {localizedActiveMeta.title}
           </h1>
-          <p className="mt-2 max-w-2xl text-sm text-slate-600 dark:text-slate-400 leading-relaxed">{activeScenario.description}</p>
+          <p className="mt-2 max-w-2xl text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
+            {localizedActiveMeta.description}
+          </p>
         </div>
 
         <div className="flex flex-wrap items-stretch gap-3">
@@ -1892,21 +2142,26 @@ export function SurvivalClient({
               <span className="text-lg leading-none text-torii-600 ml-1" aria-hidden>⛩</span>
             </div>
             <p className="mt-2 text-xs font-bold text-torii-600">
-              Bước {Math.min(currentStepIndex + 1, steps.length)} / {steps.length}
+              {t("survivalStepLabel") || "Bước"} {Math.min(currentStepIndex + 1, steps.length)} / {steps.length}
             </p>
-            <p className="text-sm font-black text-slate-900 dark:text-white leading-tight">{stepLabel(Math.min(currentStepIndex, steps.length - 1))}</p>
+            <p className="text-sm font-black text-slate-900 dark:text-white leading-tight">
+              {stepLabel(Math.min(currentStepIndex, steps.length - 1))}
+            </p>
           </div>
 
           {/* Thiện cảm / Mạng sinh tồn */}
           <div className="flex min-w-0 flex-1 flex-col items-center justify-center rounded-2xl border border-slate-200/80 bg-white/95 px-3 py-2.5 shadow-sm dark:border-slate-800 dark:bg-sumi-900/90 sm:min-w-[104px] sm:px-4 sm:py-3">
-            <p className="flex items-center gap-1 text-lg font-black text-slate-900 dark:text-white sm:text-xl" aria-label={`${hearts}/3 thiện cảm`}>
+            <p
+              className="flex items-center gap-1 text-lg font-black text-slate-900 dark:text-white sm:text-xl"
+              aria-label={`${hearts}/3 ${t("survivalAffectionLabel") || "thiện cảm"}`}
+            >
               {[1, 2, 3].map((idx) => (
                 <span key={idx} aria-hidden className={idx <= hearts ? "text-rose-500" : "opacity-25 grayscale"}>
                   ❤️
                 </span>
               ))}
             </p>
-            <p className="text-xs text-slate-500">Thiện cảm</p>
+            <p className="text-xs text-slate-500">{t("survivalAffectionLabel") || "Thiện cảm"}</p>
           </div>
 
           {/* Combo */}
@@ -1915,7 +2170,7 @@ export function SurvivalClient({
               <span aria-hidden>🔥</span>
               {combo}
             </p>
-            <p className="text-xs text-slate-500">Combo lịch sự</p>
+            <p className="text-xs text-slate-500">{t("survivalComboLabel") || "Combo lịch sự"}</p>
           </div>
 
           {/* XP */}
@@ -1924,7 +2179,7 @@ export function SurvivalClient({
               <span className="text-amber-500" aria-hidden>★</span>
               {totalScore} XP
             </p>
-            <p className="text-xs text-slate-500">Tổng điểm</p>
+            <p className="text-xs text-slate-500">{t("survivalTotalScoreLabel") || "Tổng điểm"}</p>
           </div>
         </div>
       </div>
@@ -1938,14 +2193,14 @@ export function SurvivalClient({
           >
             <SafeImg
               src={lessonImg(activeScenario.slug)}
-              alt={activeScenario.title}
+              alt={localizedActiveMeta.title}
               className="absolute inset-0 h-full w-full object-cover"
             />
             <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-black/10" />
 
             <span className="absolute left-4 top-4 inline-flex max-w-[70%] items-center gap-1.5 rounded-full border border-white/40 bg-black/30 px-3.5 py-1.5 text-xs font-bold text-white backdrop-blur-md">
               <span aria-hidden>📍</span>
-              <span className="truncate">{activeScenario.locationName}</span>
+              <span className="truncate">{localizedActiveMeta.locationName}</span>
             </span>
 
             {/* Nhân vật */}
@@ -1953,7 +2208,7 @@ export function SurvivalClient({
               <SafeImg
                 key={activeScenario.slug}
                 src={characterImg(activeScenario.slug)}
-                alt={currentStep.npcSpeaker}
+                alt={localizedStepData?.npcSpeaker || currentStep.npcSpeaker}
                 className="h-full w-auto max-w-[48vw] object-contain object-bottom drop-shadow-2xl sm:max-w-[40vw] lg:max-w-[360px]"
                 fallback={
                   <span className="select-none text-[96px] leading-none drop-shadow-2xl sm:text-[150px] lg:text-[210px]" aria-hidden>
@@ -1972,8 +2227,10 @@ export function SurvivalClient({
                 {phase === "choose" || !picked ? (
                   <>
                     <div className="flex items-start justify-between gap-3">
-                      <p className="text-sm font-bold text-torii-600 dark:text-rose-300">{currentStep.npcSpeaker}</p>
-                      <SpeakerButton onClick={() => speak(currentStep.npcJapanese)} label="Nghe lại câu thoại" />
+                      <p className="text-sm font-bold text-torii-600 dark:text-rose-300">
+                        {localizedStepData?.npcSpeaker || currentStep.npcSpeaker}
+                      </p>
+                      <SpeakerButton onClick={() => speak(currentStep.npcJapanese)} label={t("survivalListenAgain") || "Nghe lại câu thoại"} />
                     </div>
                     <p className="jp-text mt-2 text-xl font-black leading-snug text-slate-900 dark:text-white sm:text-2xl">
                       {currentStep.npcJapanese}
@@ -1981,24 +2238,23 @@ export function SurvivalClient({
                     {showHints && (
                       <div className="mt-3 border-t border-slate-100 pt-3 dark:border-slate-800">
                         <p className="text-xs font-semibold text-sakura-600 dark:text-sakura-400">{currentStep.npcRomaji}</p>
-                        <p className="mt-0.5 text-sm text-slate-600 dark:text-slate-400">{currentStep.npcMeaning}</p>
+                        <p className="mt-0.5 text-sm text-slate-600 dark:text-slate-400">
+                          {localizedStepData?.npcMeaning || currentStep.npcMeaning}
+                        </p>
                       </div>
                     )}
                   </>
                 ) : (
                   <>
-                    <p className="text-sm font-bold text-torii-600 dark:text-rose-300">{currentStep.npcSpeaker} phản hồi</p>
+                    <p className="text-sm font-bold text-torii-600 dark:text-rose-300">
+                      {localizedStepData?.npcSpeaker || currentStep.npcSpeaker} {t("survivalNpcResponds") || "phản hồi"}
+                    </p>
                     <p className="mt-2 text-sm font-medium leading-relaxed text-slate-800 dark:text-slate-100">
-                      💡 {picked.npcFeedback}
+                      💡 {pickedChoiceLocalized?.npcFeedback || picked.npcFeedback}
                     </p>
                     <div className="mt-2.5 rounded-2xl border border-slate-200/80 bg-slate-50/90 px-3 py-2 text-xs text-slate-600 dark:border-slate-700 dark:bg-sumi-800/80 dark:text-slate-300">
-                      <span className="font-bold text-slate-800 dark:text-white">📖 Giải thích ngữ vực: </span>
-                      {picked.knowledgeNote ??
-                        (picked.politeness === "POLITE"
-                          ? "Bạn dùng Thể lịch sự (丁寧語 — です/ます) hoặc Kính ngữ (敬語), chuẩn mực và an toàn trong giao tiếp đời sống tại Nhật."
-                          : picked.politeness === "CASUAL"
-                          ? "Bạn dùng Thể thông thường (タメ口), hơi suồng sã khi nói với nhân viên hoặc người lạ nhưng vẫn truyền đạt được ý."
-                          : "Cách nói trống không hoặc mệnh lệnh (RUDE) dễ gây mất thiện cảm nghiêm trọng trong văn hóa giao tiếp Nhật Bản (-1 ❤️).")}
+                      <span className="font-bold text-slate-800 dark:text-white">📖 {t("survivalRegisterExplain") || "Giải thích ngữ vực:"} </span>
+                      {pickedChoiceLocalized?.knowledgeNote ?? picked.knowledgeNote ?? defaultKnowledgeNote(picked.politeness)}
                     </div>
                     <p
                       className={`mt-3 inline-flex rounded-full px-3 py-1 text-xs font-black ${
@@ -2007,7 +2263,7 @@ export function SurvivalClient({
                           : "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300"
                       }`}
                     >
-                      +{picked.score} điểm {picked.politeness === "RUDE" || picked.score < 50 ? "· -1 ❤️ Thiện cảm" : ""}
+                      +{picked.score} {t("survivalReflexScore") || "điểm"} {picked.politeness === "RUDE" || picked.score < 50 ? `· -1 ❤️ ${t("survivalAffectionLabel") || "Thiện cảm"}` : ""}
                     </p>
                   </>
                 )}
@@ -2020,7 +2276,16 @@ export function SurvivalClient({
             <div className="rounded-3xl border border-slate-200/80 bg-white/95 p-5 shadow-sm dark:border-slate-800 dark:bg-sumi-900/90 sm:p-6">
               <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
                 <h2 className="flex items-center gap-2 text-lg font-black text-slate-900 dark:text-white">
-                  <span className="text-torii-600" aria-hidden>🙋</span> Hãy chọn câu trả lời của bạn:
+                  <span className="text-torii-600" aria-hidden>🙋</span>{" "}
+                  {nativeLanguage === "fr"
+                    ? "Choisissez votre réponse :"
+                    : nativeLanguage === "zh-CN"
+                    ? "请选择您的回答："
+                    : nativeLanguage === "zh-TW"
+                    ? "請選擇您的回答："
+                    : nativeLanguage === "en"
+                    ? "Choose your response:"
+                    : "Hãy chọn câu trả lời của bạn:"}
                 </h2>
                 <div className="flex items-center gap-2">
                   {micSupported && (
@@ -2034,18 +2299,46 @@ export function SurvivalClient({
                           : "border-slate-200 bg-slate-100 text-slate-700 hover:bg-slate-200 dark:border-slate-700 dark:bg-sumi-800 dark:text-slate-300"
                       }`}
                     >
-                      {isListening ? "🔴 Đang nghe..." : "🎙️ Nói tiếng Nhật"}
+                      {isListening
+                        ? nativeLanguage === "fr"
+                          ? "🔴 Écoute en cours..."
+                          : nativeLanguage === "zh-CN"
+                          ? "🔴 正在聆听..."
+                          : nativeLanguage === "zh-TW"
+                          ? "🔴 正在聆聽..."
+                          : nativeLanguage === "en"
+                          ? "🔴 Listening..."
+                          : "🔴 Đang nghe..."
+                        : nativeLanguage === "fr"
+                        ? "🎙️ Parler japonais"
+                        : nativeLanguage === "zh-CN"
+                        ? "🎙️ 日语语音输入"
+                        : nativeLanguage === "zh-TW"
+                        ? "🎙️ 日語語音輸入"
+                        : nativeLanguage === "en"
+                        ? "🎙️ Speak Japanese"
+                        : "🎙️ Nói tiếng Nhật"}
                     </button>
                   )}
                   <span className="hidden rounded-full border border-slate-200 px-3 py-1.5 text-xs text-slate-500 dark:border-slate-700 sm:inline-block">
-                    ⓘ Bạn sẽ nhận phản hồi ngay sau khi chọn.
+                    {nativeLanguage === "fr"
+                      ? "ⓘ Vous recevrez un retour immédiat après votre choix."
+                      : nativeLanguage === "zh-CN"
+                      ? "ⓘ 做出选择后即可获得即时反馈。"
+                      : nativeLanguage === "zh-TW"
+                      ? "ⓘ 做出選擇後即可獲得即時反饋。"
+                      : nativeLanguage === "en"
+                      ? "ⓘ Instant feedback after selection."
+                      : "ⓘ Bạn sẽ nhận phản hồi ngay sau khi chọn."}
                   </span>
                 </div>
               </div>
 
               <div className="space-y-3" role="list">
                 {currentStep.choices.map((choice, i) => {
-                  const tag = POLITENESS_TAG[choice.politeness];
+                  const locChoice = localizedStepData?.choices?.[i];
+                  const choiceMeaning = locChoice?.textNative || choice.textVi;
+                  const tag = getPolitenessTag(choice.politeness, nativeLanguage);
                   const isPicked = picked === choice;
                   const isIdealRevealed = revealed && choice.score === idealScore;
                   const stateCls = isPicked
@@ -2090,15 +2383,27 @@ export function SurvivalClient({
                           </span>
                         </span>
                         {showHints && (
-                          <span className="text-sm text-slate-600 dark:text-slate-400 sm:max-w-[34%]">{choice.textVi}</span>
+                          <span className="text-sm text-slate-600 dark:text-slate-400 sm:max-w-[34%]">
+                            {choiceMeaning}
+                          </span>
                         )}
                         <span
                           className={`w-fit shrink-0 rounded-full border px-3 py-1 text-xs font-bold ${tag.cls}`}
                         >
-                          {isIdealRevealed && !isPicked ? "✓ Đáp án tốt nhất" : tag.label}
+                          {isIdealRevealed && !isPicked
+                            ? nativeLanguage === "fr"
+                              ? "✓ Meilleure réponse"
+                              : nativeLanguage === "zh-CN"
+                              ? "✓ 最佳回答"
+                              : nativeLanguage === "zh-TW"
+                              ? "✓ 最佳回答"
+                              : nativeLanguage === "en"
+                              ? "✓ Best answer"
+                              : "✓ Đáp án tốt nhất"
+                            : tag.label}
                         </span>
                       </button>
-                      <SpeakerButton onClick={() => speak(choice.textJa)} label="Nghe câu trả lời" />
+                      <SpeakerButton onClick={() => speak(choice.textJa)} label={t("survivalListenAgain") || "Nghe câu trả lời"} />
                     </div>
                   );
                 })}
@@ -2107,7 +2412,17 @@ export function SurvivalClient({
               {/* Gợi ý */}
               <div className="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-amber-100 bg-amber-50/70 px-4 py-2.5 text-xs dark:border-amber-900/50 dark:bg-amber-950/20">
                 <p className="min-w-0 text-slate-600 dark:text-slate-300">
-                  <span className="mr-2 font-black text-amber-600">💡 Gợi ý</span>
+                  <span className="mr-2 font-black text-amber-600">
+                    {nativeLanguage === "fr"
+                      ? "💡 Conseil"
+                      : nativeLanguage === "zh-CN"
+                      ? "💡 提示"
+                      : nativeLanguage === "zh-TW"
+                      ? "💡 提示"
+                      : nativeLanguage === "en"
+                      ? "💡 Tip"
+                      : "💡 Gợi ý"}
+                  </span>
                   {meta.tip ?? DEFAULT_TIP}
                 </p>
                 <button
@@ -2119,51 +2434,76 @@ export function SurvivalClient({
                   }}
                   className="shrink-0 font-bold text-torii-600 transition hover:underline disabled:opacity-50 dark:text-rose-300"
                 >
-                  {revealed ? "Đã hiện đáp án" : "Bỏ qua và xem đáp án →"}
+                  {revealed
+                    ? nativeLanguage === "fr"
+                      ? "Réponse affichée"
+                      : nativeLanguage === "zh-CN"
+                      ? "已显示答案"
+                      : nativeLanguage === "zh-TW"
+                      ? "已顯示答案"
+                      : nativeLanguage === "en"
+                      ? "Answer revealed"
+                      : "Đã hiện đáp án"
+                    : nativeLanguage === "fr"
+                    ? "Passer et voir la réponse →"
+                    : nativeLanguage === "zh-CN"
+                    ? "跳过并查看答案 →"
+                    : nativeLanguage === "zh-TW"
+                    ? "跳過並查看答案 →"
+                    : nativeLanguage === "en"
+                    ? "Skip and see answer →"
+                    : "Bỏ qua và xem đáp án →"}
                 </button>
               </div>
             </div>
           ) : isFailed ? (
             <Card className="space-y-4 border-2 border-rose-400 p-8 text-center dark:border-rose-800">
               <div className="text-6xl">💦🙇‍♂️</div>
-              <Badge variant="torii">Chưa Vượt Qua Thử Thách</Badge>
+              <Badge variant="torii">{t("survivalFailedBadge") || "Chưa Vượt Qua Thử Thách"}</Badge>
               <h3 className="text-2xl font-black text-slate-900 dark:text-white sm:text-3xl">
-                Điểm Phản Xạ: {finalPercentage}% · Thiện cảm: {hearts}/3 ❤️
+                {t("survivalReflexScore") || "Điểm Phản Xạ"}: {finalPercentage}% · {t("survivalAffectionLabel") || "Thiện cảm"}: {hearts}/3 ❤️
               </h3>
               <p className="mx-auto max-w-md text-sm text-slate-600 dark:text-slate-400">
                 {hearts <= 0
-                  ? "Bạn đã chọn nhiều phương án thiếu lịch sự khiến đối phương bối rối. Trong văn hóa Nhật Bản, hãy ưu tiên thể Lịch sự (丁寧語) hoặc Kính ngữ (敬語) khi giao tiếp với người lạ và cấp trên."
-                  : "Bạn cần đạt tối thiểu 60% điểm phản xạ và giữ còn ít nhất 1 ❤️ thiện cảm để hoàn thành tình huống này."}
+                  ? t("survivalFailedHeartsDesc") ||
+                    "Bạn đã chọn nhiều phương án thiếu lịch sự khiến đối phương bối rối. Trong văn hóa Nhật Bản, hãy ưu tiên thể Lịch sự (丁寧語) hoặc Kính ngữ (敬語) khi giao tiếp với người lạ và cấp trên."
+                  : t("survivalFailedScoreDesc") ||
+                    "Bạn cần đạt tối thiểu 60% điểm phản xạ và giữ còn ít nhất 1 ❤️ thiện cảm để hoàn thành tình huống này."}
               </p>
               <div className="flex flex-wrap justify-center gap-3 pt-2">
                 <Button variant="sakura" onClick={() => startScenario(activeScenario)} className="px-8 font-bold">
-                  🔄 Thử lại tình huống này
+                  {t("survivalRetryBtn") || "🔄 Thử lại tình huống này"}
                 </Button>
                 <Button variant="secondary" onClick={exitScenario}>
-                  Quay lại danh sách
+                  {t("survivalBackToListBtn") || "Quay lại danh sách"}
                 </Button>
               </div>
             </Card>
           ) : (
             <Card className="space-y-4 border-2 border-emerald-400 p-8 text-center dark:border-emerald-800">
               <div className="animate-bounce text-6xl">🎌✨🍜</div>
-              <Badge variant="matcha">Hoàn Thành Xuất Sắc</Badge>
+              <Badge variant="matcha">{t("survivalSuccessBadge") || "Hoàn Thành Xuất Sắc"}</Badge>
               <h3 className="text-2xl font-black text-slate-900 dark:text-white sm:text-3xl">
-                Khả Năng Phản Xạ:{" "}
-                {finalPercentage >= 90 ? "Hạng S (Xuất Chúng)" : finalPercentage >= 75 ? "Hạng A (Chuẩn Bản Xứ)" : "Hạng B (Đạt Yêu Cầu)"}!
+                {t("survivalReflexScore") || "Khả Năng Phản Xạ"}:{" "}
+                {finalPercentage >= 90
+                  ? t("survivalRankS") || "Hạng S (Xuất Chúng)"
+                  : finalPercentage >= 75
+                  ? t("survivalRankA") || "Hạng A (Chuẩn Bản Xứ)"
+                  : t("survivalRankB") || "Hạng B (Đạt Yêu Cầu)"}!
               </h3>
               <p className="mx-auto max-w-md text-sm text-slate-600 dark:text-slate-400">
-                Bạn đã xử lý tình huống giao tiếp đời thực rất trôi chảy và tự tin ({finalPercentage}% · {hearts}/3 ❤️).
+                {t("survivalSuccessDesc", { pct: String(finalPercentage), hearts: String(hearts) }) ||
+                  `Bạn đã xử lý tình huống giao tiếp đời thực rất trôi chảy và tự tin (${finalPercentage}% · ${hearts}/3 ❤️).`}
               </p>
               <div className="inline-block rounded-2xl border border-amber-300 bg-amber-50 px-5 py-2.5 text-base font-black text-amber-800 shadow-sm dark:bg-amber-950 dark:text-amber-300">
-                ✨ +{activeScenario.xpReward} XP Đã Nhận
+                ✨ +{activeScenario.xpReward} {t("survivalXpEarned") || "XP Đã Nhận"}
               </div>
               <div className="flex flex-wrap justify-center gap-3 pt-2">
                 <Button variant="secondary" onClick={() => startScenario(activeScenario)}>
-                  🔄 Chơi lại
+                  {t("survivalReplayBtn") || "🔄 Chơi lại"}
                 </Button>
                 <Button variant="sakura" loading={submitting} onClick={exitScenario} className="px-8 font-bold">
-                  Hoàn thành thử thách 🏁
+                  {t("survivalNextScenarioBtn") || "Hoàn thành thử thách 🏁"}
                 </Button>
               </div>
             </Card>
@@ -2173,12 +2513,32 @@ export function SurvivalClient({
         {/* ── Sidebar ── */}
         <aside className="space-y-4">
           <Card className="!p-5">
-            <SideTitle icon="◎">Mục tiêu hội thoại</SideTitle>
+            <SideTitle icon="◎">
+              {nativeLanguage === "fr"
+                ? "Objectif du dialogue"
+                : nativeLanguage === "zh-CN"
+                ? "对话目标"
+                : nativeLanguage === "zh-TW"
+                ? "對話目標"
+                : nativeLanguage === "en"
+                ? "Dialogue Goal"
+                : "Mục tiêu hội thoại"}
+            </SideTitle>
             <p className="pl-1 text-sm leading-relaxed text-slate-700 dark:text-slate-300">{meta.objective}</p>
           </Card>
 
           <Card className="!p-5">
-            <SideTitle icon="食">Tiến độ tình huống</SideTitle>
+            <SideTitle icon="食">
+              {nativeLanguage === "fr"
+                ? "Progression du scénario"
+                : nativeLanguage === "zh-CN"
+                ? "情景进度"
+                : nativeLanguage === "zh-TW"
+                ? "情景進度"
+                : nativeLanguage === "en"
+                ? "Scenario Progress"
+                : "Tiến độ tình huống"}
+            </SideTitle>
             <div className="mb-3 flex items-center gap-3">
               <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-slate-100 dark:bg-sumi-800">
                 <div
@@ -2226,7 +2586,17 @@ export function SurvivalClient({
 
           {meta.vocab.length > 0 && (
             <Card className="!p-5">
-              <SideTitle icon="📖">Từ vựng hữu ích</SideTitle>
+              <SideTitle icon="📖">
+                {nativeLanguage === "fr"
+                  ? "Vocabulaire utile"
+                  : nativeLanguage === "zh-CN"
+                  ? "实用词汇"
+                  : nativeLanguage === "zh-TW"
+                  ? "實用詞彙"
+                  : nativeLanguage === "en"
+                  ? "Useful Vocabulary"
+                  : "Từ vựng hữu ích"}
+              </SideTitle>
               <ul className="divide-y divide-slate-100 dark:divide-slate-800">
                 {meta.vocab.map((v) => (
                   <li key={v.ja} className="flex items-center gap-3 py-2.5">
